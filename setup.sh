@@ -58,6 +58,9 @@ function install_nvm() {
         logi "$_version"
     else
         /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/v0.37.2/install.sh)"
+        local _nvm_dir="$([ -z "${XDG_CONFIG_HOME-}" ] && printf %s "${HOME}/.nvm" || printf %s "${XDG_CONFIG_HOME}/nvm")"
+        [ -s "$_nvm_dir/nvm.sh" ] && source "$_nvm_dir/nvm.sh" # This loads nvm
+
     fi
 }
 
@@ -68,7 +71,7 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
     tfenv install
 
     install_sdkman
-    sdk env
+    sdk env install
 
     install_nvm
     nvm install
