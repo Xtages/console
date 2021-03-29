@@ -1,0 +1,11 @@
+{
+  "eslint.workingDirectories": [{ "mode": "auto" }],
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "[javascript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "editor.codeActionsOnSave": {
+    "source.fixAll": true
+},
+"editor.tabSize": 2
+}
