@@ -87,7 +87,7 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
     brew_install tfenv
     tfenv install
 
-    brew_install postgresql postgres
+    brew_install postgresql@13 postgres
     start_postgress
 
     install_sdkman
