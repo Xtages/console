@@ -29,7 +29,11 @@ function install_brew() {
 ## Installs brew packages if they are not installed
 function brew_install() {
     local _pkg="$1"
-    if ! bin_exists "$_pkg"; then
+    local _bin="$2"
+    if [[ -z "$_bin" ]]; then
+        _bin="$_pkg"
+    fi
+    if ! bin_exists "$_bin"; then
         brew install "$_pkg"
     fi
 }
@@ -60,7 +64,20 @@ function install_nvm() {
         /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/v0.37.2/install.sh)"
         local _nvm_dir="$([ -z "${XDG_CONFIG_HOME-}" ] && printf %s "${HOME}/.nvm" || printf %s "${XDG_CONFIG_HOME}/nvm")"
         [ -s "$_nvm_dir/nvm.sh" ] && source "$_nvm_dir/nvm.sh" # This loads nvm
+    fi
+}
 
+function start_postgress() {
+    local _out="$( pg_ctl status -D $(brew --prefix)/var/postgres )"
+    echo $_out
+    if [[ ! "$_out" == *"server is running"* ]]; then
+        pg_ctl start -D $(brew --prefix)/var/postgres
+    fi
+    if [[ ! "$( psql --dbname=postgres -tAc "SELECT 1 FROM pg_user WHERE usename='xtages_console'" )" == '1' ]]; then
+        createuser -s "xtages_console"
+    fi
+    if [[ ! "$( psql --dbname=postgres -tAc "SELECT 1 FROM pg_database WHERE datname='xtages_console'" )" == '1' ]]; then
+        createdb "xtages_console" "Main Xtages console DB" --owner="xtages_console"
     fi
 }
 
@@ -69,6 +86,9 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
 
     brew_install tfenv
     tfenv install
+
+    brew_install postgresql@13 postgres
+    start_postgress
 
     install_sdkman
     sdk env install
