@@ -35,10 +35,10 @@ export default function LoginPage() {
                   Sign in to your account to continue.
                 </p>
               </div>
-              <span className="clearfix"></span>
+              <span className="clearfix" />
               <form onSubmit={signIn}>
                 <div className="form-group">
-                  <label className="form-control-label">Email address</label>
+                  <label className="form-control-label" htmlFor="input-email">Email address</label>
                   <div className="input-group">
                     <div className="input-group-prepend">
                       <span className="input-group-text">
@@ -48,6 +48,7 @@ export default function LoginPage() {
                     <input
                       type="email"
                       className="form-control"
+                      name="input-email"
                       id="input-email"
                       placeholder="name@example.com"
                       ref={emailRef}
@@ -57,7 +58,7 @@ export default function LoginPage() {
                 <div className="form-group mb-0">
                   <div className="d-flex align-items-center justify-content-between">
                     <div>
-                      <label className="form-control-label">Password</label>
+                      <label className="form-control-label" htmlFor="input-password">Password</label>
                     </div>
                   </div>
                   <div className="input-group">
@@ -70,6 +71,7 @@ export default function LoginPage() {
                       type="password"
                       className="form-control"
                       id="input-password"
+                      name="input-password"
                       placeholder="Password"
                       ref={passwordRef}
                     />
@@ -82,7 +84,8 @@ export default function LoginPage() {
                 </div>
               </form>
               <div className="mt-4 text-center">
-                <small>Not registered?</small>{' '}
+                <small>Not registered?</small>
+                {' '}
                 <a
                   href="register-basic.html"
                   className="small font-weight-bold"

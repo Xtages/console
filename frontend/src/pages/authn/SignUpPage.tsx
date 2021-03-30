@@ -35,10 +35,12 @@ export default function SignUpPage() {
                   Made with love for designers &amp; developers.
                 </p>
               </div>
-              <span className="clearfix"></span>
+              <span className="clearfix" />
               <form onSubmit={signUp}>
                 <div className="form-group">
-                  <label className="form-control-label">Name</label>
+                  <label className="form-control-label" htmlFor="input-name">
+                    Name
+                  </label>
                   <div className="input-group input-group-merge">
                     <div className="input-group-prepend">
                       <span className="input-group-text">
@@ -49,13 +51,16 @@ export default function SignUpPage() {
                       type="text"
                       className="form-control form-control-prepend"
                       id="input-name"
+                      name="input-name"
                       placeholder="Santa Claus"
                       ref={nameRef}
                     />
                   </div>
                 </div>
                 <div className="form-group">
-                  <label className="form-control-label">Email address</label>
+                  <label className="form-control-label" htmlFor="input-email">
+                    Email address
+                  </label>
                   <div className="input-group input-group-merge">
                     <div className="input-group-prepend">
                       <span className="input-group-text">
@@ -66,6 +71,7 @@ export default function SignUpPage() {
                       type="email"
                       className="form-control form-control-prepend"
                       id="input-email"
+                      name="input-email"
                       placeholder="santa@northpole.com"
                       ref={emailRef}
                     />
@@ -74,7 +80,12 @@ export default function SignUpPage() {
                 <div className="form-group mb-4">
                   <div className="d-flex align-items-center justify-content-between">
                     <div>
-                      <label className="form-control-label">Password</label>
+                      <label
+                        className="form-control-label"
+                        htmlFor="input-password"
+                      >
+                        Password
+                      </label>
                     </div>
                   </div>
                   <div className="input-group input-group-merge">
@@ -87,6 +98,7 @@ export default function SignUpPage() {
                       type="password"
                       className="form-control form-control-prepend"
                       id="input-password"
+                      name="input-password"
                       placeholder="********"
                       ref={passwordRef}
                     />
@@ -98,12 +110,14 @@ export default function SignUpPage() {
                       type="checkbox"
                       className="custom-control-input"
                       id="check-terms"
-                    />{' '}
+                    />
+                    {' '}
                     <label
                       className="custom-control-label"
                       htmlFor="check-terms"
                     >
-                      I agree to the{' '}
+                      I agree to the
+                      {' '}
                       <a href="../../pages/utility/terms.html">
                         terms and conditions
                       </a>
@@ -117,7 +131,8 @@ export default function SignUpPage() {
                 </div>
               </form>
               <div className="mt-4 text-center">
-                <small>Already have an acocunt?</small>{' '}
+                <small>Already have an acocunt?</small>
+                {' '}
                 <a href="login-basic.html" className="small font-weight-bold">
                   Sign in
                 </a>

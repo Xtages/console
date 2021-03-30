@@ -31,8 +31,11 @@ export function useAuth() {
 
 class Principal {
   readonly id: string;
+
   readonly name: string;
+
   readonly email: string;
+
   readonly org: string;
 
   constructor(id: string, name: string, email: string, org: string) {
@@ -58,20 +61,20 @@ interface ProvideAuthType {
 // Provider hook that creates auth object and handles state
 function useProvideAuth(): ProvideAuthType {
   async function cognitoUserToPrincipal(user: CognitoUser): Promise<Principal> {
-    return await new Promise<Principal>((resolve, reject) => {
+    return new Promise<Principal>((resolve, reject) => {
       user.getUserAttributes((error, attrList) => {
         if (error != null) {
           reject(error);
         }
         if (
-          attrList == null ||
-          attrList === undefined ||
-          attrList.length === 0
+          attrList == null
+          || attrList === undefined
+          || attrList.length === 0
         ) {
           reject(new Error());
         }
         const attrs = Object.fromEntries(
-          attrList!.map((attr, index) => [attr.getName(), attr.getValue()]),
+          attrList!.map((attr) => [attr.getName(), attr.getValue()]),
         );
         const principal = new Principal(
           user.getUsername(),
@@ -88,9 +91,9 @@ function useProvideAuth(): ProvideAuthType {
 
   async function signIn(email: string, password: string) {
     const user: CognitoUser = await Auth.signIn(email, password);
-    const principal = await cognitoUserToPrincipal(user);
-    setPrincipal(principal);
-    return principal;
+    const converted = await cognitoUserToPrincipal(user);
+    setPrincipal(converted);
+    return converted;
   }
 
   async function signUp(
@@ -101,22 +104,22 @@ function useProvideAuth(): ProvideAuthType {
   ) {
     const result = await Auth.signUp({
       username: email,
-      password: password,
+      password,
       attributes: {
-        name: name,
+        name,
         'custom:org': org,
       },
     });
     if (result.user != null) {
-      const principal = await cognitoUserToPrincipal(result.user);
-      setPrincipal(principal);
-      return principal;
+      const converted = await cognitoUserToPrincipal(result.user);
+      setPrincipal(converted);
+      return converted;
     }
     return null;
   }
 
   async function signOut(global = false) {
-    await Auth.signOut({global: global});
+    await Auth.signOut({global});
     setPrincipal(null);
   }
 
@@ -125,7 +128,7 @@ function useProvideAuth(): ProvideAuthType {
   // component that utilizes this hook to re-render with the
   // latest auth object.
   useAsyncEffect(async () => {
-    const listener: HubCallback = async data => {
+    const listener: HubCallback = async (data) => {
       switch (data.payload.event) {
         case 'signIn': {
           console.log('signIn');
@@ -147,6 +150,7 @@ function useProvideAuth(): ProvideAuthType {
         case 'tokenRefresh_failure':
           setPrincipal(null);
           break;
+        default:
       }
     };
 
@@ -157,7 +161,7 @@ function useProvideAuth(): ProvideAuthType {
 
   // Return the user object and auth methods
   return {
-    principal: principal,
+    principal,
     signIn,
     signUp,
     signOut,
