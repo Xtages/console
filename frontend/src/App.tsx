@@ -1,7 +1,9 @@
 import React from 'react';
 import './App.css';
-import SignUpPage from './pages/authflow/SignUpPage';
+// import SignUpPage from './pages/authflow/SignUpPage';
 import {Auth} from 'aws-amplify';
+import LoginPage from './pages/authn/LoginPage';
+import {ProvideAuth} from './hooks/useAuth';
 
 Auth.configure({
   aws_project_region: 'us-east-1',
@@ -10,5 +12,10 @@ Auth.configure({
 });
 
 export default function App() {
-  return <SignUpPage />;
+  return (
+    <ProvideAuth>
+      <LoginPage />
+      {/* <SignUpPage />; */}
+    </ProvideAuth>
+  );
 }

@@ -1,11 +1,12 @@
 import React, {FormEvent, useRef} from 'react';
 import {AtSign, Key, User} from 'react-feather';
-import {Auth} from 'aws-amplify';
+import {useAuth} from '../../hooks/useAuth';
 
 export default function SignUpPage() {
   const nameRef = useRef<HTMLInputElement>(null);
   const emailRef = useRef<HTMLInputElement>(null);
   const passwordRef = useRef<HTMLInputElement>(null);
+  const auth = useAuth()!;
 
   async function signUp(event: FormEvent) {
     event.preventDefault();
@@ -14,15 +15,8 @@ export default function SignUpPage() {
       const email = emailRef.current;
       const password = passwordRef.current;
       if (name != null && email != null && password != null) {
-        const user = await Auth.signUp({
-          username: email.value,
-          password: password.value,
-          attributes: {
-            name: name.value,
-            'custom:org': 'xtages',
-          },
-        });
-        console.log(user);
+        await auth.signUp(email.value, password.value, name.value, 'xtages');
+        console.log('sign up', auth.principal);
       }
     } catch (error) {
       console.log(error);

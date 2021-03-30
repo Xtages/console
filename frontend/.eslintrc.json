@@ -5,10 +5,7 @@
     "prettier",
     "standard-with-typescript"
   ],
-  "plugins": [
-    "node",
-    "prettier"
-  ],
+  "plugins": ["node", "prettier"],
   "rules": {
     "prettier/prettier": "error",
     "block-scoped-var": "error",
@@ -18,7 +15,7 @@
     "eol-last": "error",
     "prefer-arrow-callback": "error",
     "no-trailing-spaces": "error",
-    "quotes": ["warn", "single", { "avoidEscape": true }],
+    "quotes": ["warn", "single", {"avoidEscape": true}],
     "no-restricted-properties": [
       "error",
       {
@@ -32,28 +29,37 @@
     ]
   },
 
-"parserOptions": {
-  "project": "./tsconfig.json"
-},
+  "parserOptions": {
+    "project": "./tsconfig.json"
+  },
   "overrides": [
     {
       "files": ["**/*.ts", "**/*.tsx"],
       "parser": "@typescript-eslint/parser",
-      "extends": [
-        "plugin:@typescript-eslint/recommended"
-      ],
+      "extends": ["plugin:@typescript-eslint/recommended"],
       "rules": {
         "@typescript-eslint/ban-types": "off",
         "@typescript-eslint/camelcase": "off",
         "@typescript-eslint/explicit-function-return-type": "off",
         "@typescript-eslint/explicit-module-boundary-types": "off",
+        "@typescript-eslint/member-delimiter-style": ["error", {
+          "multiline": {
+            "delimiter": "semi",
+            "requireLast": true
+          },
+          "singleline": {
+            "delimiter": "semi",
+            "requireLast": false
+          },
+          "multilineDetection": "brackets"
+        }],
         "@typescript-eslint/no-empty-function": "off",
         "@typescript-eslint/no-non-null-assertion": "off",
         "@typescript-eslint/no-use-before-define": "off",
         "@typescript-eslint/no-var-requires": "off",
         "@typescript-eslint/no-warning-comments": "off",
         "@typescript-eslint/semi": "off",
-        "@typescript-eslint/space-before-function-paren": ["error", "never"],
+        "@typescript-eslint/space-before-function-paren": "off",
         "comma-dangle": "off",
         "no-dupe-class-members": "off",
         "node/no-empty-function": "off",

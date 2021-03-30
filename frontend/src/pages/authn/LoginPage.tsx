@@ -1,9 +1,11 @@
 import React, {FormEvent, useRef} from 'react';
 import {Key, User} from 'react-feather';
-import {Auth} from 'aws-amplify';
+import {useAuth} from '../../hooks/useAuth';
+
 export default function LoginPage() {
   const emailRef = useRef<HTMLInputElement>(null);
   const passwordRef = useRef<HTMLInputElement>(null);
+  const auth = useAuth()!;
 
   async function signIn(event: FormEvent) {
     event.preventDefault();
@@ -12,8 +14,9 @@ export default function LoginPage() {
       const email = emailRef.current;
       const password = passwordRef.current;
       if (email !== null && password !== null) {
-        const user = await Auth.signIn(email.value, password.value);
-        console.log(user);
+        const principal = await auth.signIn(email.value, password.value);
+        console.log(principal);
+        console.log(auth.principal);
       }
     } catch (error) {
       console.log('error signing in', error);
