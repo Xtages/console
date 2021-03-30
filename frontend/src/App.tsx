@@ -1,21 +1,42 @@
 import React from 'react';
+import {BrowserRouter, Link, Route, Switch} from 'react-router-dom';
 import './App.css';
-// import SignUpPage from './pages/authflow/SignUpPage';
-import {Auth} from 'aws-amplify';
-import LoginPage from './pages/authn/LoginPage';
+import PrivateRoute from './components/PrivateRoute';
 import {ProvideAuth} from './hooks/useAuth';
-
-Auth.configure({
-  aws_project_region: 'us-east-1',
-  userPoolId: 'us-east-1_F4FzoEObF',
-  userPoolWebClientId: '4iilttvg5aqlnnujs088tisjl',
-});
+import LoginPage from './pages/authn/LoginPage';
+import SignUpPage from './pages/authn/SignUpPage';
+import HomePage from './pages/home/HomePage';
 
 export default function App() {
   return (
     <ProvideAuth>
-      <LoginPage />
-      {/* <SignUpPage />; */}
+      <BrowserRouter>
+        <div>
+          <ul>
+            <li>
+              <Link to="/login">Login</Link>
+            </li>
+            <li>
+              <Link to="/signup">Sign Up</Link>
+            </li>
+            <li>
+              <Link to="/">Home</Link>
+            </li>
+          </ul>
+
+          <Switch>
+            <Route path="/login">
+              <LoginPage />
+            </Route>
+            <Route path="/signup">
+              <SignUpPage />
+            </Route>
+            <PrivateRoute path="/">
+              <HomePage />
+            </PrivateRoute>
+          </Switch>
+        </div>
+      </BrowserRouter>
     </ProvideAuth>
   );
 }
