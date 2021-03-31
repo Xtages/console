@@ -4,11 +4,20 @@ import {Key, User} from 'react-feather';
 import {Link, RouteComponentProps, useHistory} from 'react-router-dom';
 import {useAuth} from '../../hooks/useAuth';
 
-interface LoginPageProps extends RouteComponentProps<{}, {}, LocationState> {}
+/** The properties that are available to the {@link LoginPage} component. */
+type LoginPageProps = RouteComponentProps<{}, {}, LocationState | null>;
+
+/** The state that is provided when redirecting to this component. */
 interface LocationState {
   referrer: string;
 }
 
+/**
+ * Component that renders the login page.
+ *
+ * @param location - The {@link LocationState} passed to this component by
+ *     the `react-router` {@link Router}.
+ */
 export default function LoginPage({location}: LoginPageProps) {
   const emailRef = useRef<HTMLInputElement>(null);
   const passwordRef = useRef<HTMLInputElement>(null);
@@ -22,7 +31,7 @@ export default function LoginPage({location}: LoginPageProps) {
       const password = passwordRef.current;
       if (email !== null && password !== null) {
         await auth.signIn({email: email.value, password: password.value});
-        const redirectTo = location.state.referrer || '/';
+        const redirectTo = location.state?.referrer || '/';
         history.replace(redirectTo);
       }
     } catch (error) {

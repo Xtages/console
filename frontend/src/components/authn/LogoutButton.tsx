@@ -3,8 +3,9 @@ import {LogOut} from 'react-feather';
 import {useHistory} from 'react-router-dom';
 import {useAuth} from '../../hooks/useAuth';
 
+/** A button to log the Principal out. */
 export default function LogoutButton() {
-  const auth = useAuth()!;
+  const auth = useAuth();
   const history = useHistory();
 
   async function logOut(event: MouseEvent) {

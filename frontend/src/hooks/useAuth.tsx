@@ -1,37 +1,29 @@
 import {HubCallback} from '@aws-amplify/core';
 import {CognitoUser} from 'amazon-cognito-identity-js';
-import {Auth, Hub} from 'aws-amplify';
+import {Auth as CognitoAuth, Hub} from 'aws-amplify';
 import React, {createContext, ReactNode, useContext, useState} from 'react';
 import useAsyncEffect from 'use-async-effect';
 
-Auth.configure({
-  aws_project_region: 'us-east-1',
-  userPoolId: 'us-east-1_F4FzoEObF',
-  userPoolWebClientId: '4iilttvg5aqlnnujs088tisjl',
+CognitoAuth.configure({
+  aws_project_region: process.env.REACT_APP_COGNITO_REGION,
+  userPoolId: process.env.REACT_APP_COGNITO_USER_POOL_ID,
+  userPoolWebClientId: process.env.REACT_APP_COGNITO_USER_POOL_WEB_CLIENT_ID,
 });
 
-const AuthContext = createContext<ProvideAuthType | null>(null);
-
-// Provider component that wraps your app and makes auth object
-// available to any child component that calls useAuth().
-export function ProvideAuth({children}: {children: ReactNode}) {
-  const auth = useProvideAuth();
-  return <AuthContext.Provider value={auth}>{children}</AuthContext.Provider>;
-}
-
-// Hook for child components to get the auth object
-// and re-render when it changes.
-export function useAuth() {
-  return useContext(AuthContext);
-}
-
+/**
+ * Object representing the currently authenticated user.
+ */
 export class Principal {
+  /** This is the Cognito id of the user */
   readonly id: string;
 
+  /** User's name */
   readonly name: string;
 
+  /** User's email */
   readonly email: string;
 
+  /** User's organization */
   readonly org: string;
 
   constructor({
@@ -50,46 +42,79 @@ export class Principal {
     this.email = email;
     this.org = org;
   }
+
+  /**
+   * Turns a {@link CognitoUser} into a {@link Principal}.
+   *
+   * @param user - The CongnitoUser.
+   * @returns A {@link Promise} of {@link Principal} from the {@link user}.
+   */
+  static async fromCognitoUser(user: CognitoUser): Promise<Principal> {
+    const attrList = await CognitoAuth.userAttributes(user);
+    const attrs = Object.fromEntries(
+      attrList.map((attr) => [attr.getName(), attr.getValue()]),
+    );
+    return new Principal({
+      id: user.getUsername(),
+      name: attrs.name,
+      email: attrs.email,
+      org: attrs['custom:org'],
+    });
+  }
 }
 
 export type NullablePrincipal = Principal | null;
 
-interface ProvideAuthType {
-  getPrincipal: () => Promise<NullablePrincipal>;
-  signIn: (args: {email: string; password: string}) => Promise<Principal>;
-  signUp: (args: {
-    email: string;
-    password: string;
-    name: string;
-    org: string;
-  }) => Promise<NullablePrincipal>;
-  logOut: (args?: {global?: boolean}) => Promise<void>;
+/**
+ * A {@link Context} for authentication.
+ *
+ * @remarks
+ * Althouth the context is of {@link Auth} or `null`, that's only because we can't provide
+ * a sensible default on creation. However when calling {@link useAuth} this will never be
+ * `null`.
+ */
+const AuthContext = createContext<Auth | null>(null);
+
+/**
+ * Provider component that wraps the app and makes an {@link Auth} object
+ * available to any child component that calls {@link useAuth}. The `Auth` object
+ * will never be `null`;
+ */
+export function ProvideAuth({children}: {children: ReactNode}) {
+  const auth = useProvideAuth();
+  return <AuthContext.Provider value={auth}>{children}</AuthContext.Provider>;
 }
 
-async function cognitoUserToPrincipal(user: CognitoUser): Promise<Principal> {
-  const attrList = await Auth.userAttributes(user);
-  const attrs = Object.fromEntries(
-    attrList.map((attr) => [attr.getName(), attr.getValue()]),
-  );
-  return new Principal({
-    id: user.getUsername(),
-    name: attrs.name,
-    email: attrs.email,
-    org: attrs['custom:org'],
-  });
+/**
+ * Hook for child components to get the {@link Auth} object and re-render when it changes.
+ */
+export function useAuth() {
+  return useContext(AuthContext)!;
 }
 
-// Provider hook that creates auth object and handles state
-function useProvideAuth(): ProvideAuthType {
+type Auth = ReturnType<typeof useProvideAuth>;
+
+/**
+ * Provider hook that creates {@link Auth} object and handles state of the {@link Principal}
+ * and the authentication process.
+ *
+ * @returns A {@link Auth} object. If {@link Auth.inProgress} is `true` then the authentication
+ *    process still hasn't finished. If the user is authenticated then {@link Auth.principal}
+ *    will be non-null.
+ */
+function useProvideAuth() {
   const [principal, setPrincipal] = useState<NullablePrincipal>(null);
+  const [inProgress, setInProgress] = useState(true);
 
+  /** Sign-in using email and password. */
   async function signIn({email, password}: {email: string; password: string}) {
-    const user: CognitoUser = await Auth.signIn(email, password);
-    const converted = await cognitoUserToPrincipal(user);
+    const user: CognitoUser = await CognitoAuth.signIn(email, password);
+    const converted = await Principal.fromCognitoUser(user);
     setPrincipal(converted);
     return converted;
   }
 
+  /** Sign-up using email, password, name and org. */
   async function signUp({
     email,
     password,
@@ -101,7 +126,7 @@ function useProvideAuth(): ProvideAuthType {
     name: string;
     org: string;
   }) {
-    const result = await Auth.signUp({
+    const result = await CognitoAuth.signUp({
       username: email,
       password,
       attributes: {
@@ -110,32 +135,31 @@ function useProvideAuth(): ProvideAuthType {
       },
     });
     if (result.user != null) {
-      const converted = await cognitoUserToPrincipal(result.user);
+      const converted = await Principal.fromCognitoUser(result.user);
       setPrincipal(converted);
       return converted;
     }
-    return null;
+    throw Error();
   }
 
+  /**
+   * Log-out.
+   *
+   * @param global - if `true` the user will be logged out of all devices.
+   */
   async function logOut({global = false}: {global?: boolean} = {}) {
-    await Auth.signOut({global});
+    await CognitoAuth.signOut({global});
     setPrincipal(null);
   }
 
   async function getPrincipal() {
-    if (principal != null) {
-      return principal;
-    }
-    let user: CognitoUser | null;
     try {
-      user = await Auth.currentAuthenticatedUser();
+      const user = await CognitoAuth.currentAuthenticatedUser();
+      setPrincipal(await Principal.fromCognitoUser(user));
+      setInProgress(false);
     } catch (e) {
-      user = null;
+      setInProgress(false);
     }
-    if (user != null) {
-      return cognitoUserToPrincipal(user);
-    }
-    return null;
   }
 
   let listener: HubCallback | null;
@@ -147,16 +171,21 @@ function useProvideAuth(): ProvideAuthType {
   useAsyncEffect(
     async (isMounted) => {
       if (isMounted()) {
+        getPrincipal();
         listener = async (data) => {
           switch (data.payload.event) {
             case 'signIn': {
               const user = data.payload.data;
-              setPrincipal(await cognitoUserToPrincipal(user));
+              if (principal == null) {
+                setPrincipal(await Principal.fromCognitoUser(user));
+              }
               break;
             }
             case 'signUp': {
               const user = data.payload.data;
-              setPrincipal(await cognitoUserToPrincipal(user));
+              if (principal == null) {
+                setPrincipal(await Principal.fromCognitoUser(user));
+              }
               break;
             }
             case 'signOut':
@@ -179,9 +208,9 @@ function useProvideAuth(): ProvideAuthType {
     [],
   );
 
-  // Return the user object and auth methods
   return {
-    getPrincipal,
+    inProgress,
+    principal,
     signIn,
     signUp,
     logOut,

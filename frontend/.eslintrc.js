@@ -1,10 +1,14 @@
 module.exports = {
   root: true,
   extends: ['airbnb-typescript'],
+  plugins: [
+    'eslint-plugin-tsdoc',
+  ],
   parserOptions: {
     project: './tsconfig.json',
   },
   rules: {
+    'tsdoc/syntax': 'warn',
     'object-curly-newline': ['error', {ImportDeclaration: 'never', ExportDeclaration: 'never'}],
     '@typescript-eslint/object-curly-spacing': ['error', 'never'],
     'jsx-a11y/label-has-associated-control': ['error', {

@@ -1,30 +1,22 @@
-import React, {useEffect, useState} from 'react';
+import React from 'react';
 import {Redirect, Route, RouteProps} from 'react-router-dom';
-import {NullablePrincipal, useAuth} from '../../hooks/useAuth';
+import {useAuth} from '../../hooks/useAuth';
 
+/**
+ * A {@link Route} that will only render {@link RouteProps.children} if there
+ * *is not* an authenticated user, otherwise it will redirect to `/`.
+ */
 export default function UnauthdRoute(props: RouteProps) {
   const {children, location, ...rest} = props;
   const auth = useAuth()!;
-  const [authing, setAuthing] = useState(true);
-  const [principal, setPrincipal] = useState<NullablePrincipal>(null);
 
-  const fetchPrincipal = async () => {
-    const p = await auth.getPrincipal();
-    setPrincipal(p);
-    setAuthing(false);
-  };
-
-  useEffect(() => {
-    fetchPrincipal();
-  }, []);
-
-  if (authing) {
+  if (auth.inProgress) {
     return <></>;
   }
   return (
     <Route
       {...rest}
-      render={() => (principal == null ? (
+      render={() => (auth.principal == null ? (
         children
       ) : (
         <Redirect
