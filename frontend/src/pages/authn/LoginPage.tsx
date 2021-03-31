@@ -21,7 +21,7 @@ interface LocationState {
 export default function LoginPage({location}: LoginPageProps) {
   const emailRef = useRef<HTMLInputElement>(null);
   const passwordRef = useRef<HTMLInputElement>(null);
-  const auth = useAuth()!;
+  const auth = useAuth();
   const history = useHistory();
 
   async function signIn(event: FormEvent) {

@@ -3,11 +3,14 @@ import {AtSign, Key, User} from 'react-feather';
 import {Link} from 'react-router-dom';
 import {useAuth} from '../../hooks/useAuth';
 
+/**
+ * Component that renders the sign up page.
+ */
 export default function SignUpPage() {
   const nameRef = useRef<HTMLInputElement>(null);
   const emailRef = useRef<HTMLInputElement>(null);
   const passwordRef = useRef<HTMLInputElement>(null);
-  const auth = useAuth()!;
+  const auth = useAuth();
 
   async function signUp(event: FormEvent) {
     event.preventDefault();
@@ -136,7 +139,7 @@ export default function SignUpPage() {
                 </div>
               </form>
               <div className="mt-4 text-center">
-                <small>Already have an acocunt?</small>
+                <small>Already have an account?</small>
                 {' '}
                 <Link to="/login" className="small font-weight-bold">
                   Sign in

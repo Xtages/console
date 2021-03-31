@@ -8,7 +8,7 @@ import {useAuth} from '../../hooks/useAuth';
  */
 export default function UnauthdRoute(props: RouteProps) {
   const {children, location, ...rest} = props;
-  const auth = useAuth()!;
+  const auth = useAuth();
 
   if (auth.inProgress) {
     return <></>;
