@@ -1,5 +1,6 @@
 import React, {FormEvent, useRef} from 'react';
 import {AtSign, Key, User} from 'react-feather';
+import {Link} from 'react-router-dom';
 import {useAuth} from '../../hooks/useAuth';
 
 export default function SignUpPage() {
@@ -15,8 +16,12 @@ export default function SignUpPage() {
       const email = emailRef.current;
       const password = passwordRef.current;
       if (name != null && email != null && password != null) {
-        await auth.signUp(email.value, password.value, name.value, 'xtages');
-        console.log('sign up', auth.principal);
+        await auth.signUp({
+          email: email.value,
+          password: password.value,
+          name: name.value,
+          org: 'xtages',
+        });
       }
     } catch (error) {
       console.log(error);
@@ -133,9 +138,9 @@ export default function SignUpPage() {
               <div className="mt-4 text-center">
                 <small>Already have an acocunt?</small>
                 {' '}
-                <a href="login-basic.html" className="small font-weight-bold">
+                <Link to="/login" className="small font-weight-bold">
                   Sign in
-                </a>
+                </Link>
               </div>
             </div>
           </div>

@@ -10,26 +10,22 @@ Auth.configure({
   userPoolWebClientId: '4iilttvg5aqlnnujs088tisjl',
 });
 
-const authContext = createContext<ProvideAuthType | null>(null);
-
-interface ProvideAuthProps {
-  children: ReactNode;
-}
+const AuthContext = createContext<ProvideAuthType | null>(null);
 
 // Provider component that wraps your app and makes auth object
 // available to any child component that calls useAuth().
-export function ProvideAuth({children}: ProvideAuthProps) {
+export function ProvideAuth({children}: {children: ReactNode}) {
   const auth = useProvideAuth();
-  return <authContext.Provider value={auth}>{children}</authContext.Provider>;
+  return <AuthContext.Provider value={auth}>{children}</AuthContext.Provider>;
 }
 
 // Hook for child components to get the auth object
 // and re-render when it changes.
 export function useAuth() {
-  return useContext(authContext);
+  return useContext(AuthContext);
 }
 
-class Principal {
+export class Principal {
   readonly id: string;
 
   readonly name: string;
@@ -38,7 +34,17 @@ class Principal {
 
   readonly org: string;
 
-  constructor(id: string, name: string, email: string, org: string) {
+  constructor({
+    id,
+    name,
+    email,
+    org,
+  }: {
+    id: string;
+    name: string;
+    email: string;
+    org: string;
+  }) {
     this.id = id;
     this.name = name;
     this.email = email;
@@ -46,62 +52,55 @@ class Principal {
   }
 }
 
+export type NullablePrincipal = Principal | null;
+
 interface ProvideAuthType {
-  principal: Principal | null;
-  signIn: (email: string, password: string) => Promise<Principal>;
-  signUp: (
-    email: string,
-    password: string,
-    name: string,
-    org: string,
-  ) => Promise<Principal | null>;
-  signOut: (global?: boolean) => Promise<void>;
+  getPrincipal: () => Promise<NullablePrincipal>;
+  signIn: (args: {email: string; password: string}) => Promise<Principal>;
+  signUp: (args: {
+    email: string;
+    password: string;
+    name: string;
+    org: string;
+  }) => Promise<NullablePrincipal>;
+  logOut: (args?: {global?: boolean}) => Promise<void>;
+}
+
+async function cognitoUserToPrincipal(user: CognitoUser): Promise<Principal> {
+  const attrList = await Auth.userAttributes(user);
+  const attrs = Object.fromEntries(
+    attrList.map((attr) => [attr.getName(), attr.getValue()]),
+  );
+  return new Principal({
+    id: user.getUsername(),
+    name: attrs.name,
+    email: attrs.email,
+    org: attrs['custom:org'],
+  });
 }
 
 // Provider hook that creates auth object and handles state
 function useProvideAuth(): ProvideAuthType {
-  async function cognitoUserToPrincipal(user: CognitoUser): Promise<Principal> {
-    return new Promise<Principal>((resolve, reject) => {
-      user.getUserAttributes((error, attrList) => {
-        if (error != null) {
-          reject(error);
-        }
-        if (
-          attrList == null
-          || attrList === undefined
-          || attrList.length === 0
-        ) {
-          reject(new Error());
-        }
-        const attrs = Object.fromEntries(
-          attrList!.map((attr) => [attr.getName(), attr.getValue()]),
-        );
-        const principal = new Principal(
-          user.getUsername(),
-          attrs.name,
-          attrs.email,
-          attrs['custom:org'],
-        );
-        resolve(principal);
-      });
-    });
-  }
+  const [principal, setPrincipal] = useState<NullablePrincipal>(null);
 
-  const [principal, setPrincipal] = useState<Principal | null>(null);
-
-  async function signIn(email: string, password: string) {
+  async function signIn({email, password}: {email: string; password: string}) {
     const user: CognitoUser = await Auth.signIn(email, password);
     const converted = await cognitoUserToPrincipal(user);
     setPrincipal(converted);
     return converted;
   }
 
-  async function signUp(
-    email: string,
-    password: string,
-    name: string,
-    org: string,
-  ) {
+  async function signUp({
+    email,
+    password,
+    name,
+    org,
+  }: {
+    email: string;
+    password: string;
+    name: string;
+    org: string;
+  }) {
     const result = await Auth.signUp({
       username: email,
       password,
@@ -118,52 +117,73 @@ function useProvideAuth(): ProvideAuthType {
     return null;
   }
 
-  async function signOut(global = false) {
+  async function logOut({global = false}: {global?: boolean} = {}) {
     await Auth.signOut({global});
     setPrincipal(null);
   }
+
+  async function getPrincipal() {
+    if (principal != null) {
+      return principal;
+    }
+    let user: CognitoUser | null;
+    try {
+      user = await Auth.currentAuthenticatedUser();
+    } catch (e) {
+      user = null;
+    }
+    if (user != null) {
+      return cognitoUserToPrincipal(user);
+    }
+    return null;
+  }
+
+  let listener: HubCallback | null;
 
   // Subscribe to auth events on mount.
   // Because this sets state in the callback it will cause any
   // component that utilizes this hook to re-render with the
   // latest auth object.
-  useAsyncEffect(async () => {
-    const listener: HubCallback = async (data) => {
-      switch (data.payload.event) {
-        case 'signIn': {
-          console.log('signIn');
-          const user = data.payload.data;
-          setPrincipal(await cognitoUserToPrincipal(user));
-          break;
-        }
-        case 'signUp': {
-          const user = data.payload.data;
-          setPrincipal(await cognitoUserToPrincipal(user));
-          break;
-        }
-        case 'signOut':
-          setPrincipal(null);
-          break;
-        case 'signIn_failure':
-          setPrincipal(null);
-          break;
-        case 'tokenRefresh_failure':
-          setPrincipal(null);
-          break;
-        default:
-      }
-    };
+  useAsyncEffect(
+    async (isMounted) => {
+      if (isMounted()) {
+        listener = async (data) => {
+          switch (data.payload.event) {
+            case 'signIn': {
+              const user = data.payload.data;
+              setPrincipal(await cognitoUserToPrincipal(user));
+              break;
+            }
+            case 'signUp': {
+              const user = data.payload.data;
+              setPrincipal(await cognitoUserToPrincipal(user));
+              break;
+            }
+            case 'signOut':
+              setPrincipal(null);
+              break;
+            case 'signIn_failure':
+              setPrincipal(null);
+              break;
+            case 'tokenRefresh_failure':
+              setPrincipal(null);
+              break;
+            default:
+          }
+        };
 
-    Hub.listen('auth', listener);
-    // Cleanup subscription on unmount
-    return () => Hub.remove('auth', listener);
-  }, []);
+        Hub.listen('auth', listener);
+      }
+    },
+    () => listener != null && Hub.remove('auth', listener),
+    [],
+  );
 
   // Return the user object and auth methods
   return {
-    principal,
+    getPrincipal,
     signIn,
     signUp,
-    signOut,
+    logOut,
   };
 }

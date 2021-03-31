@@ -1,22 +1,29 @@
+// import {LocationDescriptor} from 'history';
 import React, {FormEvent, useRef} from 'react';
 import {Key, User} from 'react-feather';
+import {Link, RouteComponentProps, useHistory} from 'react-router-dom';
 import {useAuth} from '../../hooks/useAuth';
 
-export default function LoginPage() {
+interface LoginPageProps extends RouteComponentProps<{}, {}, LocationState> {}
+interface LocationState {
+  referrer: string;
+}
+
+export default function LoginPage({location}: LoginPageProps) {
   const emailRef = useRef<HTMLInputElement>(null);
   const passwordRef = useRef<HTMLInputElement>(null);
   const auth = useAuth()!;
+  const history = useHistory();
 
   async function signIn(event: FormEvent) {
     event.preventDefault();
-    console.log('signIn');
     try {
       const email = emailRef.current;
       const password = passwordRef.current;
       if (email !== null && password !== null) {
-        const principal = await auth.signIn(email.value, password.value);
-        console.log(principal);
-        console.log(auth.principal);
+        await auth.signIn({email: email.value, password: password.value});
+        const redirectTo = location.state.referrer || '/';
+        history.replace(redirectTo);
       }
     } catch (error) {
       console.log('error signing in', error);
@@ -38,7 +45,9 @@ export default function LoginPage() {
               <span className="clearfix" />
               <form onSubmit={signIn}>
                 <div className="form-group">
-                  <label className="form-control-label" htmlFor="input-email">Email address</label>
+                  <label className="form-control-label" htmlFor="input-email">
+                    Email address
+                  </label>
                   <div className="input-group">
                     <div className="input-group-prepend">
                       <span className="input-group-text">
@@ -58,7 +67,12 @@ export default function LoginPage() {
                 <div className="form-group mb-0">
                   <div className="d-flex align-items-center justify-content-between">
                     <div>
-                      <label className="form-control-label" htmlFor="input-password">Password</label>
+                      <label
+                        className="form-control-label"
+                        htmlFor="input-password"
+                      >
+                        Password
+                      </label>
                     </div>
                   </div>
                   <div className="input-group">
@@ -86,12 +100,9 @@ export default function LoginPage() {
               <div className="mt-4 text-center">
                 <small>Not registered?</small>
                 {' '}
-                <a
-                  href="register-basic.html"
-                  className="small font-weight-bold"
-                >
+                <Link to="/signup" className="small font-weight-bold">
                   Create account
-                </a>
+                </Link>
               </div>
             </div>
           </div>

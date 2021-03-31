@@ -1,7 +1,8 @@
 import React from 'react';
-import {BrowserRouter, Link, Route, Switch} from 'react-router-dom';
+import {BrowserRouter, Switch} from 'react-router-dom';
 import './App.css';
-import PrivateRoute from './components/PrivateRoute';
+import AuthdRoute from './components/authn/AuthdRoute';
+import UnauthdRoute from './components/authn/UnauthdRoute';
 import {ProvideAuth} from './hooks/useAuth';
 import LoginPage from './pages/authn/LoginPage';
 import SignUpPage from './pages/authn/SignUpPage';
@@ -11,31 +12,15 @@ export default function App() {
   return (
     <ProvideAuth>
       <BrowserRouter>
-        <div>
-          <ul>
-            <li>
-              <Link to="/login">Login</Link>
-            </li>
-            <li>
-              <Link to="/signup">Sign Up</Link>
-            </li>
-            <li>
-              <Link to="/">Home</Link>
-            </li>
-          </ul>
-
-          <Switch>
-            <Route path="/login">
-              <LoginPage />
-            </Route>
-            <Route path="/signup">
-              <SignUpPage />
-            </Route>
-            <PrivateRoute path="/">
-              <HomePage />
-            </PrivateRoute>
-          </Switch>
-        </div>
+        <Switch>
+          <UnauthdRoute path="/login" component={LoginPage} />
+          <UnauthdRoute path="/signup">
+            <SignUpPage />
+          </UnauthdRoute>
+          <AuthdRoute path="/">
+            <HomePage />
+          </AuthdRoute>
+        </Switch>
       </BrowserRouter>
     </ProvideAuth>
   );
