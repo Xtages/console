@@ -26,11 +26,12 @@ class SecurityConfig : WebSecurityConfigurerAdapter() {
                 sessionCreationPolicy = SessionCreationPolicy.STATELESS
             }
             authorizeRequests {
+                authorize("/", permitAll)
                 // This is a callout for use to figure out what to do about
                 // being able to access actuator endpoints when running in prod.
                 authorize("/actuator", authenticated)
-                // Everything else requires authentication.
-                authorize(anyRequest, authenticated)
+                // Everything under `/api` requires authn.
+                authorize("/api/*", authenticated)
             }
             // spring-boot-starter-oauth2-resource-server already does authentication using
             // the `Authorization: Bearer ****` header, we just had configure to configure
