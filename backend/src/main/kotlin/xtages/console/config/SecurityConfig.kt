@@ -26,9 +26,9 @@ class SecurityConfig : WebSecurityConfigurerAdapter() {
                 sessionCreationPolicy = SessionCreationPolicy.STATELESS
             }
             authorizeRequests {
-                // Allow public to `/actuator/` urls. We'll have to figure out
-                // what to do about them when we are running in prod.
-                authorize("/actuator", permitAll)
+                // This is a callout for use to figure out what to do about
+                // being able to access actuator endpoints when running in prod.
+                authorize("/actuator", authenticated)
                 // Everything else requires authentication.
                 authorize(anyRequest, authenticated)
             }
