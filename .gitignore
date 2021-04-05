@@ -109,3 +109,6 @@ dist
 
 # VSCode
 .vscode/
+
+# Terraform
+deploy/terraform/.terraform*
