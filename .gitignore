@@ -112,3 +112,6 @@ dist
 
 # Terraform
 deploy/terraform/.terraform*
+
+# Gradle
+*.gradle

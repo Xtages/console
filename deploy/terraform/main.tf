@@ -56,7 +56,7 @@ resource "aws_lb_target_group" "xtages_console" {
   vpc_id = data.terraform_remote_state.xtages.outputs.vpc_id
 
   health_check {
-    path = "/actuator/health"
+    path = "/"
     healthy_threshold = 3
     unhealthy_threshold = 3
     timeout = 30
