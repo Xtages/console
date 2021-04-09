@@ -1,18 +1,17 @@
 version: 0.2
 
 phases:
-  install:
+  pre_build:
     commands:
-      - curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.38.0/install.sh | bash
-      - . ~/.nvm/nvm.sh
-      - nvm install 15.13.0
+      - source ~/.bashrc
   build:
     commands:
       - cd backend
-      - gradle bootJar # not running build to save money in CodeBuild
+      - gradle -s bootJar # not running build to save money in CodeBuild
       - export DATE=`date '+%Y%m%d%H%M%S'` && export GIT_HASH=`git rev-parse --short HEAD`
       - export TAG=$DATE-$GIT_HASH
       - aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 606626603369.dkr.ecr.us-east-1.amazonaws.com
       - docker build --build-arg ENV=prod --tag 606626603369.dkr.ecr.us-east-1.amazonaws.com/xtages-console:$TAG .
       - docker push 606626603369.dkr.ecr.us-east-1.amazonaws.com/xtages-console:$TAG
+      - export TF_VAR_TAG=TAG
       - cd ../deploy/terraform && terraform init && terraform plan
