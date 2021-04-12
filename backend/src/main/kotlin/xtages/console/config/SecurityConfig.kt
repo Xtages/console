@@ -1,13 +1,17 @@
 package xtages.console.config
 
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Configuration
+import org.springframework.core.env.Environment
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter
 import org.springframework.security.config.http.SessionCreationPolicy
 import org.springframework.security.config.web.servlet.invoke
+import xtages.console.config.Profiles.PROD
+import xtages.console.config.Profiles.STAGING
 
 @Configuration
-class SecurityConfig : WebSecurityConfigurerAdapter() {
+class SecurityConfig(@Autowired private val environment: Environment) : WebSecurityConfigurerAdapter() {
 
     override fun configure(http: HttpSecurity) {
         http {
@@ -27,9 +31,16 @@ class SecurityConfig : WebSecurityConfigurerAdapter() {
             }
             authorizeRequests {
                 authorize("/", permitAll)
-                // This is a callout for use to figure out what to do about
-                // being able to access actuator endpoints when running in prod.
-                authorize("/actuator", authenticated)
+                // Allow access to `/actuator` endpoints when not in `PROD` or `STAGING`.
+                if (!environment.activeProfiles.contains(PROD.name) ||
+                    !environment.activeProfiles.contains(STAGING.name)
+                ) {
+                    authorize("/actuator", permitAll)
+                } else {
+                    // This is a callout for use to figure out what to do about
+                    // being able to access actuator endpoints when running in prod.
+                    authorize("/actuator", authenticated)
+                }
                 // Everything under `/api` requires authn.
                 authorize("/api/*", authenticated)
             }
