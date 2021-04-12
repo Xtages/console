@@ -2,12 +2,14 @@ version: 0.2
 
 phases:
   pre_build:
+    install:
+      - nohup /usr/local/bin/dockerd --host=unix:///var/run/docker.sock --host=tcp://127.0.0.1:2375 --storage-driver=overlay2 &
     commands:
       - source ~/.bashrc
   build:
     commands:
       - cd backend
-      - gradle -s bootJar # not running build to save money in CodeBuild
+      - gradle --stacktrace bootJar # not running build to save money in CodeBuild
       - export DATE=`date '+%Y%m%d%H%M%S'` && export GIT_HASH=`git rev-parse --short HEAD`
       - export TAG=$DATE-$GIT_HASH
       - aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 606626603369.dkr.ecr.us-east-1.amazonaws.com

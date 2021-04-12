@@ -16,7 +16,7 @@ ENV NVM_VER=${NVM_VER}
 RUN rpm --import https://yum.corretto.aws/corretto.key
 RUN curl -L -o /etc/yum.repos.d/corretto.repo https://yum.corretto.aws/corretto.repo
 
-RUN yum -y install git unzip java-${JAVA_VER}-amazon-corretto-devel shadow-utils
+RUN yum -y install git unzip java-${JAVA_VER}-amazon-corretto-devel docker
 ENV JAVA_HOME=/usr/lib/jvm/java-${JAVA_VER}-amazon-corretto/
 
 # Gradle install
@@ -41,6 +41,7 @@ RUN unzip -q awscliv2.zip && rm *.zip
 RUN ./aws/install
 
 # Tried to run the container with a user but there was to run the container with the docker privileges
+# requires to install shadow-utils
 #RUN useradd -ms /bin/bash builder
 #ENV GRADLE_USER_HOME=/home/builder
 #USER builder
