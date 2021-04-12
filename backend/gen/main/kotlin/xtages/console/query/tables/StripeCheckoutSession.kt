@@ -101,6 +101,7 @@ open class StripeCheckoutSession(
 
         return _organization;
     }
+
     override fun `as`(alias: String): StripeCheckoutSession = StripeCheckoutSession(DSL.name(alias), this)
     override fun `as`(alias: Name): StripeCheckoutSession = StripeCheckoutSession(alias, this)
 
