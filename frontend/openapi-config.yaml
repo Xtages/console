@@ -1,0 +1,3 @@
+inputSpec: ../backend/src/main/resources/xtages-internal-api.yaml
+generatorName: typescript-axios
+outputDir: src/gen/api

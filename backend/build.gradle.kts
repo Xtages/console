@@ -6,6 +6,7 @@ plugins {
     id("org.springframework.boot") version "2.4.4"
     id("io.spring.dependency-management") version "1.0.11.RELEASE"
     id("com.github.node-gradle.node") version "3.0.1"
+    id("org.openapi.generator") version "5.1.0"
     kotlin("jvm") version "1.4.31"
     kotlin("plugin.spring") version "1.4.31"
 }
@@ -25,6 +26,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
     implementation("io.projectreactor.kotlin:reactor-kotlin-extensions")
+    implementation("javax.validation:validation-api:2.0.1.Final")
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor")
@@ -39,6 +41,7 @@ dependencies {
 }
 
 val frontendDir = file(projectDir).parentFile.resolve("frontend")
+val apiSpecFile = file("${sourceSets["main"].resources.srcDirs.first()}/xtages-internal-api.yaml")
 
 node {
     // This is where the package.json file and node_modules directory are located
@@ -88,4 +91,31 @@ val cleanFrontend = tasks.register<Delete>("cleanFrontend") {
 // Make sure the `clean` task depends on `cleanFrontend`.
 tasks.clean {
     dependsOn(cleanFrontend)
+}
+
+// Generate Base classes and models from the openapi model
+tasks.openApiGenerate {
+    validateSpec.set(true)
+    generatorName.set("kotlin-spring")
+    inputSpec.set(apiSpecFile.toString())
+    outputDir.set("$projectDir/gen")
+    apiPackage.set("xtages.console.controller.api")
+    modelPackage.set("xtages.console.controller.api.model")
+    generateApiDocumentation.set(false)
+    generateApiTests.set(false)
+    generateModelDocumentation.set(false)
+    generateModelTests.set(false)
+    configOptions.set(
+        mapOf(
+            "sourceFolder" to "main/kotlin",
+            "apiSuffix" to "ApiControllerBase",
+            "serializationLibrary" to "jackson",
+            "interfaceOnly" to true.toString(),
+            "enumPropertyNaming" to "UPPERCASE"
+        )
+    )
+}
+
+tasks.compileKotlin {
+    dependsOn(tasks.openApiGenerate)
 }
