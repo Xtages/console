@@ -1,12 +1,15 @@
 import com.github.gradle.node.npm.task.NpmTask
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import org.springframework.boot.gradle.tasks.bundling.BootJar
+import nu.studer.gradle.jooq.JooqEdition
+import nu.studer.gradle.jooq.JooqGenerate
 
 plugins {
     id("org.springframework.boot") version "2.4.4"
     id("io.spring.dependency-management") version "1.0.11.RELEASE"
     id("com.github.node-gradle.node") version "3.0.1"
     id("org.openapi.generator") version "5.1.0"
+    id("nu.studer.jooq") version "5.2.1"
     kotlin("jvm") version "1.4.31"
     kotlin("plugin.spring") version "1.4.31"
 }
@@ -31,21 +34,83 @@ dependencies {
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor")
     implementation("org.liquibase:liquibase-core")
-    implementation("org.springframework.boot:spring-boot-starter-security")
+    implementation("org.springframework.boot:spring-boot-starter-actuator")
+    implementation("org.springframework.boot:spring-boot-starter-jooq")
     implementation("org.springframework.boot:spring-boot-starter-oauth2-resource-server")
+    implementation("org.springframework.boot:spring-boot-starter-security")
+    implementation("org.springframework.boot:spring-boot-starter-web")
+    implementation("org.springframework.boot:spring-boot-starter-webflux")
     developmentOnly("org.springframework.boot:spring-boot-devtools")
     runtimeOnly("org.postgresql:postgresql")
-    testImplementation("org.springframework.boot:spring-boot-starter-test")
+    jooqGenerator("org.postgresql:postgresql")
     testImplementation("io.projectreactor:reactor-test")
-    annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
+    testImplementation("org.springframework.boot:spring-boot-starter-test")
 }
 
 val frontendDir = file(projectDir).parentFile.resolve("frontend")
 val apiSpecFile = file("${sourceSets["main"].resources.srcDirs.first()}/xtages-internal-api.yaml")
 
+kotlin {
+    sourceSets.all {
+        languageSettings.enableLanguageFeature("InlineClasses")
+    }
+}
+
 node {
     // This is where the package.json file and node_modules directory are located
     nodeProjectDir.set(frontendDir)
+}
+
+allOpen {
+    annotation("javax.persistence.Entity")
+}
+
+// Generate type-safe JOOQ files based on the DB
+jooq {
+    version.set("3.14.7")
+    edition.set(JooqEdition.OSS)
+
+    configurations {
+        create("main") {
+            jooqConfiguration.apply {
+                logging = org.jooq.meta.jaxb.Logging.WARN
+                jdbc.apply {
+                    driver = "org.postgresql.Driver"
+                    user = "xtages_console"
+                    url = "jdbc:postgresql://localhost:5432/xtages_console"
+                }
+                generator.apply {
+                    name = "org.jooq.codegen.KotlinGenerator"
+                    database.apply {
+                        name = "org.jooq.meta.postgres.PostgresDatabase"
+                        inputSchema = "public"
+                        excludes = "databasechangelog|databasechangeloglock"
+                    }
+                    generate.apply {
+                        isDaos = true
+                        isSpringAnnotations = true
+                    }
+                    target.apply {
+                        packageName = "xtages.console.query"
+                        directory = "gen/main/kotlin"
+                    }
+                    strategy.name = "org.jooq.codegen.DefaultGeneratorStrategy"
+                }
+            }
+        }
+    }
+}
+
+tasks.withType<JooqGenerate> {
+    // make jOOQ task participate in incremental builds
+    allInputsDeclared.set(true)
+
+    // make jOOQ task participate in build caching
+    outputs.cacheIf { true }
+}
+
+sourceSets.main {
+    java.srcDirs("gen/main/kotlin")
 }
 
 tasks.withType<KotlinCompile> {
