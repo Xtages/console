@@ -2,18 +2,18 @@ version: 0.2
 
 phases:
   pre_build:
-    install:
-      - nohup /usr/local/bin/dockerd --host=unix:///var/run/docker.sock --host=tcp://127.0.0.1:2375 --storage-driver=overlay2 &
     commands:
+      - nohup /usr/bin/dockerd --host=unix:///var/run/docker.sock --host=tcp://127.0.0.1:2375 --storage-driver=overlay2 &
+      - aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 606626603369.dkr.ecr.us-east-1.amazonaws.com
       - source ~/.bashrc
   build:
     commands:
       - cd backend
-      - gradle --stacktrace bootJar # not running build to save money in CodeBuild
+      # not running gradle build to save money in CodeBuild
+      - gradle --stacktrace bootJar
       - export DATE=`date '+%Y%m%d%H%M%S'` && export GIT_HASH=`git rev-parse --short HEAD`
       - export TAG=$DATE-$GIT_HASH
-      - aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 606626603369.dkr.ecr.us-east-1.amazonaws.com
-      - docker build --build-arg ENV=prod --tag 606626603369.dkr.ecr.us-east-1.amazonaws.com/xtages-console:$TAG .
+      - docker build --build-arg ENV=prod -t 606626603369.dkr.ecr.us-east-1.amazonaws.com/xtages-console:$TAG .
       - docker push 606626603369.dkr.ecr.us-east-1.amazonaws.com/xtages-console:$TAG
-      - export TF_VAR_TAG=TAG
-      - cd ../deploy/terraform && terraform init && terraform plan
+      - export TF_VAR_TAG=$TAG
+      - cd ../deploy/terraform && terraform init && terraform apply -auto-approve

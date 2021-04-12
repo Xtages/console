@@ -77,7 +77,7 @@ resource "aws_ecs_service" "xtages_console_service" {
     container_name = "xtages-console"
     container_port = 8080
   }
-  lifecycle {
-    ignore_changes = [task_definition]
-  }
+//  lifecycle {
+//    ignore_changes = [task_definition]
+//  }
 }

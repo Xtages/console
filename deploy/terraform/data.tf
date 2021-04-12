@@ -29,5 +29,6 @@ data "template_file" "console_task_definition" {
   template = file("${path.root}/templates/console.json.tpl")
   vars = {
     REPOSITORY_URL = replace(data.aws_ecr_repository.xtages_console_repo.repository_url, "https://", "")
+    TAG = var.TAG
   }
 }
