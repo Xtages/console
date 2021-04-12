@@ -1,13 +1,17 @@
 package xtages.console.config
 
 import org.springframework.context.annotation.Configuration
+import org.springframework.core.env.Environment
+import org.springframework.http.HttpMethod
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter
 import org.springframework.security.config.http.SessionCreationPolicy
 import org.springframework.security.config.web.servlet.invoke
+import xtages.console.config.Profiles.PROD
+import xtages.console.config.Profiles.STAGING
 
 @Configuration
-class SecurityConfig : WebSecurityConfigurerAdapter() {
+class SecurityConfig(private val environment: Environment) : WebSecurityConfigurerAdapter() {
 
     override fun configure(http: HttpSecurity) {
         http {
@@ -20,6 +24,9 @@ class SecurityConfig : WebSecurityConfigurerAdapter() {
                 // allowing logout.
                 disable()
             }
+            csrf {
+                ignoringAntMatchers("/api/webhook")
+            }
             sessionManagement {
                 // Don't create an HTTPSession and instead always rely on the
                 // Authorization Bearer token.
@@ -27,9 +34,20 @@ class SecurityConfig : WebSecurityConfigurerAdapter() {
             }
             authorizeRequests {
                 authorize("/", permitAll)
-                // This is a callout for use to figure out what to do about
-                // being able to access actuator endpoints when running in prod.
-                authorize("/actuator", authenticated)
+                // Allow access to `/actuator` endpoints when not in `PROD` or `STAGING`.
+                if (!environment.activeProfiles.contains(PROD.name) ||
+                    !environment.activeProfiles.contains(STAGING.name)
+                ) {
+                    authorize("/actuator", permitAll)
+                } else {
+                    // This is a callout for use to figure out what to do about
+                    // being able to access actuator endpoints when running in prod.
+                    authorize("/actuator", authenticated)
+                }
+                // The `/webhook` endpoint handles Stripe's webhook requests and therefore
+                // cannot be authenticated by normal means, instead Stripe signs the request and we
+                // verify the signature in the controller.
+                authorize(HttpMethod.POST, "/api/webhook", permitAll)
                 // Everything under `/api` requires authn.
                 authorize("/api/*", authenticated)
             }
@@ -42,3 +60,8 @@ class SecurityConfig : WebSecurityConfigurerAdapter() {
         }
     }
 }
+
+/**
+ * Cognito User Id wrapper.
+ */
+inline class CognitoUserId(val id: String)

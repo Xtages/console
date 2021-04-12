@@ -1,34 +1,50 @@
-import React, {FormEvent, useRef} from 'react';
-import {AtSign, Key, User} from 'react-feather';
-import {Link} from 'react-router-dom';
+import React from 'react';
+import {Link, useHistory} from 'react-router-dom';
+import {Field, Form, Formik} from 'formik';
+import {FormikHelpers} from 'formik/dist/types';
+import {Briefcase, User} from 'react-feather';
 import {useAuth} from '../../hooks/useAuth';
+import redirectToStripeCheckoutSession from '../../service/CheckoutService';
+import {EmailField, PasswordField} from './AuthFields';
+
+export interface SignUpFormValues {
+  name: string;
+  organizationName: string;
+  email: string;
+  password: string;
+  acceptedTerms: boolean;
+}
 
 /**
  * Component that renders the sign up page.
  */
 export default function SignUpPage() {
-  const nameRef = useRef<HTMLInputElement>(null);
-  const emailRef = useRef<HTMLInputElement>(null);
-  const passwordRef = useRef<HTMLInputElement>(null);
+  const initialValues: SignUpFormValues = {
+    name: '',
+    organizationName: '',
+    email: '',
+    password: '',
+    acceptedTerms: false,
+  };
   const auth = useAuth();
+  const history = useHistory();
 
-  async function signUp(event: FormEvent) {
-    event.preventDefault();
-    try {
-      const name = nameRef.current;
-      const email = emailRef.current;
-      const password = passwordRef.current;
-      if (name != null && email != null && password != null) {
-        await auth.signUp({
-          email: email.value,
-          password: password.value,
-          name: name.value,
-          org: 'xtages',
-        });
-      }
-    } catch (error) {
-      console.log(error);
+  async function signUp(values: SignUpFormValues, actions: FormikHelpers<SignUpFormValues>) {
+    const principal = await auth.signUp({
+      name: values.name,
+      org: values.organizationName,
+      email: values.email,
+      password: values.password,
+    });
+    if (principal == null) {
+      history.replace('/confirm', values);
+    } else {
+      await redirectToStripeCheckoutSession({
+        priceIds: ['price_1IdOOzIfxICi4AQgjta89k2Y'],
+        organizationName: values.organizationName,
+      });
     }
+    actions.setSubmitting(false);
   }
 
   return (
@@ -44,100 +60,76 @@ export default function SignUpPage() {
                 </p>
               </div>
               <span className="clearfix" />
-              <form onSubmit={signUp}>
-                <div className="form-group">
-                  <label className="form-control-label" htmlFor="input-name">
-                    Name
-                  </label>
-                  <div className="input-group input-group-merge">
-                    <div className="input-group-prepend">
-                      <span className="input-group-text">
-                        <User size="1em" />
-                      </span>
+              <Formik initialValues={initialValues} onSubmit={signUp}>
+                <Form>
+                  <div className="form-group">
+                    <label className="form-control-label" htmlFor="name">
+                      Name
+                    </label>
+                    <div className="input-group input-group-merge">
+                      <div className="input-group-prepend">
+                        <span className="input-group-text">
+                          <User size="1em" />
+                        </span>
+                      </div>
+                      <Field
+                        type="text"
+                        className="form-control form-control-prepend"
+                        name="name"
+                        placeholder="Santa Claus"
+                      />
                     </div>
-                    <input
-                      type="text"
-                      className="form-control form-control-prepend"
-                      id="input-name"
-                      name="input-name"
-                      placeholder="Santa Claus"
-                      ref={nameRef}
-                    />
                   </div>
-                </div>
-                <div className="form-group">
-                  <label className="form-control-label" htmlFor="input-email">
-                    Email address
-                  </label>
-                  <div className="input-group input-group-merge">
-                    <div className="input-group-prepend">
-                      <span className="input-group-text">
-                        <AtSign size="1em" />
-                      </span>
+                  <div className="form-group">
+                    <label
+                      className="form-control-label"
+                      htmlFor="organization"
+                    >
+                      Organization
+                    </label>
+                    <div className="input-group input-group-merge">
+                      <div className="input-group-prepend">
+                        <span className="input-group-text">
+                          <Briefcase size="1em" />
+                        </span>
+                      </div>
+                      <Field
+                        type="text"
+                        className="form-control form-control-prepend"
+                        name="organizationName"
+                        placeholder="Northpole"
+                      />
                     </div>
-                    <input
-                      type="email"
-                      className="form-control form-control-prepend"
-                      id="input-email"
-                      name="input-email"
-                      placeholder="santa@northpole.com"
-                      ref={emailRef}
-                    />
                   </div>
-                </div>
-                <div className="form-group mb-4">
-                  <div className="d-flex align-items-center justify-content-between">
-                    <div>
+                  <EmailField />
+                  <PasswordField />
+                  <div className="my-4">
+                    <div className="custom-control custom-checkbox mb-3">
+                      <Field
+                        type="checkbox"
+                        className="custom-control-input"
+                        id="acceptedTerms"
+                        name="acceptedTerms"
+                      />
                       <label
-                        className="form-control-label"
-                        htmlFor="input-password"
+                        className="custom-control-label"
+                        htmlFor="acceptedTerms"
                       >
-                        Password
+                        I agree to the
+                        {' '}
+                        <a href="../../pages/utility/terms.html">
+                          terms and conditions
+                        </a>
                       </label>
                     </div>
                   </div>
-                  <div className="input-group input-group-merge">
-                    <div className="input-group-prepend">
-                      <span className="input-group-text">
-                        <Key size="1em" />
-                      </span>
-                    </div>
-                    <input
-                      type="password"
-                      className="form-control form-control-prepend"
-                      id="input-password"
-                      name="input-password"
-                      placeholder="********"
-                      ref={passwordRef}
-                    />
+                  <div className="mt-4">
+                    <button type="submit" className="btn btn-block btn-primary">
+                      Create my account
+                    </button>
                   </div>
-                </div>
-                <div className="my-4">
-                  <div className="custom-control custom-checkbox mb-3">
-                    <input
-                      type="checkbox"
-                      className="custom-control-input"
-                      id="check-terms"
-                    />
-                    {' '}
-                    <label
-                      className="custom-control-label"
-                      htmlFor="check-terms"
-                    >
-                      I agree to the
-                      {' '}
-                      <a href="../../pages/utility/terms.html">
-                        terms and conditions
-                      </a>
-                    </label>
-                  </div>
-                </div>
-                <div className="mt-4">
-                  <button type="submit" className="btn btn-block btn-primary">
-                    Create my account
-                  </button>
-                </div>
-              </form>
+                </Form>
+              </Formik>
               <div className="mt-4 text-center">
                 <small>Already have an account?</small>
                 {' '}

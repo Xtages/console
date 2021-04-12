@@ -1,0 +1,55 @@
+package xtages.console.controller.api
+
+import com.stripe.exception.SignatureVerificationException
+import com.stripe.net.Webhook
+import mu.KotlinLogging
+import org.springframework.http.ResponseEntity
+import org.springframework.stereotype.Controller
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestHeader
+import xtages.console.config.ConsoleProperties
+import xtages.console.controller.api.model.CreateCheckoutSessionReq
+import xtages.console.service.StripeService
+import java.net.URI
+
+private const val STRIPE_SIGNATURE_HEADER = "Stripe-Signature"
+
+private val logger = KotlinLogging.logger { }
+
+@Controller
+class CheckoutApiController(
+    private val stripeService: StripeService,
+    private val consoleProperties: ConsoleProperties,
+) :
+    CheckoutApiControllerBase {
+
+    override fun createCheckoutSession(createCheckoutSessionReq: CreateCheckoutSessionReq): ResponseEntity<String> {
+        return ResponseEntity.ok(
+            stripeService.createCheckoutSession(
+                createCheckoutSessionReq.priceIds,
+                createCheckoutSessionReq.organizationName
+            )
+        )
+    }
+
+    override fun createCustomerPortalSession(): ResponseEntity<URI> {
+        return ResponseEntity.ok(stripeService.createCustomerPortalSession())
+    }
+
+    @PostMapping("/webhook")
+    fun webhook(
+        @RequestBody body: String,
+        @RequestHeader(STRIPE_SIGNATURE_HEADER) stripeSignatureHeader: String,
+    ): ResponseEntity<String> {
+        logger.trace { "Received Stripe webhook request." }
+        try {
+            val event = Webhook.constructEvent(body, stripeSignatureHeader, consoleProperties.stripe.webhookSecret)
+            stripeService.handleWebhookRequest(event)
+        } catch (e: SignatureVerificationException) {
+            logger.error(e) { "Failed to verify Stripe webhook request signature." }
+            return ResponseEntity.badRequest().body("Failed to webhook request.")
+        }
+        return ResponseEntity.ok().build()
+    }
+}

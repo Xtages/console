@@ -1,8 +1,8 @@
-// import {LocationDescriptor} from 'history';
 import React, {FormEvent, useRef} from 'react';
 import {Key, User} from 'react-feather';
-import {Link, RouteComponentProps, useHistory} from 'react-router-dom';
+import {RouteComponentProps, useHistory} from 'react-router-dom';
 import {useAuth} from '../../hooks/useAuth';
+import CreateAccountLink from '../../components/CreateAccountLink';
 
 /** The properties that are available to the {@link LoginPage} component. */
 type LoginPageProps = RouteComponentProps<{}, {}, LocationState | null>;
@@ -29,8 +29,8 @@ export default function LoginPage({location}: LoginPageProps) {
     try {
       const email = emailRef.current;
       const password = passwordRef.current;
-      if (email !== null && password !== null) {
-        await auth.signIn({email: email.value, password: password.value});
+      if (email?.value !== null && password?.value !== null) {
+        await auth.signIn({email: email!.value, password: password!.value});
         const redirectTo = location.state?.referrer || '/';
         history.replace(redirectTo);
       }
@@ -106,13 +106,7 @@ export default function LoginPage({location}: LoginPageProps) {
                   </button>
                 </div>
               </form>
-              <div className="mt-4 text-center">
-                <small>Not registered?</small>
-                {' '}
-                <Link to="/signup" className="small font-weight-bold">
-                  Create account
-                </Link>
-              </div>
+              <CreateAccountLink />
             </div>
           </div>
         </div>
