@@ -1,0 +1,146 @@
+openapi: 3.0.0
+info:
+  version: 0.0.1
+  title: Xtages Internal API
+  description: |
+    Xtages internal API. Some of these endpoints might be extracted to an external API in the future.
+servers:
+  - url: https://console.xtages.com/api/v1
+security:
+  - bearerAuth: []
+paths:
+  /organization:
+    post:
+      summary: Creates a new Organization beloging to a user, if the user doesn't exist then it's created also
+      operationId: createOrganization
+      tags:
+        - organization
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateOrgReq"
+      responses:
+        '200':
+          description: Organization was created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Organization"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        default:
+          $ref: "#/components/responses/DefaultError"
+  /checkout/session:
+    post:
+      summary: Prepares a Stripe Checkout session
+      operationId: createCheckoutSession
+      tags:
+        - checkout
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCheckoutSessionReq"
+      responses:
+        '200':
+          description: A new Stripe session was created
+          content:
+            application/json:
+              schema:
+                type: string
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        default:
+          $ref: "#/components/responses/DefaultError"
+  /checkout/portal/session:
+    post:
+      summary: Creates a Stripe customer portal session
+      operationId: createCustomerPortalSession
+      tags:
+        - checkout
+      responses:
+        '200':
+          description: A new customer portal session was created
+          content:
+            application/json:
+              schema:
+                type: string
+                format: uri
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        default:
+          $ref: "#/components/responses/DefaultError"
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    ErrorDesc:
+      description: General API error
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: integer
+          format: int32
+        message:
+          type: string
+    Organization:
+      description: An Organization
+      properties:
+        name:
+          type: string
+          minLength: 1
+        subscription_status:
+          type: string
+          enum:
+            - UNCONFIRMED
+            - ACTIVE
+            - SUSPENDED
+            - PENDING_CANCELLATION
+            - CANCELLED
+    CreateOrgReq:
+      description: Request made to POST /organization
+      required:
+        - organizationName
+        - ownerCognitoUserId
+      properties:
+        organizationName:
+          type: string
+          minLength: 1
+        ownerCognitoUserId:
+          type: string
+          minLength: 1
+    CreateCheckoutSessionReq:
+      description: Request made to POST /checkout/session
+      required:
+        - organizationName
+        - priceIds
+      properties:
+        organizationName:
+          type: string
+          minLength: 1
+        priceIds:
+          type: array
+          items:
+            type: string
+            minItems: 1
+  responses:
+    DefaultError:
+      description: Default error
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorDesc"
+    UnauthorizedError:
+      description: Authorization error
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorDesc"
