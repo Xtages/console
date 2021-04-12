@@ -32,3 +32,4 @@ val XTAGES_USER_PKEY: UniqueKey<XtagesUserRecord> = Internal.createUniqueKey(Xta
 // -------------------------------------------------------------------------
 
 val ORGANIZATION__ORGANIZATION_OWNER_ID_FKEY: ForeignKey<OrganizationRecord, XtagesUserRecord> = Internal.createForeignKey(Organization.ORGANIZATION, DSL.name("organization_owner_id_fkey"), arrayOf(Organization.ORGANIZATION.OWNER_ID), xtages.console.query.keys.XTAGES_USER_PKEY, arrayOf(XtagesUser.XTAGES_USER.ID), true)
+val STRIPE_CHECKOUT_SESSION__STRIPE_CHECKOUT_SESSION_ORGANIZATION_NAME_FKEY: ForeignKey<StripeCheckoutSessionRecord, OrganizationRecord> = Internal.createForeignKey(StripeCheckoutSession.STRIPE_CHECKOUT_SESSION, DSL.name("stripe_checkout_session_organization_name_fkey"), arrayOf(StripeCheckoutSession.STRIPE_CHECKOUT_SESSION.ORGANIZATION_NAME), xtages.console.query.keys.ORGANIZATION_PKEY, arrayOf(Organization.ORGANIZATION.NAME), true)

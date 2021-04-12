@@ -23,6 +23,7 @@ import org.jooq.impl.TableImpl
 
 import xtages.console.query.Public
 import xtages.console.query.keys.STRIPE_CHECKOUT_SESSION_PKEY
+import xtages.console.query.keys.STRIPE_CHECKOUT_SESSION__STRIPE_CHECKOUT_SESSION_ORGANIZATION_NAME_FKEY
 import xtages.console.query.tables.records.StripeCheckoutSessionRecord
 
 
@@ -91,6 +92,15 @@ open class StripeCheckoutSession(
     override fun getSchema(): Schema = Public.PUBLIC
     override fun getPrimaryKey(): UniqueKey<StripeCheckoutSessionRecord> = STRIPE_CHECKOUT_SESSION_PKEY
     override fun getKeys(): List<UniqueKey<StripeCheckoutSessionRecord>> = listOf(STRIPE_CHECKOUT_SESSION_PKEY)
+    override fun getReferences(): List<ForeignKey<StripeCheckoutSessionRecord, *>> = listOf(STRIPE_CHECKOUT_SESSION__STRIPE_CHECKOUT_SESSION_ORGANIZATION_NAME_FKEY)
+
+    private lateinit var _organization: Organization
+    fun organization(): Organization {
+        if (!this::_organization.isInitialized)
+            _organization = Organization(this, STRIPE_CHECKOUT_SESSION__STRIPE_CHECKOUT_SESSION_ORGANIZATION_NAME_FKEY)
+
+        return _organization;
+    }
     override fun `as`(alias: String): StripeCheckoutSession = StripeCheckoutSession(DSL.name(alias), this)
     override fun `as`(alias: Name): StripeCheckoutSession = StripeCheckoutSession(alias, this)
 

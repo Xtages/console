@@ -12,7 +12,7 @@ import java.io.Serializable
  */
 @Suppress("UNCHECKED_CAST")
 data class XtagesUser(
-    var id: Int? = null,
+    var id: Int? = null, 
     var cognitoUserId: String? = null
 ): Serializable {
 

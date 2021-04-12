@@ -25,7 +25,7 @@ class SecurityConfig(private val environment: Environment) : WebSecurityConfigur
                 disable()
             }
             csrf {
-                ignoringAntMatchers("/api/webhook")
+                ignoringAntMatchers("/api/v1/webhook")
             }
             sessionManagement {
                 // Don't create an HTTPSession and instead always rely on the
@@ -47,7 +47,7 @@ class SecurityConfig(private val environment: Environment) : WebSecurityConfigur
                 // The `/webhook` endpoint handles Stripe's webhook requests and therefore
                 // cannot be authenticated by normal means, instead Stripe signs the request and we
                 // verify the signature in the controller.
-                authorize(HttpMethod.POST, "/api/webhook", permitAll)
+                authorize(HttpMethod.POST, "/api/v1/webhook", permitAll)
                 // Everything under `/api` requires authn.
                 authorize("/api/*", authenticated)
             }
