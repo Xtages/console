@@ -2,11 +2,11 @@
 
 set -eo pipefail
 
-function loge() { 
+function loge() {
     printf "%s\n" "$*" >&2;
 }
 
-function logi() { 
+function logi() {
     printf "%s\n" "$*";
 }
 
@@ -15,7 +15,7 @@ function bin_exists() {
     command -v "$1" >/dev/null 2>&1
 }
 
-## Installs homebrew if necessary 
+## Installs homebrew if necessary
 function install_brew() {
     local _bin="brew"
     if bin_exists "$_bin"; then
@@ -89,6 +89,10 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
 
     brew_install postgresql@13 postgres
     start_postgress
+
+    brew_install liquibase
+
+    brew_install "stripe/stripe-cli/stripe" stripe
 
     install_sdkman
     sdk env install
