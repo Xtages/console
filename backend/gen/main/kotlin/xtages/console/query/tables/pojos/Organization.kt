@@ -14,9 +14,9 @@ import xtages.console.query.enums.OrganizationSubscriptionStatus
  */
 @Suppress("UNCHECKED_CAST")
 data class Organization(
-    var name: String? = null,
-    var stripeCustomerId: String? = null,
-    var subscriptionStatus: OrganizationSubscriptionStatus? = null,
+    var name: String? = null, 
+    var stripeCustomerId: String? = null, 
+    var subscriptionStatus: OrganizationSubscriptionStatus? = null, 
     var ownerId: Int? = null
 ): Serializable {
 

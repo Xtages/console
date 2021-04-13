@@ -12,7 +12,7 @@ import java.io.Serializable
  */
 @Suppress("UNCHECKED_CAST")
 data class StripeCheckoutSession(
-    var organizationName: String? = null,
+    var organizationName: String? = null, 
     var stripeCheckoutSessionId: String? = null
 ): Serializable {
 

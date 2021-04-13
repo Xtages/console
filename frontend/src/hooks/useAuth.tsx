@@ -114,7 +114,10 @@ function useProvideAuth() {
     return converted;
   }
 
-  /** Sign-up using email, password, name and org. */
+  /**
+   * Sign-up using email, password, name and org. If we get back a confirmed user then we return
+   * a {@link Principal}, `null` otherwise.
+   */
   async function signUp({
     email,
     password,
@@ -125,7 +128,7 @@ function useProvideAuth() {
     password: string;
     name: string;
     org: string;
-  }) {
+  }) : Promise<NullablePrincipal> {
     const result = await CognitoAuth.signUp({
       username: email,
       password,
@@ -134,12 +137,26 @@ function useProvideAuth() {
         'custom:org': org,
       },
     });
-    if (result.user != null) {
+    if (result.user != null && result.userConfirmed) {
       const converted = await Principal.fromCognitoUser(result.user);
       setPrincipal(converted);
       return converted;
     }
-    throw Error();
+    setPrincipal(null);
+    setInProgress(false);
+    return null;
+  }
+
+  /**
+   * Confirms an user's sign up using a code emailed to the user.
+   *
+   * N.B.: Confirming the user doesn't automatically signs them in.
+   *
+   * @param email - The user's email that was used to sign up.
+   * @param code - The emailed code.
+   */
+  async function confirmSignUp({email, code} : {email: string, code: string}) {
+    return CognitoAuth.confirmSignUp(email, code);
   }
 
   /**
@@ -176,14 +193,14 @@ function useProvideAuth() {
           switch (data.payload.event) {
             case 'signIn': {
               const user = data.payload.data;
-              if (principal == null) {
+              if (principal == null && user) {
                 setPrincipal(await Principal.fromCognitoUser(user));
               }
               break;
             }
             case 'signUp': {
               const user = data.payload.data;
-              if (principal == null) {
+              if (principal == null && user && user.userConfirmed) {
                 setPrincipal(await Principal.fromCognitoUser(user));
               }
               break;
@@ -213,6 +230,7 @@ function useProvideAuth() {
     principal,
     signIn,
     signUp,
+    confirmSignUp,
     logOut,
   };
 }

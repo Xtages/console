@@ -23,11 +23,10 @@ repositories {
 }
 
 dependencies {
-    implementation("org.springframework.boot:spring-boot-starter-actuator")
-    implementation("org.springframework.boot:spring-boot-starter-jooq")
-    implementation("org.springframework.boot:spring-boot-starter-webflux")
-    implementation("org.springframework.boot:spring-boot-starter-web")
+    annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
+    implementation("com.stripe:stripe-java:20.45.0")
+    implementation("io.github.microutils:kotlin-logging-jvm:2.0.5")
     implementation("io.projectreactor.kotlin:reactor-kotlin-extensions")
     implementation("javax.validation:validation-api:2.0.1.Final")
     implementation("org.jetbrains.kotlin:kotlin-reflect")
@@ -144,7 +143,7 @@ val copyFrontendToResources = tasks.register<Copy>("copyFrontendToResources") {
 }
 
 // Make sure the `bootJar` task depends on copying the frontend app.
-tasks.withType<BootJar>() {
+tasks.withType<BootJar> {
     dependsOn(copyFrontendToResources)
 }
 
