@@ -11,7 +11,7 @@ phases:
       - cd backend
       # not running gradle build to save money in CodeBuild
       - gradle --stacktrace bootJar
-      - export DATE=`date '+%Y%m%d%H%M%S'` && export GIT_HASH=`git rev-parse --short HEAD`
+      - export DATE=`date '+%Y%m%d%H%M'` && export GIT_HASH=`git rev-parse --short HEAD`
       - export TAG=$DATE-$GIT_HASH
       - docker build --build-arg ENV=prod -t 606626603369.dkr.ecr.us-east-1.amazonaws.com/xtages-console:$TAG .
       - docker push 606626603369.dkr.ecr.us-east-1.amazonaws.com/xtages-console:$TAG

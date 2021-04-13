@@ -1,4 +1,4 @@
-FROM amazoncorretto:15.0.2
+FROM 606626603369.dkr.ecr.us-east-1.amazonaws.com/xtages-corretto:15.0.2
 
 RUN yum install -y shadow-utils
 RUN useradd -ms /bin/bash console

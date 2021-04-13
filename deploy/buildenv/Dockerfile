@@ -39,9 +39,3 @@ RUN source ~/.bashrc && nvm install ${NODE_VER}
 RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64-2.1.36.zip" -o "awscliv2.zip"
 RUN unzip -q awscliv2.zip && rm *.zip
 RUN ./aws/install
-
-# Tried to run the container with a user but there was to run the container with the docker privileges
-# requires to install shadow-utils
-#RUN useradd -ms /bin/bash builder
-#ENV GRADLE_USER_HOME=/home/builder
-#USER builder
