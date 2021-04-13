@@ -48,7 +48,7 @@ export default function ConfirmSignUpPage({location}: ConfirmSignUpPageProps) {
       email: values.email,
       code: values.code,
     });
-    const principal = await auth.signIn({
+    const principal = await auth.logIn({
       email: values.email,
       password: values.password,
     });

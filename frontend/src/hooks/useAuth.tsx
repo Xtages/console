@@ -107,7 +107,7 @@ function useProvideAuth() {
   const [inProgress, setInProgress] = useState(true);
 
   /** Sign-in using email and password. */
-  async function signIn({email, password}: {email: string; password: string}) {
+  async function logIn({email, password}: {email: string; password: string}) {
     const user: CognitoUser = await CognitoAuth.signIn(email, password);
     const converted = await Principal.fromCognitoUser(user);
     setPrincipal(converted);
@@ -228,7 +228,7 @@ function useProvideAuth() {
   return {
     inProgress,
     principal,
-    signIn,
+    logIn,
     signUp,
     confirmSignUp,
     logOut,
