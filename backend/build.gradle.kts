@@ -24,8 +24,12 @@ repositories {
 
 dependencies {
     annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
+    developmentOnly("org.springframework.boot:spring-boot-devtools")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
     implementation("com.stripe:stripe-java:20.45.0")
+    implementation("io.awspring.cloud:spring-cloud-aws-autoconfigure:2.3.1")
+    implementation("io.awspring.cloud:spring-cloud-starter-aws-parameter-store-config:2.3.1")
+    implementation("io.awspring.cloud:spring-cloud-starter-aws:2.3.1")
     implementation("io.github.microutils:kotlin-logging-jvm:2.0.5")
     implementation("io.projectreactor.kotlin:reactor-kotlin-extensions")
     implementation("javax.validation:validation-api:2.0.1.Final")
@@ -39,9 +43,8 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-security")
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-webflux")
-    developmentOnly("org.springframework.boot:spring-boot-devtools")
-    runtimeOnly("org.postgresql:postgresql")
     jooqGenerator("org.postgresql:postgresql")
+    runtimeOnly("org.postgresql:postgresql")
     testImplementation("io.projectreactor:reactor-test")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
 }
