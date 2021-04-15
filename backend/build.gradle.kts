@@ -99,6 +99,7 @@ allOpen {
 //        }
 //    }
 //}
+// another line commented to test codebuild
 
 tasks.withType<JooqGenerate> {
     // make jOOQ task participate in incremental builds
