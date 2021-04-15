@@ -37,7 +37,7 @@ class CheckoutApiController(
         return ResponseEntity.ok(stripeService.createCustomerPortalSession())
     }
 
-    @PostMapping("/webhook")
+    @PostMapping("/checkout/webhook")
     fun webhook(
         @RequestBody body: String,
         @RequestHeader(STRIPE_SIGNATURE_HEADER) stripeSignatureHeader: String,
