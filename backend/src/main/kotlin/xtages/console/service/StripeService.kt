@@ -139,6 +139,6 @@ enum class StripeWebhookEventType(private val stripeName: String) {
 
     companion object {
         fun fromStripeEventName(stripeEvent: String) =
-            values().find { it.stripeName.equals(stripeEvent, ignoreCase = true) };
+            values().find { it.stripeName.equals(stripeEvent, ignoreCase = true) }
     }
 }
