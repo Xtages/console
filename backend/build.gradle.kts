@@ -65,40 +65,40 @@ allOpen {
 }
 
 // Generate type-safe JOOQ files based on the DB
-jooq {
-    version.set("3.14.7")
-    edition.set(JooqEdition.OSS)
-
-    configurations {
-        create("main") {
-            jooqConfiguration.apply {
-                logging = org.jooq.meta.jaxb.Logging.WARN
-                jdbc.apply {
-                    driver = "org.postgresql.Driver"
-                    user = "xtages_console"
-                    url = "jdbc:postgresql://localhost:5432/xtages_console"
-                }
-                generator.apply {
-                    name = "org.jooq.codegen.KotlinGenerator"
-                    database.apply {
-                        name = "org.jooq.meta.postgres.PostgresDatabase"
-                        inputSchema = "public"
-                        excludes = "databasechangelog|databasechangeloglock"
-                    }
-                    generate.apply {
-                        isDaos = true
-                        isSpringAnnotations = true
-                    }
-                    target.apply {
-                        packageName = "xtages.console.query"
-                        directory = "gen/main/kotlin"
-                    }
-                    strategy.name = "org.jooq.codegen.DefaultGeneratorStrategy"
-                }
-            }
-        }
-    }
-}
+//jooq {
+//    version.set("3.14.7")
+//    edition.set(JooqEdition.OSS)
+//
+//    configurations {
+//        create("main") {
+//            jooqConfiguration.apply {
+//                logging = org.jooq.meta.jaxb.Logging.WARN
+//                jdbc.apply {
+//                    driver = "org.postgresql.Driver"
+//                    user = "xtages_console"
+//                    url = "jdbc:postgresql://localhost:5432/xtages_console"
+//                }
+//                generator.apply {
+//                    name = "org.jooq.codegen.KotlinGenerator"
+//                    database.apply {
+//                        name = "org.jooq.meta.postgres.PostgresDatabase"
+//                        inputSchema = "public"
+//                        excludes = "databasechangelog|databasechangeloglock"
+//                    }
+//                    generate.apply {
+//                        isDaos = true
+//                        isSpringAnnotations = true
+//                    }
+//                    target.apply {
+//                        packageName = "xtages.console.query"
+//                        directory = "gen/main/kotlin"
+//                    }
+//                    strategy.name = "org.jooq.codegen.DefaultGeneratorStrategy"
+//                }
+//            }
+//        }
+//    }
+//}
 
 tasks.withType<JooqGenerate> {
     // make jOOQ task participate in incremental builds
