@@ -80,13 +80,13 @@ jooq {
     edition.set(JooqEdition.OSS)
     configurations {
         create("main") {
-            generateSchemaSourceOnCompilation.set(false)
+            generateSchemaSourceOnCompilation.set(true)
             jooqConfiguration.apply {
                 logging = org.jooq.meta.jaxb.Logging.WARN
                 jdbc.apply {
                     driver = "org.postgresql.Driver"
                     user = "xtages_console"
-                    url = "jdbc:postgresql://localhost:5432/xtages_console"
+                    url = "jdbc:postgresql://xtages-development.c9ijuglx54eu.us-east-1.rds.amazonaws.com:5432/xtages_console"
                 }
                 generator.apply {
                     name = "org.jooq.codegen.KotlinGenerator"
