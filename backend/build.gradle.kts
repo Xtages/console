@@ -50,6 +50,11 @@ val frontendDir = file(projectDir).parentFile.resolve("frontend")
 val apiSpecFile = file("${sourceSets["main"].resources.srcDirs.first()}/xtages-internal-api.yaml")
 
 kotlin {
+    sourceSets {
+        main {
+            kotlin.srcDir("gen/main/openapi")
+        }
+    }
     sourceSets.all {
         languageSettings.enableLanguageFeature("InlineClasses")
     }
@@ -91,7 +96,7 @@ jooq {
                     }
                     target.apply {
                         packageName = "xtages.console.query"
-                        directory = "gen/main/kotlin"
+                        directory = "gen/main/jooq"
                     }
                     strategy.name = "org.jooq.codegen.DefaultGeneratorStrategy"
                 }
@@ -171,7 +176,7 @@ tasks.openApiGenerate {
     generateModelTests.set(false)
     configOptions.set(
         mapOf(
-            "sourceFolder" to "main/kotlin",
+            "sourceFolder" to "main/openapi",
             "apiSuffix" to "ApiControllerBase",
             "serializationLibrary" to "jackson",
             "interfaceOnly" to true.toString(),
