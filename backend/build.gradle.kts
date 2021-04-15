@@ -87,7 +87,7 @@ jooq {
                     driver = "org.postgresql.Driver"
                     user = "xtages_console"
                     url = "jdbc:postgresql://xtages-development.c9ijuglx54eu.us-east-1.rds.amazonaws.com:5432/xtages_console"
-                    password = System.getenv('DB_DEV_PASS')
+                    password = System.getenv("DB_DEV_PASS")
                 }
                 generator.apply {
                     name = "org.jooq.codegen.KotlinGenerator"
