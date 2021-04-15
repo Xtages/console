@@ -94,6 +94,8 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
 
     brew_install "stripe/stripe-cli/stripe" stripe
 
+    brew_install awscli aws
+
     install_sdkman
     sdk env install
 
