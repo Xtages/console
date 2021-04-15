@@ -73,9 +73,9 @@ allOpen {
 jooq {
     version.set("3.14.7")
     edition.set(JooqEdition.OSS)
-
     configurations {
         create("main") {
+            generateSchemaSourceOnCompilation.set(false)
             jooqConfiguration.apply {
                 logging = org.jooq.meta.jaxb.Logging.WARN
                 jdbc.apply {
