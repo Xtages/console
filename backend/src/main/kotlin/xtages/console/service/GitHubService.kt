@@ -12,19 +12,31 @@ import org.kohsuke.github.GitHub
 import org.kohsuke.github.GitHubBuilder
 import org.springframework.stereotype.Service
 import xtages.console.config.ConsoleProperties
+import xtages.console.exception.ExceptionCode.*
+import xtages.console.exception.IllegalArgumentException
+import xtages.console.exception.ensure
+import xtages.console.query.enums.GithubAppInstallationStatus.*
+import xtages.console.query.tables.daos.OrganizationDao
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.*
 import kotlin.reflect.KProperty
 
 @Service
-class GitHubService(consoleProperties: ConsoleProperties, val objectMapper: ObjectMapper) {
+class GitHubService(
+    consoleProperties: ConsoleProperties,
+    val objectMapper: ObjectMapper,
+    val organizationDao: OrganizationDao
+) {
     private val gitHubClient: GitHub by GitHubClientDelegate(consoleProperties)
 
     fun handleWebhookRequest(eventType: GitHubWebhookEventType?, eventJson: String) {
         when (eventType) {
             GitHubWebhookEventType.INSTALLATION -> onInstallation(eventJson)
-            GitHubWebhookEventType.INSTALLATION_REPOSITORIES -> TODO()
+            GitHubWebhookEventType.INSTALLATION_REPOSITORIES -> throw IllegalArgumentException(
+                code = GH_APP_INSTALLATION_INVALID,
+                innerMessage = "GitHub app must be installed at the organization level."
+            )
             GitHubWebhookEventType.REPOSITORY -> TODO()
         }
     }
@@ -35,10 +47,65 @@ class GitHubService(consoleProperties: ConsoleProperties, val objectMapper: Obje
         // method fail.
         // val event = gitHubClient.parseEventPayload(eventJson.reader(), GHEventPayload.Installation::class.java)
         val jsonBody = objectMapper.readTree(eventJson)
-        val installationId = jsonBody.get("installation").get("id").asLong()
-        val appGitHubClient =
-            buildAppGitHubClient(gitHubClient.app.getInstallationById(installationId).createToken().create())
-        println(appGitHubClient.isCredentialValid)
+        val action = jsonBody.get("action").asText()
+        val installation = jsonBody.get("installation")
+        val organizationName = installation.get("account").get("name").asText()
+        val installationId = installation.get("id").asLong()
+        val organization = ensure.foundOne(
+            operation = { organizationDao.fetchOneByName(organizationName) },
+            code = ORG_NOT_FOUND,
+            message = "Organization [$organizationName] is not registered on Xtages"
+        )
+        /*
+        See https://docs.github.com/en/developers/webhooks-and-events/webhook-events-and-payloads#installation
+        created - Someone installs a GitHub App.
+        deleted - Someone uninstalls a GitHub App
+        suspend - Someone suspends a GitHub App installation.
+        unsuspend - Someone unsuspends a GitHub App installation.
+        new_permissions_accepted - Someone accepts new permissions for a GitHub App installation.
+            When a GitHub App owner requests new permissions, the person who installed the GitHub App must accept
+            the new permissions request.
+        */
+        when (action) {
+            "created" -> {
+                val repositorySelection = installation.get("repository_selection").asText()
+                ensure.isTrue(
+                    value = repositorySelection == "all",
+                    code = GH_APP_NOT_ALL_REPOSITORIES_SELECTED,
+                    message = "GitHub app was not installed on all repositories"
+                )
+                organizationDao.update(
+                    organization.copy(
+                        githubAppInstallationId = installationId,
+                        githubAppInstallationStatus = ACTIVE
+                    )
+                )
+            }
+            "deleted" -> {
+                organizationDao.update(
+                    organization.copy(
+                        githubAppInstallationId = null,
+                        githubAppInstallationStatus = null
+                    )
+                )
+            }
+            "suspend" -> {
+                ensure.notNull(value = organization.githubAppInstallationId, code = GH_APP_INSTALLATION_ID_IS_NULL)
+                organizationDao.update(
+                    organization.copy(
+                        githubAppInstallationStatus = SUSPENDED
+                    )
+                )
+            }
+            "unsuspend", "new_permissions_accepted" -> {
+                ensure.notNull(value = organization.githubAppInstallationId, code = GH_APP_INSTALLATION_ID_IS_NULL)
+                organizationDao.update(
+                    organization.copy(
+                        githubAppInstallationStatus = ACTIVE
+                    )
+                )
+            }
+        }
     }
 
     fun buildAppGitHubClient(installationToken: GHAppInstallationToken): GitHub {

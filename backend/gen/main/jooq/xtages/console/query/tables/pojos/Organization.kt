@@ -6,6 +6,7 @@ package xtages.console.query.tables.pojos
 
 import java.io.Serializable
 
+import xtages.console.query.enums.GithubAppInstallationStatus
 import xtages.console.query.enums.OrganizationSubscriptionStatus
 
 
@@ -17,7 +18,9 @@ data class Organization(
     var name: String? = null, 
     var stripeCustomerId: String? = null, 
     var subscriptionStatus: OrganizationSubscriptionStatus? = null, 
-    var ownerId: Int? = null
+    var ownerId: Int? = null, 
+    var githubAppInstallationId: Long? = null, 
+    var githubAppInstallationStatus: GithubAppInstallationStatus? = null
 ): Serializable {
 
 
@@ -28,6 +31,8 @@ data class Organization(
         sb.append(", ").append(stripeCustomerId)
         sb.append(", ").append(subscriptionStatus)
         sb.append(", ").append(ownerId)
+        sb.append(", ").append(githubAppInstallationId)
+        sb.append(", ").append(githubAppInstallationStatus)
 
         sb.append(")")
         return sb.toString()
