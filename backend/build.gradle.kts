@@ -82,7 +82,7 @@ jooq {
         create("main") {
             generateSchemaSourceOnCompilation.set(true)
             jooqConfiguration.apply {
-                logging = org.jooq.meta.jaxb.Logging.WARN
+                logging = org.jooq.meta.jaxb.Logging.DEBUG
                 jdbc.apply {
                     driver = "org.postgresql.Driver"
                     user = "xtages_console"
