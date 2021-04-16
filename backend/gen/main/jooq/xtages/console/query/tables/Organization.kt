@@ -6,11 +6,12 @@ package xtages.console.query.tables
 
 import kotlin.collections.List
 
+import org.jooq.Check
 import org.jooq.Field
 import org.jooq.ForeignKey
 import org.jooq.Name
 import org.jooq.Record
-import org.jooq.Row4
+import org.jooq.Row6
 import org.jooq.Schema
 import org.jooq.Table
 import org.jooq.TableField
@@ -22,7 +23,9 @@ import org.jooq.impl.SQLDataType
 import org.jooq.impl.TableImpl
 
 import xtages.console.query.Public
+import xtages.console.query.enums.GithubAppInstallationStatus
 import xtages.console.query.enums.OrganizationSubscriptionStatus
+import xtages.console.query.keys.ORGANIZATION_GITHUB_APP_INSTALLATION_ID_KEY
 import xtages.console.query.keys.ORGANIZATION_PKEY
 import xtages.console.query.keys.ORGANIZATION__ORGANIZATION_OWNER_ID_FKEY
 import xtages.console.query.tables.records.OrganizationRecord
@@ -81,6 +84,16 @@ open class Organization(
      */
     val OWNER_ID: TableField<OrganizationRecord, Int?> = createField(DSL.name("owner_id"), SQLDataType.INTEGER.nullable(false), this, "")
 
+    /**
+     * The column <code>public.organization.github_app_installation_id</code>.
+     */
+    val GITHUB_APP_INSTALLATION_ID: TableField<OrganizationRecord, Long?> = createField(DSL.name("github_app_installation_id"), SQLDataType.BIGINT, this, "")
+
+    /**
+     * The column <code>public.organization.github_app_installation_status</code>.
+     */
+    val GITHUB_APP_INSTALLATION_STATUS: TableField<OrganizationRecord, GithubAppInstallationStatus?> = createField(DSL.name("github_app_installation_status"), SQLDataType.VARCHAR.asEnumDataType(xtages.console.query.enums.GithubAppInstallationStatus::class.java), this, "")
+
     private constructor(alias: Name, aliased: Table<OrganizationRecord>?): this(alias, null, null, aliased, null)
     private constructor(alias: Name, aliased: Table<OrganizationRecord>?, parameters: Array<Field<*>?>?): this(alias, null, null, aliased, parameters)
 
@@ -102,7 +115,7 @@ open class Organization(
     constructor(child: Table<out Record>, key: ForeignKey<out Record, OrganizationRecord>): this(Internal.createPathAlias(child, key), child, key, ORGANIZATION, null)
     override fun getSchema(): Schema = Public.PUBLIC
     override fun getPrimaryKey(): UniqueKey<OrganizationRecord> = ORGANIZATION_PKEY
-    override fun getKeys(): List<UniqueKey<OrganizationRecord>> = listOf(ORGANIZATION_PKEY)
+    override fun getKeys(): List<UniqueKey<OrganizationRecord>> = listOf(ORGANIZATION_PKEY, ORGANIZATION_GITHUB_APP_INSTALLATION_ID_KEY)
     override fun getReferences(): List<ForeignKey<OrganizationRecord, *>> = listOf(ORGANIZATION__ORGANIZATION_OWNER_ID_FKEY)
 
     private lateinit var _xtagesUser: XtagesUser
@@ -112,6 +125,9 @@ open class Organization(
 
         return _xtagesUser;
     }
+    override fun getChecks(): List<Check<OrganizationRecord>> = listOf(
+          Internal.createCheck(this, DSL.name("github_app_cols_consistent"), "(((ROW(github_app_installation_id, github_app_installation_status) IS NULL) OR (ROW(github_app_installation_id, github_app_installation_status) IS NOT NULL)))", true)
+    )
     override fun `as`(alias: String): Organization = Organization(DSL.name(alias), this)
     override fun `as`(alias: Name): Organization = Organization(alias, this)
 
@@ -126,7 +142,7 @@ open class Organization(
     override fun rename(name: Name): Organization = Organization(name, null)
 
     // -------------------------------------------------------------------------
-    // Row4 type methods
+    // Row6 type methods
     // -------------------------------------------------------------------------
-    override fun fieldsRow(): Row4<String?, String?, OrganizationSubscriptionStatus?, Int?> = super.fieldsRow() as Row4<String?, String?, OrganizationSubscriptionStatus?, Int?>
+    override fun fieldsRow(): Row6<String?, String?, OrganizationSubscriptionStatus?, Int?, Long?, GithubAppInstallationStatus?> = super.fieldsRow() as Row6<String?, String?, OrganizationSubscriptionStatus?, Int?, Long?, GithubAppInstallationStatus?>
 }

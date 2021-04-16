@@ -1,7 +1,6 @@
 package xtages.console.service
 
 import com.stripe.Stripe
-import com.stripe.model.Customer
 import com.stripe.model.Event
 import com.stripe.param.checkout.SessionCreateParams
 import org.springframework.security.core.context.SecurityContextHolder
@@ -11,11 +10,13 @@ import org.springframework.web.context.annotation.RequestScope
 import org.springframework.web.util.UriComponentsBuilder
 import xtages.console.config.CognitoUserId
 import xtages.console.config.ConsoleProperties
+import xtages.console.exception.ensure
 import xtages.console.query.enums.OrganizationSubscriptionStatus.ACTIVE
 import xtages.console.query.tables.daos.OrganizationDao
 import xtages.console.query.tables.daos.StripeCheckoutSessionDao
 import xtages.console.query.tables.pojos.StripeCheckoutSession
 import xtages.console.dao.findByCognitoUserId
+import xtages.console.exception.ExceptionCode.*
 import java.net.URI
 import com.stripe.model.billingportal.Session as PortalSession
 import com.stripe.model.checkout.Session as CheckoutSession
@@ -80,19 +81,20 @@ class StripeService(
      */
     fun createCustomerPortalSession(): URI {
         val returnUrl = UriComponentsBuilder.fromUri(URI(consoleProperties.server.basename)).pathSegment("account")
-        val customerId = organizationDao.findByCognitoUserId(getCurrentCognitoUserId())?.let { org ->
-            if (org.stripeCustomerId != null) {
-                Customer.retrieve(org.stripeCustomerId).id
-            } else {
-                null
-            }
-        } ?: run {
-            throw Error("")
-        }
+        val organization = ensure.foundOne(
+            operation = { organizationDao.findByCognitoUserId(getCurrentCognitoUserId()) },
+            code = ORG_NOT_FOUND,
+            message = "Could not found organization associated to current user"
+        )
+        val stripeCustomerId = ensure.notNull(
+            value = organization.stripeCustomerId,
+            code = STRIPE_CUSTOMER_ID_IS_NULL,
+            lazyMessage = { "A Stripe customer id was not found for ${organization.name}" }
+        )
         val sessionParams =
             CustomerPortalSessionCreateParams.builder()
                 .setReturnUrl(returnUrl.toUriString())
-                .setCustomer(customerId)
+                .setCustomer(stripeCustomerId)
                 .build()
         val session = PortalSession.create(sessionParams)
         return URI(session.url)
@@ -114,11 +116,18 @@ class StripeService(
      */
     private fun onCheckoutCompleted(event: Event) {
         val stripeObject = event.dataObjectDeserializer.`object`.get() as CheckoutSession
-        val organizationName = stripeCheckoutSessionDao.fetchByStripeCheckoutSessionId(stripeObject.id)
-            .single().organizationName
-        checkNotNull(organizationName)
-        val organization = organizationDao.fetchOneByName(organizationName)
-        checkNotNull(organization)
+        val organizationName = ensure.foundOne(
+            operation = {
+                stripeCheckoutSessionDao.fetchByStripeCheckoutSessionId(stripeObject.id).single()
+            },
+            code = CHECKOUT_SESSION_NOT_FOUND,
+            message = "Checkout session not found"
+        ).organizationName!!
+        val organization = ensure.notNull(
+            operation = { organizationDao.fetchOneByName(organizationName) },
+            code = ORG_NOT_FOUND,
+            lazyMessage = { "Organization [$organizationName] not found" }
+        )
         organizationDao.update(
             organization.copy(
                 stripeCustomerId = stripeObject.customer,

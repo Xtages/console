@@ -22,6 +22,7 @@ import xtages.console.query.tables.records.XtagesUserRecord
 // UNIQUE and PRIMARY KEY definitions
 // -------------------------------------------------------------------------
 
+val ORGANIZATION_GITHUB_APP_INSTALLATION_ID_KEY: UniqueKey<OrganizationRecord> = Internal.createUniqueKey(Organization.ORGANIZATION, DSL.name("organization_github_app_installation_id_key"), arrayOf(Organization.ORGANIZATION.GITHUB_APP_INSTALLATION_ID), true)
 val ORGANIZATION_PKEY: UniqueKey<OrganizationRecord> = Internal.createUniqueKey(Organization.ORGANIZATION, DSL.name("organization_pkey"), arrayOf(Organization.ORGANIZATION.NAME), true)
 val STRIPE_CHECKOUT_SESSION_PKEY: UniqueKey<StripeCheckoutSessionRecord> = Internal.createUniqueKey(StripeCheckoutSession.STRIPE_CHECKOUT_SESSION, DSL.name("stripe_checkout_session_pkey"), arrayOf(StripeCheckoutSession.STRIPE_CHECKOUT_SESSION.ORGANIZATION_NAME), true)
 val XTAGES_USER_COGNITO_USER_ID_KEY: UniqueKey<XtagesUserRecord> = Internal.createUniqueKey(XtagesUser.XTAGES_USER, DSL.name("xtages_user_cognito_user_id_key"), arrayOf(XtagesUser.XTAGES_USER.COGNITO_USER_ID), true)
