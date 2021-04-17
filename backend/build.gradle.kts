@@ -4,6 +4,7 @@ import org.springframework.boot.gradle.tasks.bundling.BootJar
 import nu.studer.gradle.jooq.JooqEdition
 import nu.studer.gradle.jooq.JooqGenerate
 import org.jetbrains.kotlin.builtins.StandardNames.FqNames.target
+import org.jetbrains.kotlin.javax.inject.Inject
 import org.liquibase.gradle.LiquibaseTask
 
 plugins {
@@ -84,33 +85,18 @@ allOpen {
 }
 
 // Liquibase configuration
-
 liquibase {
-    activities.register("local") {
-        this.arguments = mapOf(
+    val sysEnv = System.getenv("ENV")
+    val env = if ( sysEnv != null) sysEnv else "local"
+    val url = if (env == "local") "localhost" else "xtages-development.c9ijuglx54eu.us-east-1.rds.amazonaws.com"
+    activities.register("main") {
+        arguments = mapOf(
                 "logLevel" to "info",
                 "changeLogFile" to "src/main/resources/db/changelog/xtages-console.xml",
-                "url" to "jdbc:postgresql://localhost:5432/xtages_console",
+                "url" to "jdbc:postgresql://" + url + ":5432/xtages_console",
                 "username" to "xtages_console",
                 "password" to "")
     }
-    activities.register("dev") {
-        this.arguments = mapOf(
-                "logLevel" to "info",
-                "changeLogFile" to "src/main/resources/db/changelog/xtages-console.xml",
-                "url" to "jdbc:postgresql://xtages-development.c9ijuglx54eu.us-east-1.rds.amazonaws.com:5432/xtages_console",
-                "username" to "xtages_console",
-                "password" to System.getenv("DB_DEV_PASS"))
-    }
-    activities.register("prod") {
-        this.arguments = mapOf(
-                "logLevel" to "info",
-                "changeLogFile" to "src/main/resources/db/changelog/xtages-console.xml",
-                "url" to "jdbc:postgresql://xtages-production.c9ijuglx54eu.us-east-1.rds.amazonaws.com:5432/xtages_console",
-                "username" to "xtages_console",
-                "password" to System.getenv("DB_PROD_PASS"))
-    }
-    runList = "local, dev, prod"
 }
 
 // Generate type-safe JOOQ files based on the DB
@@ -118,7 +104,7 @@ jooq {
     version.set("3.14.7")
     edition.set(JooqEdition.OSS)
     configurations {
-        create("main") {
+        create("local") {
             generateSchemaSourceOnCompilation.set(true)
             jooqConfiguration.apply {
                 logging = org.jooq.meta.jaxb.Logging.DEBUG
@@ -126,6 +112,34 @@ jooq {
                     driver = "org.postgresql.Driver"
                     user = "xtages_console"
                     url = "jdbc:postgresql://localhost:5432/xtages_console"
+                }
+                generator.apply {
+                    name = "org.jooq.codegen.KotlinGenerator"
+                    database.apply {
+                        name = "org.jooq.meta.postgres.PostgresDatabase"
+                        inputSchema = "public"
+                        excludes = "databasechangelog|databasechangeloglock"
+                    }
+                    generate.apply {
+                        isDaos = true
+                        isSpringAnnotations = true
+                    }
+                    target.apply {
+                        packageName = "xtages.console.query"
+                        directory = "gen/main/jooq"
+                    }
+                    strategy.name = "org.jooq.codegen.DefaultGeneratorStrategy"
+                }
+            }
+        }
+        create("dev") {
+            generateSchemaSourceOnCompilation.set(true)
+            jooqConfiguration.apply {
+                logging = org.jooq.meta.jaxb.Logging.DEBUG
+                jdbc.apply {
+                    driver = "org.postgresql.Driver"
+                    user = "xtages_console"
+                    url = "jdbc:postgresql://xtages-development.c9ijuglx54eu.us-east-1.rds.amazonaws.com:5432/xtages_console"
                     password = System.getenv("DB_DEV_PASS")
                 }
                 generator.apply {
