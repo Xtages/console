@@ -3,6 +3,8 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import org.springframework.boot.gradle.tasks.bundling.BootJar
 import nu.studer.gradle.jooq.JooqEdition
 import nu.studer.gradle.jooq.JooqGenerate
+import org.jetbrains.kotlin.builtins.StandardNames.FqNames.target
+import org.liquibase.gradle.LiquibaseTask
 
 plugins {
     id("org.springframework.boot") version "2.4.4"
@@ -10,6 +12,7 @@ plugins {
     id("com.github.node-gradle.node") version "3.0.1"
     id("org.openapi.generator") version "5.1.0"
     id("nu.studer.jooq") version "5.2.1"
+    id ("org.liquibase.gradle") version "2.0.4"
     kotlin("jvm") version "1.4.31"
     kotlin("plugin.spring") version "1.4.31"
 }
@@ -38,6 +41,12 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor")
     implementation("org.kohsuke:github-api:1.127")
     implementation("org.liquibase:liquibase-core")
+
+    liquibaseRuntime("org.liquibase:liquibase-core")
+    liquibaseRuntime(sourceSets.getByName("main").compileClasspath)
+    liquibaseRuntime(sourceSets.getByName("main").output)
+    liquibaseRuntime("org.postgresql:postgresql")
+
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     implementation("org.springframework.boot:spring-boot-starter-jooq")
     implementation("org.springframework.boot:spring-boot-starter-oauth2-resource-server")
@@ -74,6 +83,36 @@ allOpen {
     annotation("javax.persistence.Entity")
 }
 
+// Liquibase configuration
+
+liquibase {
+    activities.register("local") {
+        this.arguments = mapOf(
+                "logLevel" to "info",
+                "changeLogFile" to "src/main/resources/db/changelog/xtages-console.xml",
+                "url" to "jdbc:postgresql://localhost:5432/xtages_console",
+                "username" to "xtages_console",
+                "password" to "xtages_console")
+    }
+    activities.register("dev") {
+        this.arguments = mapOf(
+                "logLevel" to "info",
+                "changeLogFile" to "src/main/resources/db/changelog/xtages-console.xml",
+                "url" to "jdbc:postgresql://xtages-development.c9ijuglx54eu.us-east-1.rds.amazonaws.com:5432/xtages_console",
+                "username" to "xtages_console",
+                "password" to "xtages_console")
+    }
+    activities.register("prod") {
+        this.arguments = mapOf(
+                "logLevel" to "info",
+                "changeLogFile" to "src/main/resources/db/changelog/xtages-console.xml",
+                "url" to "jdbc:postgresql://xtages-production.c9ijuglx54eu.us-east-1.rds.amazonaws.com:5432/xtages_console",
+                "username" to "xtages_console",
+                "password" to "xtages_console")
+    }
+    runList = "local, dev, prod"
+}
+
 // Generate type-safe JOOQ files based on the DB
 jooq {
     version.set("3.14.7")
@@ -86,7 +125,7 @@ jooq {
                 jdbc.apply {
                     driver = "org.postgresql.Driver"
                     user = "xtages_console"
-                    url = "jdbc:postgresql://xtages-development.c9ijuglx54eu.us-east-1.rds.amazonaws.com:5432/xtages_console"
+                    url = "jdbc:postgresql://localhost:5432/xtages_console"
                     password = System.getenv("DB_DEV_PASS")
                 }
                 generator.apply {
@@ -111,7 +150,8 @@ jooq {
     }
 }
 
-tasks.withType<JooqGenerate> {
+tasks.withType<JooqGenerate>("") {
+    dependsOn("update")
     // make jOOQ task participate in incremental builds
     allInputsDeclared.set(true)
 
@@ -181,13 +221,13 @@ tasks.openApiGenerate {
     generateModelDocumentation.set(false)
     generateModelTests.set(false)
     configOptions.set(
-        mapOf(
-            "sourceFolder" to "main/openapi",
-            "apiSuffix" to "ApiControllerBase",
-            "serializationLibrary" to "jackson",
-            "interfaceOnly" to true.toString(),
-            "enumPropertyNaming" to "UPPERCASE"
-        )
+            mapOf(
+                    "sourceFolder" to "main/openapi",
+                    "apiSuffix" to "ApiControllerBase",
+                    "serializationLibrary" to "jackson",
+                    "interfaceOnly" to true.toString(),
+                    "enumPropertyNaming" to "UPPERCASE"
+            )
     )
 }
 
