@@ -92,7 +92,7 @@ liquibase {
                 "changeLogFile" to "src/main/resources/db/changelog/xtages-console.xml",
                 "url" to "jdbc:postgresql://localhost:5432/xtages_console",
                 "username" to "xtages_console",
-                "password" to "xtages_console")
+                "password" to "")
     }
     activities.register("dev") {
         this.arguments = mapOf(
@@ -100,7 +100,7 @@ liquibase {
                 "changeLogFile" to "src/main/resources/db/changelog/xtages-console.xml",
                 "url" to "jdbc:postgresql://xtages-development.c9ijuglx54eu.us-east-1.rds.amazonaws.com:5432/xtages_console",
                 "username" to "xtages_console",
-                "password" to "xtages_console")
+                "password" to System.getenv("DB_DEV_PASS"))
     }
     activities.register("prod") {
         this.arguments = mapOf(
@@ -108,7 +108,7 @@ liquibase {
                 "changeLogFile" to "src/main/resources/db/changelog/xtages-console.xml",
                 "url" to "jdbc:postgresql://xtages-production.c9ijuglx54eu.us-east-1.rds.amazonaws.com:5432/xtages_console",
                 "username" to "xtages_console",
-                "password" to "xtages_console")
+                "password" to System.getenv("DB_PROD_PASS"))
     }
     runList = "local, dev, prod"
 }
