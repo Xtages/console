@@ -63,7 +63,7 @@ val apiSpecFile = file("${sourceSets["main"].resources.srcDirs.first()}/xtages-i
 val sysEnv = System.getenv("ENV")
 val env = if (sysEnv != null) sysEnv else "local"
 val dbEndpoint = if (env == "local") "localhost" else "xtages-development.c9ijuglx54eu.us-east-1.rds.amazonaws.com"
-val dbPass = if (System.getenv("DB_DEV_PASS") != null) System.getenv("DB_DEV_PASS") else null
+val dbPass = if (System.getenv("DB_PASS") != null) System.getenv("DB_PASS") else null
 
 kotlin {
     sourceSets {
