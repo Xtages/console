@@ -62,8 +62,8 @@ val frontendDir = file(projectDir).parentFile.resolve("frontend")
 val apiSpecFile = file("${sourceSets["main"].resources.srcDirs.first()}/xtages-internal-api.yaml")
 val sysEnv = System.getenv("ENV")
 val env = if (sysEnv != null) sysEnv else "local"
-val db_endpoint = if (env == "local") "localhost" else "xtages-development.c9ijuglx54eu.us-east-1.rds.amazonaws.com"
-val db_pass = if (System.getenv("DB_DEV_PASS") != null) System.getenv("DB_DEV_PASS") else null
+val dbEndpoint = if (env == "local") "localhost" else "xtages-development.c9ijuglx54eu.us-east-1.rds.amazonaws.com"
+val dbPass = if (System.getenv("DB_DEV_PASS") != null) System.getenv("DB_DEV_PASS") else null
 
 kotlin {
     sourceSets {
@@ -91,14 +91,13 @@ liquibase {
         arguments = mapOf(
                 "logLevel" to "info",
                 "changeLogFile" to "src/main/resources/db/changelog/xtages-console.xml",
-                "url" to "jdbc:postgresql://" + db_endpoint + ":5432/xtages_console",
+                "url" to "jdbc:postgresql://" + dbEndpoint + ":5432/xtages_console",
                 "username" to "xtages_console",
-                "password" to db_pass)
+                "password" to dbPass)
     }
 }
 
 // Generate type-safe JOOQ files based on the DB
-
 jooq {
     version.set("3.14.7")
     edition.set(JooqEdition.OSS)
@@ -110,8 +109,8 @@ jooq {
                 jdbc.apply {
                     driver = "org.postgresql.Driver"
                     user = "xtages_console"
-                    url = "jdbc:postgresql://" + db_endpoint + ":5432/xtages_console"
-                    "password" to db_pass
+                    url = "jdbc:postgresql://" + dbEndpoint + ":5432/xtages_console"
+                    password = dbPass
                 }
                 generator.apply {
                     name = "org.jooq.codegen.KotlinGenerator"
