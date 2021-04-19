@@ -115,3 +115,6 @@ deploy/terraform/.terraform*
 
 # Gradle
 *.gradle
+
+### MacOS ###
+.DS_Store

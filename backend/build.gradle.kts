@@ -10,6 +10,7 @@ plugins {
     id("com.github.node-gradle.node") version "3.0.1"
     id("org.openapi.generator") version "5.1.0"
     id("nu.studer.jooq") version "5.2.1"
+    id ("org.liquibase.gradle") version "2.0.4"
     kotlin("jvm") version "1.4.31"
     kotlin("plugin.spring") version "1.4.31"
 }
@@ -38,6 +39,12 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor")
     implementation("org.kohsuke:github-api:1.127")
     implementation("org.liquibase:liquibase-core")
+
+    liquibaseRuntime("org.liquibase:liquibase-core")
+    liquibaseRuntime(sourceSets.getByName("main").compileClasspath)
+    liquibaseRuntime(sourceSets.getByName("main").output)
+    liquibaseRuntime("org.postgresql:postgresql")
+
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     implementation("org.springframework.boot:spring-boot-starter-jooq")
     implementation("org.springframework.boot:spring-boot-starter-oauth2-resource-server")
@@ -53,6 +60,10 @@ dependencies {
 
 val frontendDir = file(projectDir).parentFile.resolve("frontend")
 val apiSpecFile = file("${sourceSets["main"].resources.srcDirs.first()}/xtages-internal-api.yaml")
+
+val env = System.getenv("ENV") ?: "local"
+val dbEndpoint = if (env == "local") "localhost" else "xtages-development.c9ijuglx54eu.us-east-1.rds.amazonaws.com"
+val dbPass = System.getenv("DB_PASS")
 
 kotlin {
     sourceSets {
@@ -74,19 +85,31 @@ allOpen {
     annotation("javax.persistence.Entity")
 }
 
+// Liquibase configuration
+liquibase {
+    activities.register("main") {
+        arguments = mapOf(
+                "logLevel" to "info",
+                "changeLogFile" to "src/main/resources/db/changelog/xtages-console.xml",
+                "url" to "jdbc:postgresql://" + dbEndpoint + ":5432/xtages_console",
+                "username" to "xtages_console",
+                "password" to dbPass)
+    }
+}
+
 // Generate type-safe JOOQ files based on the DB
 jooq {
     version.set("3.14.7")
     edition.set(JooqEdition.OSS)
     configurations {
         create("main") {
-            generateSchemaSourceOnCompilation.set(false)
             jooqConfiguration.apply {
                 logging = org.jooq.meta.jaxb.Logging.WARN
                 jdbc.apply {
                     driver = "org.postgresql.Driver"
                     user = "xtages_console"
-                    url = "jdbc:postgresql://localhost:5432/xtages_console"
+                    url = "jdbc:postgresql://" + dbEndpoint + ":5432/xtages_console"
+                    password = dbPass
                 }
                 generator.apply {
                     name = "org.jooq.codegen.KotlinGenerator"
@@ -111,6 +134,7 @@ jooq {
 }
 
 tasks.withType<JooqGenerate> {
+    dependsOn("update")
     // make jOOQ task participate in incremental builds
     allInputsDeclared.set(true)
 
