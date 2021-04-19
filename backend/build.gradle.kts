@@ -60,10 +60,10 @@ dependencies {
 
 val frontendDir = file(projectDir).parentFile.resolve("frontend")
 val apiSpecFile = file("${sourceSets["main"].resources.srcDirs.first()}/xtages-internal-api.yaml")
-val sysEnv = System.getenv("ENV")
-val env = if (sysEnv != null) sysEnv else "local"
+
+val env = System.getenv("ENV") ?: "local"
 val dbEndpoint = if (env == "local") "localhost" else "xtages-development.c9ijuglx54eu.us-east-1.rds.amazonaws.com"
-val dbPass = if (System.getenv("DB_PASS") != null) System.getenv("DB_PASS") else null
+val dbPass = System.getenv("DB_PASS")
 
 kotlin {
     sourceSets {
@@ -103,7 +103,6 @@ jooq {
     edition.set(JooqEdition.OSS)
     configurations {
         create("main") {
-            generateSchemaSourceOnCompilation.set(true)
             jooqConfiguration.apply {
                 logging = org.jooq.meta.jaxb.Logging.WARN
                 jdbc.apply {
