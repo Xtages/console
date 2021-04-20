@@ -1,5 +1,14 @@
 version: 0.2
 
+env:
+  # As we are building the code and generating jOOQ our dev DB is the source of truth.
+  # Gradle is checking for the ENV var regardless of the value but if there is a value will go to the dev DB
+  # In the future the code won't be build and the jar will be pulled from CodeArtifact
+  variables:
+    ENV: prod
+  parameter-store:
+    DB_PASS: "/config/xtages_console_dev/spring.datasource.password"
+
 phases:
   pre_build:
     commands:
