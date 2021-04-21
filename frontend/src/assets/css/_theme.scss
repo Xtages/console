@@ -1,3 +1,6 @@
+@import '~bootstrap/scss/_functions';
+@import 'functions';
+
 // Variables
 //
 // Variables should follow the `$component-state-property-size` formula for
@@ -1230,5 +1233,4 @@ $datepicker-border-radius:       $input-border-radius !default;
 $datepicker-months-bg:           $card-bg !default;
 $datepicker-months-color:        $headings-color !default;
 
-// TODO(czuniga): Consider cleaning this up and using more granular imports
-@import '~bootstrap/scss/bootstrap.scss';
+@import "bootstrap";

@@ -6,6 +6,7 @@ import {Briefcase, User} from 'react-feather';
 import {useAuth} from '../../hooks/useAuth';
 import redirectToStripeCheckoutSession from '../../service/CheckoutService';
 import {EmailField, PasswordField} from './AuthFields';
+import Logo from '../../components/Logos';
 
 export interface SignUpFormValues {
   name: string;
@@ -54,10 +55,8 @@ export default function SignUpPage() {
           <div className="col-md-8 col-lg-5 py-6">
             <div>
               <div className="mb-5 text-center">
-                <h6 className="h3 mb-1">Create your account</h6>
-                <p className="text-muted mb-0">
-                  Made with love for designers &amp; developers.
-                </p>
+                <Logo size="SMALL" />
+                <h1 className="h3 mb-1">Create your account</h1>
               </div>
               <span className="clearfix" />
               <Formik initialValues={initialValues} onSubmit={signUp}>
@@ -85,7 +84,7 @@ export default function SignUpPage() {
                       className="form-control-label"
                       htmlFor="organization"
                     >
-                      Organization
+                      GitHub organization name
                     </label>
                     <div className="input-group input-group-merge">
                       <div className="input-group-prepend">
