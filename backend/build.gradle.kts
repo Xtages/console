@@ -134,7 +134,7 @@ jooq {
 }
 
 tasks.withType<JooqGenerate> {
-    dependsOn("update")
+    dependsOn(tasks.update)
     // make jOOQ task participate in incremental builds
     allInputsDeclared.set(true)
 
@@ -161,6 +161,7 @@ tasks.withType<Test> {
 val buildFrontend = tasks.register<NpmTask>("buildFrontend") {
     dependsOn(tasks.npmInstall)
     npmCommand.set(listOf("run", "build"))
+    args.set(listOf("--", "--out-dir", "${frontendDir}/build"))
     inputs.dir("${frontendDir}/src")
     inputs.dir("${frontendDir}/public")
     outputs.dir("${frontendDir}/build")
@@ -178,6 +179,10 @@ val copyFrontendToResources = tasks.register<Copy>("copyFrontendToResources") {
     val publicOutDir = "${sourceSets["main"].resources.srcDirs.first()}/public"
     println("publicOutDir: " + publicOutDir)
     into(file(publicOutDir))
+}
+
+tasks.npmInstall {
+    println(File("${frontendDir}/build").walkTopDown().forEach { println(it) })
 }
 
 // Make sure the `bootJar` task depends on copying the frontend app.
