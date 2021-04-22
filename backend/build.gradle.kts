@@ -171,7 +171,8 @@ val buildFrontend = tasks.register<NpmTask>("buildFrontend") {
 // serves it.
 val copyFrontendToResources = tasks.register<Copy>("copyFrontendToResources") {
     dependsOn(buildFrontend)
-
+    println("copy frontend resources")
+    println(File("${frontendDir}/build").walkTopDown().forEach { println(it) })
     println("frontendDir: " + frontendDir)
     from(file("${frontendDir}/build"))
     val publicOutDir = "${sourceSets["main"].resources.srcDirs.first()}/public"
