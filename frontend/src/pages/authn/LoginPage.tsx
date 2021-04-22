@@ -1,10 +1,13 @@
 import React from 'react';
 import {RouteComponentProps, useHistory} from 'react-router-dom';
-import {Form, Formik} from 'formik';
+import {Form, Formik, FormikErrors} from 'formik';
 import {FormikHelpers} from 'formik/dist/types';
+import * as z from 'zod';
 import {useAuth} from '../../hooks/useAuth';
 import CreateAccountLink from '../../components/CreateAccountLink';
 import {EmailField, PasswordField} from './AuthFields';
+import Logo from '../../components/Logos';
+import Alert from '../../components/alert/Alerts';
 
 /** The properties that are available to the {@link LoginPage} component. */
 type LoginPageProps = RouteComponentProps<{}, {}, LocationState | null>;
@@ -14,10 +17,14 @@ interface LocationState {
   referrer: string;
 }
 
-interface LoginFormValues {
-  email: string;
-  password: string;
-}
+const loginFormValuesSchema = z.object({
+  email: z.string()
+    .nonempty(),
+  password: z.string()
+    .nonempty(),
+});
+
+type LoginFormValues = z.infer<typeof loginFormValuesSchema>;
 
 /**
  * Component that renders the login page.
@@ -35,10 +42,26 @@ export default function LoginPage({location}: LoginPageProps) {
   const history = useHistory();
 
   async function logIn(values: LoginFormValues, actions: FormikHelpers<LoginFormValues>) {
-    await auth.logIn({email: values.email, password: values.password});
-    const redirectTo = location.state?.referrer || '/';
-    history.replace(redirectTo);
+    try {
+      await auth.logIn({
+        email: values.email,
+        password: values.password,
+      });
+      const redirectTo = location.state?.referrer || '/';
+      history.replace(redirectTo);
+    } catch (e) {
+      actions.setErrors({email: ''});
+    }
     actions.setSubmitting(false);
+  }
+
+  function validate(values: LoginFormValues): FormikErrors<LoginFormValues> | void {
+    try {
+      loginFormValuesSchema.parse(values);
+      return {};
+    } catch (error) {
+      return error.formErrors.fieldErrors;
+    }
   }
 
   return (
@@ -48,22 +71,39 @@ export default function LoginPage({location}: LoginPageProps) {
           <div className="col-md-6 col-lg-5 col-xl-4 py-6 py-md-0">
             <div>
               <div className="mb-5 text-center">
-                <h1 className="h3 mb-1">Login</h1>
-                <p className="text-muted mb-0">
-                  Sign in to your account to continue.
-                </p>
+                <Logo size="SMALL" full={false} />
+                <h1 className="h3 mb-1">Sign in to Xtages</h1>
               </div>
               <span className="clearfix" />
-              <Formik initialValues={initialValues} onSubmit={logIn}>
-                <Form>
-                  <EmailField />
-                  <PasswordField />
-                  <div className="mt-4">
-                    <button type="submit" className="btn btn-block btn-primary">
-                      Sign in
-                    </button>
-                  </div>
-                </Form>
+              <Formik
+                initialValues={initialValues}
+                onSubmit={logIn}
+                validate={validate}
+                validateOnBlur={false}
+                validateOnChange={false}
+              >
+                {({isValid, isSubmitting}) => (
+                  <Form>
+                    {!isValid && (
+                    <Alert color="danger" outline>
+                      <div className="d-flex justify-content-center">
+                        <strong>Incorrect username or password</strong>
+                      </div>
+                    </Alert>
+                    )}
+                    <EmailField />
+                    <PasswordField placeholder="Password" />
+                    <div className="mt-4">
+                      <button
+                        type="submit"
+                        className="btn btn-block btn-primary"
+                        disabled={isSubmitting}
+                      >
+                        Sign in
+                      </button>
+                    </div>
+                  </Form>
+                )}
               </Formik>
               <CreateAccountLink />
             </div>

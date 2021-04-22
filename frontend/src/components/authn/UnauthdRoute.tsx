@@ -13,19 +13,16 @@ export default function UnauthdRoute(props: RouteProps) {
   if (auth.inProgress) {
     return <></>;
   }
+  if (auth.principal == null) {
+    return <Route {...rest}>{children}</Route>;
+  }
   return (
-    <Route
-      {...rest}
-      render={() => (auth.principal == null ? (
-        children
-      ) : (
-        <Redirect
-          to={{
-            pathname: '/',
-            state: {referrer: location},
-          }}
-        />
-      ))}
-    />
+    <Route {...rest}>
+      <Redirect to={{
+        pathname: '/',
+        state: {referrer: location},
+      }}
+      />
+    </Route>
   );
 }
