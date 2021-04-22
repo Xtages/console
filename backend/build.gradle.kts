@@ -171,14 +171,18 @@ val buildFrontend = tasks.register<NpmTask>("buildFrontend") {
 // serves it.
 val copyFrontendToResources = tasks.register<Copy>("copyFrontendToResources") {
     dependsOn(buildFrontend)
+
+    println("frontendDir: " + frontendDir)
     from(file("${frontendDir}/build"))
     val publicOutDir = "${sourceSets["main"].resources.srcDirs.first()}/public"
+    println("publicOutDir: " + publicOutDir)
     into(file(publicOutDir))
 }
 
 // Make sure the `bootJar` task depends on copying the frontend app.
 tasks.withType<BootJar> {
     dependsOn(copyFrontendToResources)
+    println(File("${sourceSets["main"].resources.srcDirs.first()}").walkTopDown().forEach { println(it) })
 }
 
 // Clean the files under `console/backend/src/main/resources/public`.
