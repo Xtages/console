@@ -165,6 +165,7 @@ val buildFrontend = tasks.register<NpmTask>("buildFrontend") {
     inputs.dir("${frontendDir}/src")
     inputs.dir("${frontendDir}/public")
     outputs.dir("${frontendDir}/build")
+    println(File("${frontendDir}/build").walkTopDown().forEach { println(it) })
 }
 
 // Copy the built frontend app from `console/frontend/build/` to
@@ -183,6 +184,13 @@ val copyFrontendToResources = tasks.register<Copy>("copyFrontendToResources") {
 
 tasks.npmInstall {
     println(File("${frontendDir}/build").walkTopDown().forEach { println(it) })
+}
+
+gradle.buildFinished {
+    println("ls frontend/build")
+    println(File("${frontendDir}/build").walkTopDown().forEach { println(it) })
+    println("ls backend/src")
+    println(File( "${sourceSets["main"].resources.srcDirs.first()}/public").walkTopDown().forEach { println(it) })
 }
 
 // Make sure the `bootJar` task depends on copying the frontend app.
