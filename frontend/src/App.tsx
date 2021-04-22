@@ -1,6 +1,5 @@
 import React from 'react';
 import {BrowserRouter, Switch} from 'react-router-dom';
-import './App.css';
 import {QueryClient, QueryClientProvider} from 'react-query';
 import AuthdRoute from './components/authn/AuthdRoute';
 import UnauthdRoute from './components/authn/UnauthdRoute';
