@@ -5,12 +5,12 @@ import {FormikHelpers} from 'formik/dist/types';
 import {Briefcase, User} from 'react-feather';
 import * as z from 'zod';
 import cx from 'classnames';
-import {NullablePrincipal, useAuth} from '../../hooks/useAuth';
-import redirectToStripeCheckoutSession from '../../service/CheckoutService';
+import {NullablePrincipal, useAuth} from 'hooks/useAuth';
+import redirectToStripeCheckoutSession from 'service/CheckoutService';
+import Logo from 'components/Logos';
+import LabeledFormField from 'components/form/LabeledFormField';
+import Alert from 'components/alert/Alerts';
 import {EmailField, PasswordField} from './AuthFields';
-import Logo from '../../components/Logos';
-import LabeledFormField from '../../components/form/LabeledFormField';
-import Alert from '../../components/alert/Alerts';
 
 const signUpFormValuesSchema = z.object({
   name: z.string()

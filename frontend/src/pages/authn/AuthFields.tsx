@@ -1,8 +1,8 @@
 import {AtSign, HelpCircle, Key} from 'react-feather';
 import React, {useState} from 'react';
 import ReactTooltip from 'react-tooltip';
+import LabeledFormField, {LabeledFormFieldProps} from 'components/form/LabeledFormField';
 import styles from './AuthFields.module.scss';
-import LabeledFormField, {LabeledFormFieldProps} from '../../components/form/LabeledFormField';
 
 /**
  * Email `formik` field.

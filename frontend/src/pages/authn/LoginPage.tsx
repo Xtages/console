@@ -3,11 +3,11 @@ import {RouteComponentProps, useHistory} from 'react-router-dom';
 import {Form, Formik, FormikErrors} from 'formik';
 import {FormikHelpers} from 'formik/dist/types';
 import * as z from 'zod';
-import {useAuth} from '../../hooks/useAuth';
-import CreateAccountLink from '../../components/CreateAccountLink';
+import {useAuth} from 'hooks/useAuth';
+import CreateAccountLink from 'components/CreateAccountLink';
+import Logo from 'components/Logos';
+import Alert from 'components/alert/Alerts';
 import {EmailField, PasswordField} from './AuthFields';
-import Logo from '../../components/Logos';
-import Alert from '../../components/alert/Alerts';
 
 /** The properties that are available to the {@link LoginPage} component. */
 type LoginPageProps = RouteComponentProps<{}, {}, LocationState | null>;

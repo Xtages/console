@@ -1,6 +1,6 @@
 import React from 'react';
 import {Redirect, Route, RouteProps} from 'react-router-dom';
-import {useAuth} from '../../hooks/useAuth';
+import {useAuth} from 'hooks/useAuth';
 
 /**
  * A {@link Route} that will only render {@link RouteProps.children} if there

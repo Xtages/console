@@ -1,6 +1,6 @@
 import React from 'react';
 import {useQuery} from 'react-query';
-import {checkoutApi} from '../../service/Services';
+import {checkoutApi} from 'service/Services';
 
 /**
  * A simple account page where the user can then click to go to their Striper customer portal.
