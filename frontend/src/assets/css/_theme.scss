@@ -174,7 +174,7 @@ $enable-grid-classes:                         true !default;
 $enable-pointer-cursor-for-buttons:           true !default;
 $enable-print-styles:                         true !default;
 $enable-responsive-font-sizes:                true !default;
-$enable-validation-icons:                     false !default;
+$enable-validation-icons:                     true !default;
 $enable-deprecation-messages:                 true !default;
 
 // Spacing
@@ -592,6 +592,9 @@ $input-group-addon-focus-color:               $primary !default;
 $input-group-addon-focus-bg:                  $gray-200 !default;
 $input-group-addon-focus-border-color:        rgba($primary, .5) !default;
 
+$input-group-addon-invalid-color:               $danger !default;
+$input-group-addon-invalid-bg:                  $gray-200 !default;
+$input-group-addon-invalid-border-color:        $danger !default;
 
 // Custom forms
 
