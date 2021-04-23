@@ -1,7 +1,7 @@
 -- liquibase formatted sql
 
 
--- changeset czuniga:4
+-- changeset czuniga:4 logicalFilePath:xtages-console.xml
 CREATE TYPE "github_app_installation_status" AS ENUM
     ('ACTIVE', 'SUSPENDED', 'NEW_PERMISSIONS_REQUIRED');
 ALTER TABLE "organization"
