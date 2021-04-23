@@ -11,6 +11,7 @@ plugins {
     id("org.openapi.generator") version "5.1.0"
     id("nu.studer.jooq") version "5.2.1"
     id ("org.liquibase.gradle") version "2.0.4"
+    id("org.barfuin.gradle.taskinfo") version "1.0.5"
     kotlin("jvm") version "1.4.31"
     kotlin("plugin.spring") version "1.4.31"
 }
@@ -134,7 +135,7 @@ jooq {
 }
 
 tasks.withType<JooqGenerate> {
-    dependsOn("update")
+    dependsOn(tasks.update)
     // make jOOQ task participate in incremental builds
     allInputsDeclared.set(true)
 
@@ -176,11 +177,6 @@ val copyFrontendToResources = tasks.register<Copy>("copyFrontendToResources") {
     into(file(publicOutDir))
 }
 
-// Make sure the `bootJar` task depends on copying the frontend app.
-tasks.withType<BootJar> {
-    dependsOn(copyFrontendToResources)
-}
-
 // Clean the files under `console/backend/src/main/resources/public`.
 val cleanFrontend = tasks.register<Delete>("cleanFrontend") {
     delete("${sourceSets["main"].resources.srcDirs.first()}/public")
@@ -215,5 +211,6 @@ tasks.openApiGenerate {
 }
 
 tasks.compileKotlin {
+    dependsOn(copyFrontendToResources)
     dependsOn(tasks.openApiGenerate)
 }
