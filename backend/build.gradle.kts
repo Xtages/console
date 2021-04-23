@@ -134,7 +134,7 @@ jooq {
 }
 
 tasks.withType<JooqGenerate> {
-    dependsOn(tasks.update)
+    dependsOn("update")
     // make jOOQ task participate in incremental builds
     allInputsDeclared.set(true)
 
