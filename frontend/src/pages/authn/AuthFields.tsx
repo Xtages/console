@@ -1,82 +1,82 @@
-import {AtSign, Key} from 'react-feather';
-import {Field} from 'formik';
-import React, {memo, useState} from 'react';
+import {AtSign, HelpCircle, Key} from 'react-feather';
+import React, {useState} from 'react';
+import ReactTooltip from 'react-tooltip';
 import styles from './AuthFields.module.scss';
+import LabeledFormField, {LabeledFormFieldProps} from '../../components/form/LabeledFormField';
 
 /**
  * Email `formik` field.
  */
-function EmailField() {
+export function EmailField(props : Partial<LabeledFormFieldProps>) {
   return (
-    <div className="form-group">
-      <label className="form-control-label" htmlFor="email">
-        Email address
-      </label>
-      <div className="input-group input-group-merge">
-        <div className="input-group-prepend">
-          <span className="input-group-text">
-            <AtSign size="1em" />
-          </span>
-        </div>
-        <Field
-          type="email"
-          className="form-control form-control-prepend"
-          id="email"
-          name="email"
-          placeholder="santa@northpole.com"
-        />
-      </div>
-    </div>
+    <LabeledFormField
+      {...props}
+      type="email"
+      name="email"
+      label="Email address"
+      placeholder="santa@northpole.com"
+      icon={<AtSign size="1em" />}
+    />
   );
 }
 
 /**
  * Password `formik` field.
  */
-function PasswordField({placeholder = '********'}: {placeholder?: string} = {}) {
+export function PasswordField({
+  showHelpTooltip = false,
+  placeholder = '********',
+  ...props
+}: {
+  showHelpTooltip?: boolean,
+} & Partial<LabeledFormFieldProps>) {
   const [showPassword, setShowPassword] = useState(false);
 
+  let helpTooltipFragment;
+  if (showHelpTooltip) {
+    helpTooltipFragment = (
+      <>
+        <HelpCircle height="1em" data-tip data-for="passwordHelpTooltip" />
+        <ReactTooltip id="passwordHelpTooltip" place="right" effect="solid">
+          Your password must:
+          <ul>
+            <li>be at least 8 characters long</li>
+            <li>contain an uppercase letter</li>
+            <li>contain a lowercase letter</li>
+            <li>contain a number</li>
+            <li>contain a special character</li>
+          </ul>
+        </ReactTooltip>
+      </>
+    );
+  }
+
   return (
-    <div className="form-group mb-4">
-      <div
-        className="d-flex align-items-center justify-content-between"
-      >
-        <div>
-          <label
-            className="form-control-label"
-            htmlFor="password"
-          >
-            Password
-          </label>
+    <LabeledFormField
+      {...props}
+      type={showPassword ? 'text' : 'password'}
+      name="password"
+      placeholder={placeholder}
+      icon={<Key size="1em" />}
+      label={(
+        <div className="d-flex align-items-center justify-content-between">
+          <div>
+            <label className="form-control-label" htmlFor="password">
+              Password
+              {helpTooltipFragment}
+            </label>
+          </div>
+          <div className="mb-2">
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className={`small text-muted text-underline--dashed border-primary ${styles.showPasswordButton}`}
+            >
+              {showPassword ? 'Hide password' : 'Show password'}
+            </button>
+          </div>
         </div>
-        <div className="mb-2">
-          <button
-            type="button"
-            onClick={() => setShowPassword(!showPassword)}
-            className={`small text-muted text-underline--dashed border-primary ${styles.showPasswordButton}`}
-          >
-            {showPassword ? 'Hide password' : 'Show password'}
-          </button>
-        </div>
-      </div>
-      <div className="input-group input-group-merge">
-        <div className="input-group-prepend">
-          <span className="input-group-text">
-            <Key size="1em" />
-          </span>
-        </div>
-        <Field
-          type={showPassword ? 'text' : 'password'}
-          className="form-control form-control-prepend"
-          id="password"
-          name="password"
-          placeholder={placeholder}
-        />
-      </div>
-    </div>
+    )}
+    />
   );
 }
-
-const memoizedEmailField = memo(EmailField);
-
-export {memoizedEmailField as EmailField, PasswordField};

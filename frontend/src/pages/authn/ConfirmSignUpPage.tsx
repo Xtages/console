@@ -1,23 +1,32 @@
 import {RouteComponentProps} from 'react-router-dom';
-import React from 'react';
+import React, {useState} from 'react';
 import {Zap} from 'react-feather';
-import {Field, Form, Formik} from 'formik';
+import {Form, Formik, FormikErrors} from 'formik';
 import {FormikHelpers} from 'formik/dist/types';
+import * as z from 'zod';
 import CreateAccountLink from '../../components/CreateAccountLink';
 import {useAuth} from '../../hooks/useAuth';
 import redirectToStripeCheckoutSession from '../../service/CheckoutService';
 import {SignUpFormValues} from './SignUpPage';
 import {EmailField, PasswordField} from './AuthFields';
 import {organizationApi} from '../../service/Services';
+import Logo from '../../components/Logos';
+import LabeledFormField from '../../components/form/LabeledFormField';
+import Alert from '../../components/alert/Alerts';
 
 /** The properties that are available to the {@link ConfirmSignUpPage} component. */
 type ConfirmSignUpPageProps = RouteComponentProps<{}, {}, SignUpFormValues | null>;
 
-interface FormValues {
-  email: string;
-  password: string;
-  code: string;
-}
+const formValuesSchema = z.object({
+  email: z.string()
+    .email(),
+  password: z.string()
+    .nonempty(),
+  code: z.string()
+    .regex(/\d+/),
+});
+
+type FormValues = z.infer<typeof formValuesSchema>;
 
 /**
  * A full page to confirm a user's signup by providing a code that was emailed to the user.
@@ -42,12 +51,20 @@ export default function ConfirmSignUpPage({location}: ConfirmSignUpPageProps) {
 
   const initialValues = buildFormValues();
   const auth = useAuth();
+  const [errorOccurred, setErrorOccurred] = useState(false);
 
   async function confirm(values: FormValues, actions: FormikHelpers<FormValues>) {
-    await auth.confirmSignUp({
-      email: values.email,
-      code: values.code,
-    });
+    setErrorOccurred(false);
+    try {
+      await auth.confirmSignUp({
+        email: values.email,
+        code: values.code,
+      });
+    } catch (e) {
+      setErrorOccurred(true);
+      actions.setSubmitting(false);
+      return;
+    }
     const principal = await auth.logIn({
       email: values.email,
       password: values.password,
@@ -63,51 +80,83 @@ export default function ConfirmSignUpPage({location}: ConfirmSignUpPageProps) {
     actions.setSubmitting(false);
   }
 
+  function validate(values: FormValues): FormikErrors<FormValues> | void {
+    try {
+      formValuesSchema.parse(values);
+      return {};
+    } catch (error) {
+      return error.formErrors.fieldErrors;
+    }
+  }
+
   return (
     <section>
       <div className="container d-flex flex-column">
         <div className="row align-items-center justify-content-center min-vh-100">
           <div className="col-md-6 col-lg-5 col-xl-4">
             <div className="mb-5 text-center">
-              <h6 className="h3 mb-1">Confirm your account</h6>
+              <Logo size="SMALL" />
+              <h1 className="h3 mb-1">Confirm your account</h1>
             </div>
             <span className="clearfix" />
-            <Formik initialValues={initialValues} onSubmit={confirm}>
-              <Form>
-                {location.state == null
-                                && (
-                                <>
-                                  <EmailField />
-                                  <PasswordField />
-                                </>
-                                )}
-                <div className="form-group">
-                  <label className="form-control-label" htmlFor="code">
-                    Confirmation code
-                  </label>
-                  <div className="input-group input-group-merge">
-                    <div className="input-group-prepend">
-                      <span className="input-group-text">
-                        <Zap size="1em" />
-                      </span>
-                    </div>
-                    <Field
+            <Formik
+              initialValues={initialValues}
+              validate={validate}
+              onSubmit={confirm}
+            >
+              {({
+                isSubmitting,
+                touched,
+                errors,
+              }) => {
+                const haveUserAndPass = location.state == null;
+                return (
+                  <Form noValidate>
+                    {errorOccurred && (
+                      <Alert color="danger" outline>
+                        <div className="d-flex justify-content-center">
+                          <strong>
+                            {haveUserAndPass
+                              ? 'Incorrect username or password or code'
+                              : 'Incorrect code'}
+                          </strong>
+                        </div>
+                      </Alert>
+                    )}
+                    {haveUserAndPass
+                      && (
+                      <>
+                        <EmailField
+                          invalid={touched.email && errors.email != null}
+                          validationFeedback="Please provide your email address."
+                        />
+                        <PasswordField
+                          invalid={touched.password && errors.password != null}
+                          validationFeedback="Invalid password."
+                        />
+                      </>
+                      )}
+                    <LabeledFormField
                       type="text"
-                      className="form-control form-control-prepend"
-                      id="code"
                       name="code"
+                      label="Confirmation code"
+                      invalid={touched.code && errors.code != null}
+                      validationFeedback="Invalid confirmation code."
+                      icon={<Zap size="1em" />}
+                      autoComplete="off"
                     />
-                  </div>
-                </div>
-                <div className="mt-4">
-                  <button
-                    type="submit"
-                    className="btn btn-block btn-primary"
-                  >
-                    Confirm
-                  </button>
-                </div>
-              </Form>
+                    <div className="mt-4">
+                      <button
+                        type="submit"
+                        className="btn btn-block btn-primary"
+                        disabled={isSubmitting}
+                      >
+                        Confirm
+                      </button>
+                    </div>
+                  </Form>
+                );
+              }}
             </Formik>
             <CreateAccountLink />
           </div>

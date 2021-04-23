@@ -1,4 +1,5 @@
 import React, {ReactNode} from 'react';
+import cx from 'classnames';
 import styles from './Alerts.module.scss';
 
 /**
@@ -15,10 +16,11 @@ export default function Alert({
   color?: 'primary' | 'secondary' | 'neutral' | 'success' | 'info' | 'warning' | 'danger',
   outline?: boolean,
   children?: ReactNode
-} = {}): JSX.Element {
+} = {}) {
+  const alertType = `alert${outline ? '-outline' : ''}-${color}`;
   return (
     <div
-      className={`${styles.alert} ${styles[`alert${outline ?? '-outline'}-${color}`]}`}
+      className={cx(styles.alert, styles[alertType])}
       role="alert"
     >
       {children}
