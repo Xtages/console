@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useState} from 'react';
 import {RouteComponentProps, useHistory} from 'react-router-dom';
 import {Form, Formik, FormikErrors} from 'formik';
 import {FormikHelpers} from 'formik/dist/types';
@@ -40,8 +40,10 @@ export default function LoginPage({location}: LoginPageProps) {
 
   const auth = useAuth();
   const history = useHistory();
+  const [errorOccurred, setErrorOccurred] = useState(false);
 
   async function logIn(values: LoginFormValues, actions: FormikHelpers<LoginFormValues>) {
+    setErrorOccurred(false);
     try {
       await auth.logIn({
         email: values.email,
@@ -50,7 +52,7 @@ export default function LoginPage({location}: LoginPageProps) {
       const redirectTo = location.state?.referrer || '/';
       history.replace(redirectTo);
     } catch (e) {
-      actions.setErrors({email: ''});
+      setErrorOccurred(true);
     }
     actions.setSubmitting(false);
   }
@@ -82,9 +84,9 @@ export default function LoginPage({location}: LoginPageProps) {
                 validateOnBlur={false}
                 validateOnChange={false}
               >
-                {({isValid, isSubmitting}) => (
+                {({isSubmitting}) => (
                   <Form>
-                    {!isValid && (
+                    {errorOccurred && (
                     <Alert color="danger" outline>
                       <div className="d-flex justify-content-center">
                         <strong>Incorrect username or password</strong>
