@@ -11,6 +11,7 @@ plugins {
     id("org.openapi.generator") version "5.1.0"
     id("nu.studer.jooq") version "5.2.1"
     id ("org.liquibase.gradle") version "2.0.4"
+    id("org.barfuin.gradle.taskinfo") version "1.0.5"
     kotlin("jvm") version "1.4.31"
     kotlin("plugin.spring") version "1.4.31"
 }
@@ -161,11 +162,9 @@ tasks.withType<Test> {
 val buildFrontend = tasks.register<NpmTask>("buildFrontend") {
     dependsOn(tasks.npmInstall)
     npmCommand.set(listOf("run", "build"))
-    args.set(listOf("--", "--out-dir", "${frontendDir}/build"))
     inputs.dir("${frontendDir}/src")
     inputs.dir("${frontendDir}/public")
     outputs.dir("${frontendDir}/build")
-    println(File("${frontendDir}/build").walkTopDown().forEach { println(it) })
 }
 
 // Copy the built frontend app from `console/frontend/build/` to
@@ -173,30 +172,9 @@ val buildFrontend = tasks.register<NpmTask>("buildFrontend") {
 // serves it.
 val copyFrontendToResources = tasks.register<Copy>("copyFrontendToResources") {
     dependsOn(buildFrontend)
-    println("copy frontend resources")
-    println(File("${frontendDir}/build").walkTopDown().forEach { println(it) })
-    println("frontendDir: " + frontendDir)
     from(file("${frontendDir}/build"))
     val publicOutDir = "${sourceSets["main"].resources.srcDirs.first()}/public"
-    println("publicOutDir: " + publicOutDir)
     into(file(publicOutDir))
-}
-
-tasks.npmInstall {
-    println(File("${frontendDir}/build").walkTopDown().forEach { println(it) })
-}
-
-gradle.buildFinished {
-    println("ls frontend/build")
-    println(File("${frontendDir}/build").walkTopDown().forEach { println(it) })
-    println("ls backend/src")
-    println(File( "${sourceSets["main"].resources.srcDirs.first()}/public").walkTopDown().forEach { println(it) })
-}
-
-// Make sure the `bootJar` task depends on copying the frontend app.
-tasks.withType<BootJar> {
-    dependsOn(copyFrontendToResources)
-    println(File("${sourceSets["main"].resources.srcDirs.first()}").walkTopDown().forEach { println(it) })
 }
 
 // Clean the files under `console/backend/src/main/resources/public`.
@@ -233,5 +211,6 @@ tasks.openApiGenerate {
 }
 
 tasks.compileKotlin {
+    dependsOn(copyFrontendToResources)
     dependsOn(tasks.openApiGenerate)
 }
