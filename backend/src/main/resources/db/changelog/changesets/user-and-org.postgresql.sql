@@ -1,14 +1,14 @@
 -- liquibase formatted sql
 
 
--- changeset czuniga:1
+-- changeset czuniga:1 logicalFilePath:xtages-console.xml
 CREATE TABLE "xtages_user"
 (
     "id"              SERIAL PRIMARY KEY,
     "cognito_user_id" VARCHAR(255) NOT NULL UNIQUE
 );
 
--- changeset czuniga:2
+-- changeset czuniga:2 logicalFilePath:xtages-console.xml
 CREATE TYPE "organization_subscription_status" AS ENUM
     ('UNCONFIRMED','ACTIVE','SUSPENDED','PENDING_CANCELLATION','CANCELLED');
 CREATE TABLE "organization"
@@ -19,7 +19,7 @@ CREATE TABLE "organization"
     "owner_id"            INT                                NOT NULL REFERENCES "xtages_user" ("id")
 );
 
--- changeset czuniga:3
+-- changeset czuniga:3 logicalFilePath:xtages-console.xml
 CREATE TABLE "stripe_checkout_session"
 (
     "organization_name"          VARCHAR(255) NOT NULL PRIMARY KEY REFERENCES "organization" ("name"),
