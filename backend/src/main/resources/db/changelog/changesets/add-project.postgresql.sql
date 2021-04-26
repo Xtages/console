@@ -7,6 +7,7 @@ CREATE TYPE "project_type" AS ENUM
 -- changeset mdellamerlina:2 logicalFilePath:xtages-console.xml
 CREATE TABLE "project"
 (
+    "id"                        SERIAL  PRIMARY KEY,
     "name"                      VARCHAR(255) NOT NULL,
     "type"                      "project_type",
     "version"                   INT,
@@ -14,7 +15,7 @@ CREATE TABLE "project"
     "user"                      INT NOT NULL,
     "pass_check_rule_enable"    BOOLEAN NOT NULL DEFAULT FALSE,
 
-    PRIMARY KEY("name", "organization"),
+    UNIQUE(name, organization),
     CONSTRAINT "type_version_consistent" CHECK ((ROW ("type", "version") IS NULL) OR
                                                        (ROW ("type", "version") IS NOT NULL)),
     CONSTRAINT "project_organization_name_fkey" FOREIGN KEY("name") REFERENCES organization("name"),
