@@ -1,5 +1,5 @@
 import React from 'react';
-import LogoutButton from '../../components/authn/LogoutButton';
+import LogoutButton from 'components/authn/LogoutButton';
 
 export default function HomePage() {
   return (

@@ -1,7 +1,7 @@
 import React, {MouseEvent} from 'react';
 import {LogOut} from 'react-feather';
 import {useHistory} from 'react-router-dom';
-import {useAuth} from '../../hooks/useAuth';
+import {useAuth} from 'hooks/useAuth';
 
 /** A button to log the Principal out. */
 export default function LogoutButton() {

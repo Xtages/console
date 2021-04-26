@@ -4,15 +4,15 @@ import {Zap} from 'react-feather';
 import {Form, Formik, FormikErrors} from 'formik';
 import {FormikHelpers} from 'formik/dist/types';
 import * as z from 'zod';
-import CreateAccountLink from '../../components/CreateAccountLink';
-import {useAuth} from '../../hooks/useAuth';
-import redirectToStripeCheckoutSession from '../../service/CheckoutService';
-import {SignUpFormValues} from './SignUpPage';
+import CreateAccountLink from 'components/CreateAccountLink';
+import {useAuth} from 'hooks/useAuth';
+import redirectToStripeCheckoutSession from 'service/CheckoutService';
+import {organizationApi} from 'service/Services';
+import Logo from 'components/Logos';
+import LabeledFormField from 'components/form/LabeledFormField';
+import Alert from 'components/alert/Alerts';
 import {EmailField, PasswordField} from './AuthFields';
-import {organizationApi} from '../../service/Services';
-import Logo from '../../components/Logos';
-import LabeledFormField from '../../components/form/LabeledFormField';
-import Alert from '../../components/alert/Alerts';
+import {SignUpFormValues} from './SignUpPage';
 
 /** The properties that are available to the {@link ConfirmSignUpPage} component. */
 type ConfirmSignUpPageProps = RouteComponentProps<{}, {}, SignUpFormValues | null>;
