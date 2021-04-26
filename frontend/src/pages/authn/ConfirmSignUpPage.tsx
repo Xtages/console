@@ -1,7 +1,7 @@
 import {RouteComponentProps} from 'react-router-dom';
 import React, {useState} from 'react';
 import {Zap} from 'react-feather';
-import {Form, Formik, FormikErrors} from 'formik';
+import {Form, Formik, FormikErrors, useFormikContext} from 'formik';
 import {FormikHelpers} from 'formik/dist/types';
 import * as z from 'zod';
 import CreateAccountLink from 'components/CreateAccountLink';
@@ -13,6 +13,7 @@ import LabeledFormField from 'components/form/LabeledFormField';
 import Alert from 'components/alert/Alerts';
 import {EmailField, PasswordField} from './AuthFields';
 import {SignUpFormValues} from './SignUpPage';
+import ButtonAsLink from '../../components/button/Buttons';
 
 /** The properties that are available to the {@link ConfirmSignUpPage} component. */
 type ConfirmSignUpPageProps = RouteComponentProps<{}, {}, SignUpFormValues | null>;
@@ -27,6 +28,62 @@ const formValuesSchema = z.object({
 });
 
 type FormValues = z.infer<typeof formValuesSchema>;
+
+function ResendCodeButton({state}: {state: SignUpFormValues | null | undefined}) {
+  const auth = useAuth();
+  const {values, errors} = useFormikContext<FormValues>();
+  const [confirmationCodeWasSent, setConfirmationCodeWasSent] = useState(false);
+
+  async function resendVerificationCode() {
+    const email = getEmail();
+    if (email != null) {
+      await auth.resendConfirmationCode({email});
+      setConfirmationCodeWasSent(true);
+    }
+  }
+
+  function getEmail() {
+    if (state?.email != null) {
+      return state?.email!!;
+    }
+    if (errors.email == null) {
+      return values.email;
+    }
+    return null;
+  }
+
+  const hasEmail = () => getEmail() != null;
+
+  return (
+    <>
+      {hasEmail()
+            && (
+            <div className="mt-4 container">
+              {confirmationCodeWasSent
+                    && (
+                    <div className="pb-2 d-flex justify-content-center row row-cols-1">
+                      <div className="col-12">
+                        <Alert color="success" outline>
+                          <div className="text-center">
+                            Your confirmation code was sent.
+                            Please check your email.
+                          </div>
+                        </Alert>
+                      </div>
+                    </div>
+                    )}
+              <div className="row row-cols-1">
+                <div className="col-12 d-flex justify-content-center">
+                  <ButtonAsLink type="button" onClick={resendVerificationCode}>
+                    Re-send verification code
+                  </ButtonAsLink>
+                </div>
+              </div>
+            </div>
+            )}
+    </>
+  );
+}
 
 /**
  * A full page to confirm a user's signup by providing a code that was emailed to the user.
@@ -154,6 +211,7 @@ export default function ConfirmSignUpPage({location}: ConfirmSignUpPageProps) {
                         Confirm
                       </button>
                     </div>
+                    <ResendCodeButton state={location?.state} />
                   </Form>
                 );
               }}

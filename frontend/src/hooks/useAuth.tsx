@@ -160,6 +160,14 @@ function useProvideAuth() {
   }
 
   /**
+   * Resends the confirmation code the user's email.
+   * @param email - Where the confirmation code is sent.
+   */
+  async function resendConfirmationCode({email} : {email: string}) {
+    return CognitoAuth.resendSignUp(email);
+  }
+
+  /**
    * Log-out.
    *
    * @param global - if `true` the user will be logged out of all devices.
@@ -231,6 +239,7 @@ function useProvideAuth() {
     logIn,
     signUp,
     confirmSignUp,
+    resendConfirmationCode,
     logOut,
   };
 }
