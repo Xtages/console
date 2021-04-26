@@ -1,6 +1,6 @@
 import {Auth as CognitoAuth} from 'aws-amplify';
-import {CheckoutApi, Configuration, OrganizationApi} from '../gen/api';
-import {BaseAPI} from '../gen/api/base';
+import {CheckoutApi, Configuration, OrganizationApi} from 'gen/api';
+import {BaseAPI} from 'gen/api/base';
 
 function getBasePath() {
   const url = new URL('/api/v1', window.location.href);
