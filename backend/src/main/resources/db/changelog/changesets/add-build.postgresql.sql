@@ -19,6 +19,6 @@ CREATE TABLE "build"
 	"commit" 		VARCHAR(255) NOT NULL,
 	"build_events" INT NOT NULL,
 	PRIMARY KEY("project", "commit"),
-	CONSTRAINT "build_project_name_fkey" FOREIGN KEY("project") REFERENCES project("name"),
+	CONSTRAINT "build_project_name_fkey" FOREIGN KEY("project") REFERENCES project("name", "organization"),
 	CONSTRAINT "build_build_events_id_fkey" FOREIGN KEY("build_events") REFERENCES  build_events("id")
 )
