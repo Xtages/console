@@ -1,7 +1,7 @@
 -- liquibase formatted sql
 
 -- changeset mdellamerlina:3 logicalFilePath:xtages-console.xml
-CREATE TABLE "xtages_build_events"
+CREATE TABLE "build_events"
 (
 	"id" SERIAL PRIMARY KEY,
 	"time" 	TIMESTAMPTZ NOT NULL,
@@ -13,12 +13,12 @@ CREATE TABLE "xtages_build_events"
 )
 
 -- changeset mdellamerlina:4 logicalFilePath:xtages-console.xml
-CREATE TABLE "xtages_build"
+CREATE TABLE "build"
 (
 	"project" 		VARCHAR(255) NOT NULL,
 	"commit" 		VARCHAR(255) NOT NULL,
 	"build_events" INT NOT NULL,
 	PRIMARY KEY("project", "commit"),
-	CONSTRAINT "fk_build_project" FOREIGN KEY("project") REFERENCES xtages_project("name"),
-	CONSTRAINT "fk_build_events" FOREIGN KEY("build_events") REFERENCES  xtages_build_events("id")
+	CONSTRAINT "fk_build_project" FOREIGN KEY("project") REFERENCES project("name"),
+	CONSTRAINT "fk_build_events" FOREIGN KEY("build_events") REFERENCES  build_events("id")
 )

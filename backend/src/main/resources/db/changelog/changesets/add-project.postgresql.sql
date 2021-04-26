@@ -1,14 +1,14 @@
 -- liquibase formatted sql
 
 -- changeset mdellamerlina:1 logicalFilePath:xtages-console.xml
-CREATE TYPE "xtages_project_type" AS ENUM
+CREATE TYPE "project_type" AS ENUM
     ('NODEJS');
 
 -- changeset mdellamerlina:2 logicalFilePath:xtages-console.xml
-CREATE TABLE "xtages_project"
+CREATE TABLE "project"
 (
 	"name" 		VARCHAR(255) NOT NULL UNIQUE,
-	"type" 		"xtages_project_type",
+	"type" 		"project_type",
 	"version" 	INT,
 	"organization" INT NOT NULL,
 	"user" INT NOT NULL,
