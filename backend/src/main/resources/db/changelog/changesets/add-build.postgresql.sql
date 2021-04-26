@@ -8,6 +8,7 @@ CREATE TABLE "xtages_build_events"
 	"status" VARCHAR(255) NOT NULL,
 	"operation" VARCHAR(255) NOT NULL,
 	"user" INT NOT NULL,
+	"environment" VARCHAR(255) NOT NULL,
 	CONSTRAINT "fk_user" FOREIGN KEY("user") REFERENCES xtages_user("id")
 )
 
