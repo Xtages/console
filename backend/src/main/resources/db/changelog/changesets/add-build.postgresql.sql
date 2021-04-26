@@ -9,7 +9,7 @@ CREATE TABLE "build_events"
 	"operation" VARCHAR(255) NOT NULL,
 	"user" INT NOT NULL,
 	"environment" VARCHAR(255) NOT NULL,
-	CONSTRAINT "fk_user" FOREIGN KEY("user") REFERENCES xtages_user("id")
+	CONSTRAINT "build_events_xtages_user_id_fkey" FOREIGN KEY("user") REFERENCES xtages_user("id")
 )
 
 -- changeset mdellamerlina:4 logicalFilePath:xtages-console.xml
@@ -19,6 +19,6 @@ CREATE TABLE "build"
 	"commit" 		VARCHAR(255) NOT NULL,
 	"build_events" INT NOT NULL,
 	PRIMARY KEY("project", "commit"),
-	CONSTRAINT "fk_build_project" FOREIGN KEY("project") REFERENCES project("name"),
-	CONSTRAINT "fk_build_events" FOREIGN KEY("build_events") REFERENCES  build_events("id")
+	CONSTRAINT "build_project_name_fkey" FOREIGN KEY("project") REFERENCES project("name"),
+	CONSTRAINT "build_build_events_id_fkey" FOREIGN KEY("build_events") REFERENCES  build_events("id")
 )

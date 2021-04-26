@@ -16,6 +16,6 @@ CREATE TABLE "project"
 	PRIMARY KEY("name", "organization"),
 	CONSTRAINT "type_version_consistent" CHECK ((ROW ("type", "version") IS NULL) OR
                                                        (ROW ("type", "version") IS NOT NULL)),
-	CONSTRAINT "fk_organization" FOREIGN KEY("name") REFERENCES organization("name"),
-	CONSTRAINT "fk_user" FOREIGN KEY("user") REFERENCES xtages_user("id")
+	CONSTRAINT "project_organization_name_fkey" FOREIGN KEY("name") REFERENCES organization("name"),
+	CONSTRAINT "project_xtages_user_id_fkey" FOREIGN KEY("user") REFERENCES xtages_user("id")
 )
