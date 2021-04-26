@@ -8,5 +8,6 @@
 
     <include file="changesets/user-and-org.postgresql.sql" relativeToChangelogFile="true" />
     <include file="changesets/add-github-app-data-to-organization.postgresql.sql" relativeToChangelogFile="true" />
-
+    <include file="changesets/add-project.postgresql.sql" relativeToChangelogFile="true" />
+    <include file="changesets/add-build.postgresql.sql" relativeToChangelogFile="true" />
 </databaseChangeLog>

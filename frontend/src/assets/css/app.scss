@@ -1,2 +1,6 @@
-@import '_theme';
-@import '_text';
+@import 'theme';
+@import 'text';
+
+@import 'bootstrap';
+
+@import url(#{$font});

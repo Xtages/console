@@ -1,0 +1,9 @@
+@import "../../assets/css/theme";
+
+.buttonAsLink {
+  font-size: 80%;
+
+  &:hover {
+    color: $text-muted-hover !important;
+  }
+}
