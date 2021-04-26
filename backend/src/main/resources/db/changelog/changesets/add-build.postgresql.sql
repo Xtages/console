@@ -6,7 +6,6 @@ CREATE TABLE "build"
     "id"            SERIAL UNIQUE,
     "project_id"    INT NOT NULL,
     "commit"        VARCHAR(255) NOT NULL,
-    "build_events"  INT NOT NULL,
     PRIMARY KEY("project_id", "commit"),
     CONSTRAINT "build_project_id_fkey" FOREIGN KEY("project_id") REFERENCES project("id")
 )
