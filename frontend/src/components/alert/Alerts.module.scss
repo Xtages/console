@@ -1,4 +1,6 @@
 @import "../../assets/css/theme";
+@import "~bootstrap/scss/variables";
+@import "~bootstrap/scss/mixins";
 
 @mixin alert-variant($background, $border, $color) {
   color: color-yiq($background);

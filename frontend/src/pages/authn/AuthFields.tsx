@@ -70,7 +70,7 @@ export function PasswordField({
             <ButtonAsLink
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="small text-muted text-underline--dashed border-primary"
+              className="small text-muted text-underline--dashed"
             >
               {showPassword ? 'Hide password' : 'Show password'}
             </ButtonAsLink>
