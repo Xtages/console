@@ -1,5 +1,6 @@
 package xtages.console.controller.api
 
+import org.springframework.http.HttpStatus.CREATED
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Controller
 import xtages.console.controller.api.model.CreateOrgReq
@@ -26,7 +27,8 @@ class OrganizationApiController(
             ownerId = owner.id
         )
         organizationDao.insert(organization)
-        return ResponseEntity.ok(organizationPojoToOrganizationConverter.convert(organization))
+        return ResponseEntity.status(CREATED)
+            .body(organizationPojoToOrganizationConverter.convert(organization))
     }
 
 
