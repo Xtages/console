@@ -1,9 +1,9 @@
 [
   {
     "essential": true,
-    "memory": 512,
+    "memory": 3584,
     "name": "xtages-console",
-    "cpu": 512,
+    "cpu": 1536,
     "image": "${REPOSITORY_URL}:${TAG}",
     "workingDirectory": "/",
     "command": ["java", "-jar", "console.jar"],
