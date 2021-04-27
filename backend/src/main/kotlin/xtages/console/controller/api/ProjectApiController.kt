@@ -49,7 +49,7 @@ class ProjectApiController(
             user = user.id,
         )
         projectDao.insert(projectPojo)
-        gitHubService.createRepoForProject(project = projectPojo)
+        gitHubService.createRepoForProject(project = projectPojo, organization = organization)
         awsService.registerProject(project = projectPojo)
         return ResponseEntity.status(CREATED).body(projectPojoToProjectConverter.convert(projectPojo))
     }

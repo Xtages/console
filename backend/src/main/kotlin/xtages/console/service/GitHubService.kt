@@ -17,6 +17,7 @@ import xtages.console.exception.IllegalArgumentException
 import xtages.console.exception.ensure
 import xtages.console.query.enums.GithubAppInstallationStatus.*
 import xtages.console.query.tables.daos.OrganizationDao
+import xtages.console.query.tables.pojos.Organization
 import xtages.console.query.tables.pojos.Project
 import java.time.Instant
 import java.time.temporal.ChronoUnit
@@ -109,11 +110,17 @@ class GitHubService(
         }
     }
 
-    fun createRepoForProject(project: Project) {
-        TODO("(czuniga): Not yet implemented")
+    fun createRepoForProject(project: Project, organization: Organization) {
+        val gitHubAppClient = buildGitHubAppClient(
+            gitHubClient.app.getInstallationById(organization.githubAppInstallationId!!).createToken().create()
+        )
+        gitHubAppClient
+            .createRepository(project.name)
+            .fromTemplateRepository("Xtages", "nodejs_15_template")
+            .create()
     }
 
-    fun buildAppGitHubClient(installationToken: GHAppInstallationToken): GitHub {
+    fun buildGitHubAppClient(installationToken: GHAppInstallationToken): GitHub {
         return GitHubBuilder().withAppInstallationToken(installationToken.token).build()!!
     }
 
