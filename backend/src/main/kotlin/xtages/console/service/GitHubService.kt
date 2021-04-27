@@ -17,6 +17,7 @@ import xtages.console.exception.IllegalArgumentException
 import xtages.console.exception.ensure
 import xtages.console.query.enums.GithubAppInstallationStatus.*
 import xtages.console.query.tables.daos.OrganizationDao
+import xtages.console.query.tables.pojos.Project
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.*
@@ -106,6 +107,10 @@ class GitHubService(
                 )
             }
         }
+    }
+
+    fun createRepoForProject(project: Project) {
+        TODO("(czuniga): Not yet implemented")
     }
 
     fun buildAppGitHubClient(installationToken: GHAppInstallationToken): GitHub {
