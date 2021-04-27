@@ -28,6 +28,7 @@ class StripeService(
     private val consoleProperties: ConsoleProperties,
     private val organizationDao: OrganizationDao,
     private val stripeCheckoutSessionDao: StripeCheckoutSessionDao,
+    private val authenticationService: AuthenticationService,
 ) {
     init {
         Stripe.apiKey = consoleProperties.stripe.apiKey;
@@ -82,7 +83,7 @@ class StripeService(
     fun createCustomerPortalSession(): URI {
         val returnUrl = UriComponentsBuilder.fromUri(URI(consoleProperties.server.basename)).pathSegment("account")
         val organization = ensure.foundOne(
-            operation = { organizationDao.findByCognitoUserId(getCurrentCognitoUserId()) },
+            operation = { organizationDao.findByCognitoUserId(authenticationService.currentCognitoUserId) },
             code = ORG_NOT_FOUND,
             message = "Could not found organization associated to current user"
         )
@@ -134,10 +135,6 @@ class StripeService(
                 subscriptionStatus = ACTIVE
             )
         )
-    }
-
-    private fun getCurrentCognitoUserId(): CognitoUserId {
-        return CognitoUserId((SecurityContextHolder.getContext().authentication.principal as Jwt).subject)
     }
 }
 

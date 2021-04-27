@@ -9,6 +9,29 @@ servers:
 security:
   - bearerAuth: []
 paths:
+  /project:
+    post:
+      summary: Creates a new Xtages project
+      operationId: createProject
+      tags:
+        - project
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateProjectReq"
+      responses:
+        '200':
+          description: Project was created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        default:
+          $ref: "#/components/responses/DefaultError"
   /organization:
     post:
       summary: Creates a new Organization beloging to a user, if the user doesn't exist then it's created also
@@ -117,6 +140,44 @@ components:
         ownerCognitoUserId:
           type: string
           minLength: 1
+    Project:
+      description: An Xtages project
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+          minLength: 1
+        type:
+          type: string
+          enum:
+            - NODEJS
+        version:
+          type: string
+          minLength: 1
+        pass_check_rule_enabled:
+          type: boolean
+    CreateProjectReq:
+      description: Request made to POST /project
+      required:
+        - name
+        - type
+        - version
+        - pass_check_rule_enabled
+      properties:
+        name:
+          type: string
+          minLength: 1
+        type:
+          type: string
+          enum:
+            - NODEJS
+        version:
+          type: string
+          minLength: 1
+        pass_check_rule_enabled:
+          type: boolean
+          default: false
     CreateCheckoutSessionReq:
       description: Request made to POST /checkout/session
       required:
