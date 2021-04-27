@@ -3,6 +3,7 @@ package xtages.console.controller.api
 import com.stripe.exception.SignatureVerificationException
 import com.stripe.net.Webhook
 import mu.KotlinLogging
+import org.springframework.http.HttpStatus.CREATED
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Controller
 import org.springframework.web.bind.annotation.PostMapping
@@ -25,7 +26,7 @@ class CheckoutApiController(
     CheckoutApiControllerBase {
 
     override fun createCheckoutSession(createCheckoutSessionReq: CreateCheckoutSessionReq): ResponseEntity<String> {
-        return ResponseEntity.ok(
+        return ResponseEntity.status(CREATED).body(
             stripeService.createCheckoutSession(
                 createCheckoutSessionReq.priceIds,
                 createCheckoutSessionReq.organizationName
@@ -33,7 +34,7 @@ class CheckoutApiController(
         )
     }
 
-    override fun createCustomerPortalSession(): ResponseEntity<URI> {
+    override fun getCustomerPortalSession(): ResponseEntity<URI> {
         return ResponseEntity.ok(stripeService.createCustomerPortalSession())
     }
 

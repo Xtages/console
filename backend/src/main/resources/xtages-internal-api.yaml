@@ -22,7 +22,7 @@ paths:
             schema:
               $ref: "#/components/schemas/CreateProjectReq"
       responses:
-        '200':
+        '201':
           description: Project was created
           content:
             application/json:
@@ -45,7 +45,7 @@ paths:
             schema:
               $ref: "#/components/schemas/CreateOrgReq"
       responses:
-        '200':
+        '201':
           description: Organization was created
           content:
             application/json:
@@ -57,7 +57,7 @@ paths:
           $ref: "#/components/responses/DefaultError"
   /checkout/session:
     post:
-      summary: Prepares a Stripe Checkout session
+      summary: Creates a Stripe Checkout session
       operationId: createCheckoutSession
       tags:
         - checkout
@@ -68,7 +68,7 @@ paths:
             schema:
               $ref: "#/components/schemas/CreateCheckoutSessionReq"
       responses:
-        '200':
+        '201':
           description: A new Stripe session was created
           content:
             application/json:
@@ -80,13 +80,13 @@ paths:
           $ref: "#/components/responses/DefaultError"
   /checkout/portal/session:
     post:
-      summary: Creates a Stripe customer portal session
-      operationId: createCustomerPortalSession
+      summary: Gets a Stripe customer portal session URI
+      operationId: getCustomerPortalSession
       tags:
         - checkout
       responses:
         '200':
-          description: A new customer portal session was created
+          description: A new customer portal session URI
           content:
             application/json:
               schema:
