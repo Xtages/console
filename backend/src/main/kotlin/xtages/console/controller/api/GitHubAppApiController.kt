@@ -41,7 +41,7 @@ class GitHubAppApiController(
         }
 
         gitHubService.handleWebhookRequest(GitHubWebhookEventType.fromGitHubWebhookEventName(eventTypeHeader), body)
-        return ResponseEntity.ok("")
+        return ResponseEntity.ok().build()
     }
 
     private fun verifyRequest(body: String, gitHubSignatureHeader: String): Boolean {

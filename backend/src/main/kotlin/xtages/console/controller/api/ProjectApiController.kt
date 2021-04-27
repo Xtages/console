@@ -1,5 +1,6 @@
 package xtages.console.controller.api
 
+import org.springframework.http.HttpStatus.CREATED
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Controller
 import xtages.console.controller.api.model.CreateProjectReq
@@ -50,6 +51,6 @@ class ProjectApiController(
         projectDao.insert(projectPojo)
         gitHubService.createRepoForProject(project = projectPojo)
         awsService.registerProject(project = projectPojo)
-        return ResponseEntity.ok(projectPojoToProjectConverter.convert(projectPojo))
+        return ResponseEntity.status(CREATED).body(projectPojoToProjectConverter.convert(projectPojo))
     }
 }

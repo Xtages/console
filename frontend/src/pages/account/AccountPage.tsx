@@ -12,7 +12,7 @@ export default function AccountPage() {
     data,
   } = useQuery(
     'customerPortalLink',
-    () => checkoutApi.createCustomerPortalSession(),
+    () => checkoutApi.getCustomerPortalSession(),
   );
 
   let content: string | JSX.Element;
