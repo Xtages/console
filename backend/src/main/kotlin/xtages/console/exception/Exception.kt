@@ -7,6 +7,7 @@ enum class ExceptionCode {
     GH_APP_INSTALLATION_ID_IS_NULL,
     GH_APP_INSTALLATION_INVALID,
     STRIPE_CUSTOMER_ID_IS_NULL,
+    USER_NOT_FOUND,
 }
 
 /**
