@@ -50,7 +50,7 @@ class ProjectApiController(
         )
         projectDao.insert(projectPojo)
         gitHubService.createRepoForProject(project = projectPojo, organization = organization)
-        awsService.registerProject(project = projectPojo)
+        awsService.registerProject(project = projectPojo, organization = organization)
         return ResponseEntity.status(CREATED).body(projectPojoToProjectConverter.convert(projectPojo))
     }
 }
