@@ -14,56 +14,54 @@ class Ensure internal constructor() {
      * [NullValueException] with [code] and [message].
      *
      * @param operation - The lambda to run when checking for nullness.
-     * @param code - The [ExceptionCode] to add to the [NullValueException] thrown when the result of [operation] is
-     *      `null`.
+     * @param valueDesc - The description of the value that should have not been `null`, for example: `"project.name"`.
      * @param message - A added to the [NullValueException] thrown.
      * @returns A non-null value [T].
      * @throws NullValueException if the result of [operation] is `null`.
      */
-    fun <T : Any> notNull(operation: () -> T?, code: ExceptionCode, message: String = ""): T =
-        notNull(operation = operation, code = code, lazyMessage = { message })
+    fun <T : Any> notNull(operation: () -> T?, valueDesc: String, message: String = ""): T =
+        notNull(operation = operation, valueDesc = valueDesc, lazyMessage = { message })
 
     /**
      * Checks that the result of calling [operation] is not `null` and return it, otherwise throws a
      * [NullValueException] with [code] and  and the result of calling [lazyMessage].
      *
      * @param operation - The lambda to run when checking for nullness.
-     * @param code - The [ExceptionCode] to add to the [NullValueException] thrown when the result of [operation] is
-     *      `null`.
+     * @param valueDesc - The description of the value that should have not been `null`, for example: `"project.name"`.
      * @param lazyMessage - A lambda to call when [NullValueException] is thrown to generate the exception's message.
      * @returns A non-null value [T].
      * @throws NullValueException if the result of [operation] is `null`.
      */
-    fun <T : Any> notNull(operation: () -> T?, code: ExceptionCode, lazyMessage: () -> String): T =
-        notNull(value = operation(), code = code, lazyMessage = lazyMessage)
+    fun <T : Any> notNull(operation: () -> T?, valueDesc: String, lazyMessage: () -> String): T =
+        notNull(value = operation(), valueDesc = valueDesc, lazyMessage = lazyMessage)
 
     /**
      * Checks that [value] is not `null` and return it, otherwise throws a [NullValueException] with [code] and
      * [message].
      *
      * @param value - The value to check for nullness.
-     * @param code - The [ExceptionCode] to add to the [NullValueException] thrown when [value] is `null`.
+     * @param valueDesc - The description of the value that should have not been `null`, for example: `"project.name"`.
      * @param message - A added to the [NullValueException] thrown.
      * @returns A non-null value [T].
      * @throws NullValueException if [value] is `null`.
      */
-    fun <T : Any> notNull(value: T?, code: ExceptionCode, message: String = ""): T =
-        notNull(value = value, code = code, lazyMessage = { message })
+    fun <T : Any> notNull(value: T?, valueDesc: String, message: String = ""): T =
+        notNull(value = value, valueDesc = valueDesc, lazyMessage = { message })
 
     /**
      * Checks that [value] is not `null` and return it, otherwise throws a [NullValueException] with [code] and the
      * result of calling [lazyMessage].
      *
      * @param value - The value to check for nullness.
-     * @param code - The [ExceptionCode] to add to the [NullValueException] thrown when [value] is `null`.
+     * @param valueDesc - The description of the value that should have not been `null`, for example: `"project.name"`.
      * @param lazyMessage - A lambda to call when [NullValueException] is thrown to generate the exception's message.
      * @returns A non-null value [T].
      * @throws NullValueException if [value] is `null`.
      */
-    fun <T : Any> notNull(value: T?, code: ExceptionCode, lazyMessage: () -> String): T {
+    fun <T : Any> notNull(value: T?, valueDesc: String, lazyMessage: () -> String): T {
         if (value == null) {
             val message = lazyMessage()
-            throw NullValueException(code = code, innerMessage = message)
+            throw NullValueException(code = ExceptionCode.NULL_VALUE, valueDesc = valueDesc, innerMessage = message)
         }
         return value
     }
