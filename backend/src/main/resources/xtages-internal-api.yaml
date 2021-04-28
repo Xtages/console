@@ -163,7 +163,6 @@ components:
         - name
         - type
         - version
-        - pass_check_rule_enabled
       properties:
         name:
           type: string
@@ -175,7 +174,7 @@ components:
         version:
           type: string
           minLength: 1
-        pass_check_rule_enabled:
+        passCheckRuleEnabled:
           type: boolean
           default: false
     CreateCheckoutSessionReq:
