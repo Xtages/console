@@ -133,7 +133,7 @@ class GitHubService(
             .create()
     }
 
-    fun buildGitHubAppClient(installationToken: GHAppInstallationToken): GitHub {
+    private fun buildGitHubAppClient(installationToken: GHAppInstallationToken): GitHub {
         return GitHubBuilder().withAppInstallationToken(installationToken.token).build()!!
     }
 

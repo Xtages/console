@@ -3,6 +3,9 @@ package xtages.console.pojo
 import xtages.console.exception.ensure
 import xtages.console.query.tables.pojos.Project
 
+/**
+ * Returns the template repository name based on the [Project.type] and [Project.version] of the [Project].
+ */
 val Project.templateRepoName: String
     get() {
         val type = ensure.notNull(value = type, valueDesc = "project.type")
