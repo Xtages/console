@@ -88,7 +88,7 @@ export interface CreateProjectReq {
      * @type {boolean}
      * @memberof CreateProjectReq
      */
-    pass_check_rule_enabled: boolean;
+    passCheckRuleEnabled?: boolean;
 }
 
 /**
