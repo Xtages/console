@@ -3,12 +3,9 @@ package xtages.console.service
 import com.stripe.Stripe
 import com.stripe.model.Event
 import com.stripe.param.checkout.SessionCreateParams
-import org.springframework.security.core.context.SecurityContextHolder
-import org.springframework.security.oauth2.jwt.Jwt
 import org.springframework.stereotype.Service
 import org.springframework.web.context.annotation.RequestScope
 import org.springframework.web.util.UriComponentsBuilder
-import xtages.console.config.CognitoUserId
 import xtages.console.config.ConsoleProperties
 import xtages.console.exception.ensure
 import xtages.console.query.enums.OrganizationSubscriptionStatus.ACTIVE
@@ -89,7 +86,7 @@ class StripeService(
         )
         val stripeCustomerId = ensure.notNull(
             value = organization.stripeCustomerId,
-            code = STRIPE_CUSTOMER_ID_IS_NULL,
+            valueDesc = "organization.stripeCustomerId",
             lazyMessage = { "A Stripe customer id was not found for ${organization.name}" }
         )
         val sessionParams =
@@ -124,7 +121,7 @@ class StripeService(
             code = CHECKOUT_SESSION_NOT_FOUND,
             message = "Checkout session not found"
         ).organizationName!!
-        val organization = ensure.notNull(
+        val organization = ensure.foundOne(
             operation = { organizationDao.fetchOneByName(organizationName) },
             code = ORG_NOT_FOUND,
             lazyMessage = { "Organization [$organizationName] not found" }

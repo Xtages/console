@@ -15,6 +15,7 @@ import xtages.console.config.ConsoleProperties
 import xtages.console.exception.ExceptionCode.*
 import xtages.console.exception.IllegalArgumentException
 import xtages.console.exception.ensure
+import xtages.console.pojo.templateRepoName
 import xtages.console.query.enums.GithubAppInstallationStatus.*
 import xtages.console.query.tables.daos.OrganizationDao
 import xtages.console.query.tables.pojos.Organization
@@ -51,7 +52,7 @@ class GitHubService(
         val jsonBody = objectMapper.readTree(eventJson)
         val action = jsonBody.get("action").asText()
         val installation = jsonBody.get("installation")
-        val organizationName = installation.get("account").get("name").asText()
+        val organizationName = installation.get("account").get("login").asText()
         val installationId = installation.get("id").asLong()
         val organization = ensure.foundOne(
             operation = { organizationDao.fetchOneByName(organizationName) },
@@ -92,7 +93,10 @@ class GitHubService(
                 )
             }
             "suspend" -> {
-                ensure.notNull(value = organization.githubAppInstallationId, code = GH_APP_INSTALLATION_ID_IS_NULL)
+                ensure.notNull(
+                    value = organization.githubAppInstallationId,
+                    valueDesc = "organization.githubAppInstallationId"
+                )
                 organizationDao.update(
                     organization.copy(
                         githubAppInstallationStatus = SUSPENDED
@@ -100,7 +104,10 @@ class GitHubService(
                 )
             }
             "unsuspend", "new_permissions_accepted" -> {
-                ensure.notNull(value = organization.githubAppInstallationId, code = GH_APP_INSTALLATION_ID_IS_NULL)
+                ensure.notNull(
+                    value = organization.githubAppInstallationId,
+                    valueDesc = "organization.githubAppInstallationId"
+                )
                 organizationDao.update(
                     organization.copy(
                         githubAppInstallationStatus = ACTIVE
@@ -111,12 +118,18 @@ class GitHubService(
     }
 
     fun createRepoForProject(project: Project, organization: Organization) {
+        val githubAppInstallationId = ensure.notNull(
+                value = organization.githubAppInstallationId,
+                valueDesc = "organization.githubAppInstallationId"
+            )
         val gitHubAppClient = buildGitHubAppClient(
-            gitHubClient.app.getInstallationById(organization.githubAppInstallationId!!).createToken().create()
+            gitHubClient.app.getInstallationById(githubAppInstallationId).createToken().create()
         )
         gitHubAppClient
             .createRepository(project.name)
-            .fromTemplateRepository("Xtages", "nodejs_15_template")
+            .owner(organization.name)
+            .private_(true)
+            .fromTemplateRepository("Xtages", project.templateRepoName)
             .create()
     }
 
