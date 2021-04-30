@@ -22,14 +22,14 @@ private val xtagesCodeBuildTag: CodebuildTag = CodebuildTag.builder()
     .key("XTAGES_CONSOLE_CREATED")
     .value("true")
     .build()
+
 private val envVars = listOf(
     buildPlaceholderEnvironmentVariable("XTAGES_COMMIT"),
     buildPlaceholderEnvironmentVariable("XTAGES_REPO"),
     buildPlaceholderEnvironmentVariable("XTAGES_GITHUB_TOKEN"),
 )
 
-
-private enum class CodeBuildType {
+enum class CodeBuildType {
     CI,
     CD
 }
@@ -57,35 +57,32 @@ class AwsService(
         createCodeBuildCdProject(project = project)
     }
 
+    /**
+     * Starts a CodeBuild project for a specific [Project]
+     * codeBuildStarterRequest provides information about the [CodeBuildType] to run and
+     * al the necessary information to make the build run
+     */
     fun startCodeBuildProject(codeBuildStarterRequest: CodeBuildStarterRequest) {
+        logger.info { "running CodeBuild: ${codeBuildStarterRequest}" }
         val token = gitHubService.token(codeBuildStarterRequest.organization)
-        logger.info {"GH Token: ${token}"}
-//        val envVars = listOf(
-//            EnvironmentVariable.builder()
-//                .type(EnvironmentVariableType.PLAINTEXT)
-//                .name("XTAGES_COMMIT")
-//                .value(commit).build(),
-//            EnvironmentVariable.builder()
-//                .type(EnvironmentVariableType.PLAINTEXT)
-//                .name("XTAGES_REPO")
-//                .value(project.name).build(),
-//            EnvironmentVariable.builder()
-//                .type(EnvironmentVariableType.PLAINTEXT)
-//                .name("XTAGES_ORGANIZATION")
-//                .value(organization.name).build(),
-//            EnvironmentVariable.builder()
-//                .type(EnvironmentVariableType.PLAINTEXT)
-//                .name("XTAGES_GITHUB_TOKEN")
-//                .value(
-//                    gitHubService.token(organization)
-//                ).build(),
-//        )
-//        val startCIResponse = codeBuildAsyncClient.startBuild(
-//            StartBuildRequest.builder()
-//                .projectName(project.name)
-//                .environmentVariablesOverride(envVars)
-//                .build()
-//        ).get()
+        val cbProjectName = if (codeBuildStarterRequest.codeBuildType == CodeBuildType.CI)
+            codeBuildStarterRequest.project.codeBuildCiProjectName
+        else
+            codeBuildStarterRequest.project.codeBuildCdBuildSpecName
+
+        codeBuildAsyncClient.startBuild(
+            StartBuildRequest.builder()
+                .projectName(cbProjectName)
+                .environmentVariablesOverride(
+                    listOf(
+                        buildEnvironmentVariable("XTAGES_COMMIT", codeBuildStarterRequest.commit),
+                        buildEnvironmentVariable("XTAGES_REPO", codeBuildStarterRequest.project.ghRepoFullName),
+                        buildEnvironmentVariable("XTAGES_GITHUB_TOKEN", token)
+                    )
+                )
+                .build()
+        ).get()
+        logger.info { "started CodeBuild: ${codeBuildStarterRequest}" }
     }
 
     private fun createCodeBuildCiProject(project: Project) {
@@ -189,10 +186,13 @@ class AwsService(
 
 }
 
-private fun buildPlaceholderEnvironmentVariable(name: String) = EnvironmentVariable.builder()
+private fun buildPlaceholderEnvironmentVariable(name: String) = buildEnvironmentVariable(name, null)
+
+private fun buildEnvironmentVariable(name: String, value: String?) = EnvironmentVariable.builder()
     .type(EnvironmentVariableType.PLAINTEXT)
     .name(name)
-    .value("FILL_ME")
+    .value( value ?: "FILL_ME")
     .build()
 
-data class CodeBuildStarterRequest (val project: Project, val organization: Organization, val commit: String)
+data class CodeBuildStarterRequest (val project: Project, val organization: Organization,
+                                    val commit: String, val codeBuildType: CodeBuildType)

@@ -204,7 +204,7 @@ components:
       description: A reference to the run CI
       properties:
         id:
-          type: integer
+          type: long
     RunCIReq:
       description: Request made to POST /runCI
       required:
