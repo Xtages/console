@@ -11,6 +11,7 @@ ALTER TABLE "build_events"
     ADD COLUMN "commit" VARCHAR(255),
     DROP COLUMN "build_id",
     ALTER COLUMN "time" TYPE TIMESTAMP,
+    ALTER COLUMN "id" TYPE BIGINT,
     DROP CONSTRAINT build_events_build_id_fkey,
     ADD CONSTRAINT "build_events_project_id_fkey" FOREIGN KEY("project_id") REFERENCES project("id");
 
