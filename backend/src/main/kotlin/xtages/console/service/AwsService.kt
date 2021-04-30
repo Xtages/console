@@ -194,6 +194,5 @@ private fun buildPlaceholderEnvironmentVariable(name: String) = EnvironmentVaria
     .name(name)
     .value("FILL_ME")
     .build()
-}
 
 data class CodeBuildStarterRequest (val project: Project, val organization: Organization, val commit: String)
