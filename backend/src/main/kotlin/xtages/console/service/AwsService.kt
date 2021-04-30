@@ -88,11 +88,13 @@ class AwsService(
         fun <T> buildTypeVar(ciVar: T, cdVar: T) = if (codeBuildType == CodeBuildType.CI) ciVar else cdVar
         val imageName = buildTypeVar(project.codeBuildCiImageName, project.codeBuildCdImageName)
         val projectName = buildTypeVar(project.codeBuildCiProjectName, project.codeBuildCdProjectName)
+        val projectDesc = buildTypeVar(project.codeBuildCiProjectDescription, project.codeBuildCdProjectDescription)
         val logsGroupName = buildTypeVar(project.codeBuildCiLogsGroupName, project.codeBuildCdLogsGroupName)
         val logsStreamName = buildTypeVar(project.codeBuildCiLogsStreamName, project.codeBuildCdLogsStreamName)
         val buildSpecLocation = buildTypeVar(project.codeBuildCiBuildSpecName, project.codeBuildCdBuildSpecName)
         return CreateProjectRequest.builder()
             .name(projectName)
+            .description(projectDesc)
             .serviceRole(serviceRoleArn)
             .source(
                 ProjectSource.builder()

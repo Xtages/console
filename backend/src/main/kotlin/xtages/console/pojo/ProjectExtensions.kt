@@ -20,7 +20,7 @@ val Project.codeBuildCiProjectName: String
     get() {
         val name = ensure.notNull(value = name, valueDesc = "project.name")
         val organization = ensure.notNull(value = organization, valueDesc = "project.organization")
-        return "${organization}__${name}__ci"
+        return "${organization}_${name}_ci".toLowerCase()
     }
 
 /**
@@ -30,7 +30,28 @@ val Project.codeBuildCdProjectName: String
     get() {
         val name = ensure.notNull(value = name, valueDesc = "project.name")
         val organization = ensure.notNull(value = organization, valueDesc = "project.organization")
-        return "${organization}__${name}__cd"
+        return "${organization}_${name}_cd".toLowerCase()
+    }
+
+
+/**
+ * Returns the CodeBuild CI project description.
+ */
+val Project.codeBuildCiProjectDescription: String
+    get() {
+        val name = ensure.notNull(value = name, valueDesc = "project.name")
+        val organization = ensure.notNull(value = organization, valueDesc = "project.organization")
+        return "CI for ${organization}/${name}"
+    }
+
+/**
+ * Returns the CodeBuild CD project description.
+ */
+val Project.codeBuildCdProjectDescription: String
+    get() {
+        val name = ensure.notNull(value = name, valueDesc = "project.name")
+        val organization = ensure.notNull(value = organization, valueDesc = "project.organization")
+        return "CD for ${organization}/${name}"
     }
 
 /**
