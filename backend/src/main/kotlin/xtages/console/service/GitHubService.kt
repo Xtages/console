@@ -137,6 +137,15 @@ class GitHubService(
         projectDao.merge(project)
     }
 
+    fun token(organization: Organization): String? {
+        val githubAppInstallationId = ensure.notNull(
+            value = organization.githubAppInstallationId,
+            valueDesc = "organization.githubAppInstallationId"
+        )
+        return gitHubClient.app.getInstallationById(githubAppInstallationId)
+            .createToken().create().token
+    }
+
     private fun buildGitHubAppClient(installationToken: GHAppInstallationToken): GitHub {
         return GitHubBuilder().withAppInstallationToken(installationToken.token).build()!!
     }

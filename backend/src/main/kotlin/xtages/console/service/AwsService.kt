@@ -1,5 +1,6 @@
 package xtages.console.service
 
+import mu.KotlinLogging
 import org.springframework.stereotype.Service
 import software.amazon.awssdk.services.codebuild.CodeBuildAsyncClient
 import software.amazon.awssdk.services.codebuild.model.*
@@ -33,8 +34,11 @@ private enum class CodeBuildType {
     CD
 }
 
+private val logger = KotlinLogging.logger { }
+
 @Service
 class AwsService(
+    private val gitHubService: GitHubService,
     private val ecrAsyncClient: EcrAsyncClient,
     private val codeBuildAsyncClient: CodeBuildAsyncClient,
     private val organizationDao: OrganizationDao,
@@ -51,6 +55,37 @@ class AwsService(
         createEcrRepositoryForOrganization(organization = organization)
         createCodeBuildCiProject(project = project)
         createCodeBuildCdProject(project = project)
+    }
+
+    fun startCodeBuildProject(codeBuildStarterRequest: CodeBuildStarterRequest) {
+        val token = gitHubService.token(codeBuildStarterRequest.organization)
+        logger.info {"GH Token: ${token}"}
+//        val envVars = listOf(
+//            EnvironmentVariable.builder()
+//                .type(EnvironmentVariableType.PLAINTEXT)
+//                .name("XTAGES_COMMIT")
+//                .value(commit).build(),
+//            EnvironmentVariable.builder()
+//                .type(EnvironmentVariableType.PLAINTEXT)
+//                .name("XTAGES_REPO")
+//                .value(project.name).build(),
+//            EnvironmentVariable.builder()
+//                .type(EnvironmentVariableType.PLAINTEXT)
+//                .name("XTAGES_ORGANIZATION")
+//                .value(organization.name).build(),
+//            EnvironmentVariable.builder()
+//                .type(EnvironmentVariableType.PLAINTEXT)
+//                .name("XTAGES_GITHUB_TOKEN")
+//                .value(
+//                    gitHubService.token(organization)
+//                ).build(),
+//        )
+//        val startCIResponse = codeBuildAsyncClient.startBuild(
+//            StartBuildRequest.builder()
+//                .projectName(project.name)
+//                .environmentVariablesOverride(envVars)
+//                .build()
+//        ).get()
     }
 
     private fun createCodeBuildCiProject(project: Project) {
@@ -159,3 +194,6 @@ private fun buildPlaceholderEnvironmentVariable(name: String) = EnvironmentVaria
     .name(name)
     .value("FILL_ME")
     .build()
+}
+
+data class CodeBuildStarterRequest (val project: Project, val organization: Organization, val commit: String)
