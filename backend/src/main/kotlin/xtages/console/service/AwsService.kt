@@ -73,6 +73,7 @@ class AwsService(
                 codeBuildType = CodeBuildType.CD,
                 privilegedMode = true,
                 serviceRoleArn = "${consoleProperties.aws.aimRoleArnPrefix}/xtages-codebuild-cd-role",
+                concurrentBuildLimit = 2,
             )
         ).get()
         project.codebuildCdProjectArn = createProResponse.project().arn()
@@ -84,6 +85,7 @@ class AwsService(
         codeBuildType: CodeBuildType,
         privilegedMode: Boolean,
         serviceRoleArn: String,
+        concurrentBuildLimit: Int? = null,
     ): CreateProjectRequest {
         fun <T> buildTypeVar(ciVar: T, cdVar: T) = if (codeBuildType == CodeBuildType.CI) ciVar else cdVar
         val imageName = buildTypeVar(project.codeBuildCiImageName, project.codeBuildCdImageName)
@@ -92,7 +94,7 @@ class AwsService(
         val logsGroupName = buildTypeVar(project.codeBuildCiLogsGroupName, project.codeBuildCdLogsGroupName)
         val logsStreamName = buildTypeVar(project.codeBuildCiLogsStreamName, project.codeBuildCdLogsStreamName)
         val buildSpecLocation = buildTypeVar(project.codeBuildCiBuildSpecName, project.codeBuildCdBuildSpecName)
-        return CreateProjectRequest.builder()
+        val builder = CreateProjectRequest.builder()
             .name(projectName)
             .description(projectDesc)
             .serviceRole(serviceRoleArn)
@@ -102,9 +104,11 @@ class AwsService(
                     .buildspec("${consoleProperties.aws.buildSpecsS3BucketArn}/${buildSpecLocation}")
                     .build()
             )
-            .artifacts(ProjectArtifacts.builder()
-                .type(ArtifactsType.NO_ARTIFACTS)
-                .build())
+            .artifacts(
+                ProjectArtifacts.builder()
+                    .type(ArtifactsType.NO_ARTIFACTS)
+                    .build()
+            )
             .environment(
                 ProjectEnvironment.builder()
                     .image("${consoleProperties.aws.ecrRepository}/${imageName}")
@@ -127,7 +131,10 @@ class AwsService(
             )
             .tags(xtagesCodeBuildTag)
             .badgeEnabled(false)
-            .build()
+        if (concurrentBuildLimit != null) {
+            builder.concurrentBuildLimit(concurrentBuildLimit)
+        }
+        return builder.build()
     }
 
     private fun createEcrRepositoryForOrganization(organization: Organization) {
