@@ -41,6 +41,12 @@ class AwsService(
     private val projectDao: ProjectDao,
     private val consoleProperties: ConsoleProperties
 ) {
+    /**
+     * Creates a [Project]-related infrastructure in AWS. Specifically creates:
+     *   * an ECR repository for the [organization] if one hasn't been created already
+     *   * a CodeBuild project for CI
+     *   * a CodeBuild project for CD
+     */
     fun registerProject(project: Project, organization: Organization) {
         createEcrRepositoryForOrganization(organization = organization)
         createCodeBuildCiProject(project = project)
@@ -52,7 +58,8 @@ class AwsService(
             buildCreateProjectRequest(
                 project = project,
                 codeBuildType = CodeBuildType.CI,
-                privilegedMode = false
+                privilegedMode = false,
+                serviceRoleArn = "${consoleProperties.aws.aimRoleArnPrefix}/xtages-codebuild-ci-role",
             )
         ).get()
         project.codebuildCiProjectArn = createProResponse.project().arn()
@@ -64,7 +71,8 @@ class AwsService(
             buildCreateProjectRequest(
                 project = project,
                 codeBuildType = CodeBuildType.CD,
-                privilegedMode = true
+                privilegedMode = true,
+                serviceRoleArn = "${consoleProperties.aws.aimRoleArnPrefix}/xtages-codebuild-cd-role",
             )
         ).get()
         project.codebuildCdProjectArn = createProResponse.project().arn()
@@ -74,7 +82,8 @@ class AwsService(
     private fun buildCreateProjectRequest(
         project: Project,
         codeBuildType: CodeBuildType,
-        privilegedMode: Boolean
+        privilegedMode: Boolean,
+        serviceRoleArn: String,
     ): CreateProjectRequest {
         fun <T> buildTypeVar(ciVar: T, cdVar: T) = if (codeBuildType == CodeBuildType.CI) ciVar else cdVar
         val imageName = buildTypeVar(project.codeBuildCiImageName, project.codeBuildCdImageName)
@@ -84,19 +93,23 @@ class AwsService(
         val buildSpecLocation = buildTypeVar(project.codeBuildCiBuildSpecName, project.codeBuildCdBuildSpecName)
         return CreateProjectRequest.builder()
             .name(projectName)
+            .serviceRole(serviceRoleArn)
             .source(
                 ProjectSource.builder()
                     .type(SourceType.NO_SOURCE)
-                    .buildspec("${consoleProperties.aws.buildSpecsS3Bucket}/${buildSpecLocation}")
+                    .buildspec("${consoleProperties.aws.buildSpecsS3BucketArn}/${buildSpecLocation}")
                     .build()
             )
+            .artifacts(ProjectArtifacts.builder()
+                .type(ArtifactsType.NO_ARTIFACTS)
+                .build())
             .environment(
                 ProjectEnvironment.builder()
                     .image("${consoleProperties.aws.ecrRepository}/${imageName}")
                     .computeType(ComputeType.BUILD_GENERAL1_SMALL)
                     .type(EnvironmentType.LINUX_CONTAINER)
                     .environmentVariables(envVars)
-                    .privilegedMode(privilegedMode) // in CI we don't create images
+                    .privilegedMode(privilegedMode)
                     .build()
             )
             .logsConfig(

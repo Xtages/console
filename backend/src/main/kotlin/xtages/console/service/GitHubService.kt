@@ -18,6 +18,7 @@ import xtages.console.exception.ensure
 import xtages.console.pojo.templateRepoName
 import xtages.console.query.enums.GithubAppInstallationStatus.*
 import xtages.console.query.tables.daos.OrganizationDao
+import xtages.console.query.tables.daos.ProjectDao
 import xtages.console.query.tables.pojos.Organization
 import xtages.console.query.tables.pojos.Project
 import java.time.Instant
@@ -29,9 +30,10 @@ import kotlin.reflect.KProperty
 class GitHubService(
     consoleProperties: ConsoleProperties,
     val objectMapper: ObjectMapper,
-    val organizationDao: OrganizationDao
+    val organizationDao: OrganizationDao,
+    val projectDao: ProjectDao,
 ) {
-    private val gitHubClient: GitHub by GitHubClientDelegate(consoleProperties)
+    private val gitHubClient by GitHubClientDelegate(consoleProperties)
 
     fun handleWebhookRequest(eventType: GitHubWebhookEventType?, eventJson: String) {
         when (eventType) {
@@ -125,12 +127,14 @@ class GitHubService(
         val gitHubAppClient = buildGitHubAppClient(
             gitHubClient.app.getInstallationById(githubAppInstallationId).createToken().create()
         )
-        gitHubAppClient
+        val repository = gitHubAppClient
             .createRepository(project.name)
             .owner(organization.name)
             .private_(true)
             .fromTemplateRepository("Xtages", project.templateRepoName)
             .create()
+        project.ghRepoFullName = repository.fullName
+        projectDao.merge(project)
     }
 
     private fun buildGitHubAppClient(installationToken: GHAppInstallationToken): GitHub {

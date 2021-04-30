@@ -13,5 +13,5 @@ data class ConsoleProperties(val stripe: Stripe, val server: Server, val gitHubA
 
     data class GitHubApp(val privateKey: String, val identifier: String, val webhookSecret: String)
 
-    data class Aws(val ecrRepository: String, val buildSpecsS3Bucket: String)
+    data class Aws(val ecrRepository: String, val buildSpecsS3BucketArn: String, val aimRoleArnPrefix: String)
 }
