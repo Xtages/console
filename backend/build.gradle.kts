@@ -40,6 +40,9 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor")
     implementation("org.kohsuke:github-api:1.127")
     implementation("org.liquibase:liquibase-core")
+    implementation(platform("software.amazon.awssdk:bom:2.16.48"))
+    implementation("software.amazon.awssdk:ecr")
+    implementation("software.amazon.awssdk:codebuild")
 
     liquibaseRuntime("org.liquibase:liquibase-core")
     liquibaseRuntime(sourceSets.getByName("main").compileClasspath)
