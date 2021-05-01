@@ -1,7 +1,7 @@
 package xtages.console.controller.api
 
 import mu.KotlinLogging
-import org.springframework.http.HttpStatus.CREATED
+import org.springframework.http.HttpStatus.*
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Controller
 import xtages.console.controller.api.model.*
@@ -25,6 +25,7 @@ import xtages.console.service.AuthenticationService
 import xtages.console.service.AwsService
 import xtages.console.service.CodeBuildType
 import xtages.console.service.GitHubService
+import kotlin.math.log
 import xtages.console.query.tables.pojos.Project as ProjectPojo
 
 private val logger = KotlinLogging.logger { }
@@ -59,10 +60,13 @@ class ProjectApiController(
             passCheckRuleEnabled = createProjectReq.passCheckRuleEnabled,
             user = user.id,
         )
-        projectDao.insert(projectPojo)
-        gitHubService.createRepoForProject(project = projectPojo, organization = organization)
-        awsService.registerProject(project = projectPojo, organization = organization)
-        return ResponseEntity.status(CREATED).body(projectPojoToProjectConverter.convert(projectPojo))
+        if (gitHubService.getRepositoryForProject(project = projectPojo, organization = organization) == null) {
+            projectDao.insert(projectPojo)
+            gitHubService.createRepoForProject(project = projectPojo, organization = organization)
+            awsService.registerProject(project = projectPojo, organization = organization)
+            return ResponseEntity.status(CREATED).body(projectPojoToProjectConverter.convert(projectPojo))
+        }
+        return ResponseEntity.status(CONFLICT).build()
     }
 
     override fun ci(projectName: String, ciReq: CIReq): ResponseEntity<CI> {
@@ -74,23 +78,29 @@ class ProjectApiController(
         buildEventsRecord.store()
         logger.debug { "Build Event created with id: ${buildEventsRecord.id}" }
 
-        awsService.startCodeBuildProject(project = project, organization = organization,
-            commit = ciReq.commitId, codeBuildType = CodeBuildType.CI)
+        awsService.startCodeBuildProject(
+            project = project, organization = organization,
+            commit = ciReq.commitId, codeBuildType = CodeBuildType.CI
+        )
         return ResponseEntity.ok(CI(id = buildEventsRecord.id))
     }
 
     override fun cd(projectName: String, cdReq: CDReq): ResponseEntity<CD> {
         val (user, organization, project) = checkRepoBelongsToOrg(projectName)
 
-        val buildEvent = createBuildEvent(user, project, CodeBuildType.CD,
-            cdReq.commitId, cdReq.env)
+        val buildEvent = createBuildEvent(
+            user, project, CodeBuildType.CD,
+            cdReq.commitId, cdReq.env
+        )
 
         val buildEventsRecord = buildEventsDao.ctx().newRecord(BUILD_EVENTS, buildEvent)
         buildEventsRecord.store()
         logger.debug { "Build Event created with id: ${buildEventsRecord.id}" }
 
-        awsService.startCodeBuildProject(project = project, organization = organization,
-            commit = cdReq.commitId, codeBuildType = CodeBuildType.CD)
+        awsService.startCodeBuildProject(
+            project = project, organization = organization,
+            commit = cdReq.commitId, codeBuildType = CodeBuildType.CD
+        )
         return ResponseEntity.ok(CD(id = buildEventsRecord.id))
     }
 
