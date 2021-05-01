@@ -1,6 +1,5 @@
 import com.github.gradle.node.npm.task.NpmTask
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-import org.springframework.boot.gradle.tasks.bundling.BootJar
 import nu.studer.gradle.jooq.JooqEdition
 import nu.studer.gradle.jooq.JooqGenerate
 
@@ -10,7 +9,7 @@ plugins {
     id("com.github.node-gradle.node") version "3.0.1"
     id("org.openapi.generator") version "5.1.0"
     id("nu.studer.jooq") version "5.2.1"
-    id ("org.liquibase.gradle") version "2.0.4"
+    id("org.liquibase.gradle") version "2.0.4"
     id("org.barfuin.gradle.taskinfo") version "1.0.5"
     kotlin("jvm") version "1.4.31"
     kotlin("plugin.spring") version "1.4.31"
@@ -67,7 +66,7 @@ val apiSpecFile = file("${sourceSets["main"].resources.srcDirs.first()}/xtages-i
 
 val env = System.getenv("ENV") ?: "local"
 val dbEndpoint = if (env == "local") "localhost" else "xtages-development.c9ijuglx54eu.us-east-1.rds.amazonaws.com"
-val dbPass = System.getenv("DB_PASS")
+val dbPass: String? = System.getenv("DB_PASS")
 
 kotlin {
     sourceSets {
@@ -89,16 +88,29 @@ allOpen {
     annotation("javax.persistence.Entity")
 }
 
+val liquibaseRunList: String? by project
+
 // Liquibase configuration
 liquibase {
     activities.register("main") {
         arguments = mapOf(
-                "logLevel" to "info",
-                "changeLogFile" to "src/main/resources/db/changelog/xtages-console.xml",
-                "url" to "jdbc:postgresql://" + dbEndpoint + ":5432/xtages_console",
-                "username" to "xtages_console",
-                "password" to dbPass)
+            "logLevel" to "info",
+            "changeLogFile" to "src/main/resources/db/changelog/xtages-console.xml",
+            "url" to "jdbc:postgresql://$dbEndpoint:5432/xtages_console",
+            "username" to "xtages_console",
+            "password" to dbPass
+        )
     }
+    activities.register("seed-dev-db") {
+        arguments = mapOf(
+            "logLevel" to "info",
+            "changeLogFile" to "src/main/resources/db/changelog/seed-xtages-console-dev-db.xml",
+            "url" to "jdbc:postgresql://localhost:5432/xtages_console",
+            "username" to "xtages_console"
+        )
+    }
+    println(liquibaseRunList)
+    runList = liquibaseRunList ?: "main"
 }
 
 // Generate type-safe JOOQ files based on the DB
@@ -112,7 +124,7 @@ jooq {
                 jdbc.apply {
                     driver = "org.postgresql.Driver"
                     user = "xtages_console"
-                    url = "jdbc:postgresql://" + dbEndpoint + ":5432/xtages_console"
+                    url = "jdbc:postgresql://$dbEndpoint:5432/xtages_console"
                     password = dbPass
                 }
                 generator.apply {
