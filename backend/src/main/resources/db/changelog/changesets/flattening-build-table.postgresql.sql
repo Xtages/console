@@ -19,6 +19,6 @@ UPDATE build_events SET "project_id" = 0, "commit" = '' , "time" = NOW();
 
 ALTER TABLE "build_events" ALTER "project_id" SET NOT NULL;
 ALTER TABLE "build_events" ALTER "commit" SET NOT NULL;
-ALTER TABLE "build_events" ALTER "commit" SET NOT NULL;
+ALTER TABLE "build_events" ALTER "time" SET DEFAULT CURRENT_TIMESTAMP;
 
 DROP TABLE "build";

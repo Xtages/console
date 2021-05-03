@@ -22,7 +22,6 @@ import xtages.console.service.AuthenticationService
 import xtages.console.service.AwsService
 import xtages.console.service.CodeBuildStarterRequest
 import xtages.console.service.CodeBuildType
-import java.time.LocalDateTime
 
 private val logger = KotlinLogging.logger { }
 
@@ -42,7 +41,6 @@ class RunCIApiController(
         val buildEventsPojo = BuildEvents(
             environment = "DEV",
             operation = "CI",
-            time = LocalDateTime.now(),
             status = "starting",
             user = user.id,
             projectId = project.id,
