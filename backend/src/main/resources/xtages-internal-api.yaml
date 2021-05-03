@@ -209,10 +209,10 @@ components:
     RunCIReq:
       description: Request made to POST /runCI
       required:
-        - repo
+        - project
         - commitId
       properties:
-        repo:
+        project:
           type: string
           minLength: 1
         commitId:

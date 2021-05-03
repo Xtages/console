@@ -69,7 +69,7 @@ class RunCIApiController(
             "Could not find organization associated to user"
         )
         val project = ensure.foundOne(
-            operation = { projectDao.findByNameAndOrganization(runCIReq.repo, organization.name!!) },
+            operation = { projectDao.findByNameAndOrganization(runCIReq.project, organization.name!!) },
             code = PROJECT_NOT_FOUND,
             message = "Could not find project in organization"
         )
