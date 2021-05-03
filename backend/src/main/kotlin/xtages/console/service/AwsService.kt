@@ -24,9 +24,9 @@ private val xtagesCodeBuildTag: CodebuildTag = CodebuildTag.builder()
     .build()
 
 private val envVars = listOf(
-    buildPlaceholderEnvironmentVariable("XTAGES_COMMIT"),
-    buildPlaceholderEnvironmentVariable("XTAGES_REPO"),
-    buildPlaceholderEnvironmentVariable("XTAGES_GITHUB_TOKEN"),
+    buildEnvironmentVariable("XTAGES_COMMIT"),
+    buildEnvironmentVariable("XTAGES_REPO"),
+    buildEnvironmentVariable("XTAGES_GITHUB_TOKEN"),
 )
 
 enum class CodeBuildType {
@@ -186,9 +186,7 @@ class AwsService(
 
 }
 
-private fun buildPlaceholderEnvironmentVariable(name: String) = buildEnvironmentVariable(name, null)
-
-private fun buildEnvironmentVariable(name: String, value: String?) = EnvironmentVariable.builder()
+private fun buildEnvironmentVariable(name: String, value: String? = null) = EnvironmentVariable.builder()
     .type(EnvironmentVariableType.PLAINTEXT)
     .name(name)
     .value( value ?: "FILL_ME")
