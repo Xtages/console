@@ -204,17 +204,18 @@ components:
       description: A reference to the run CI
       properties:
         id:
-          type: long
+          type: integer
+          format: int64
     RunCIReq:
       description: Request made to POST /runCI
       required:
         - repo
-        - commit_id
+        - commitId
       properties:
         repo:
           type: string
           minLength: 1
-        commit_id:
+        commitId:
           type: string
           minLength: 1
     CreateCheckoutSessionReq:
