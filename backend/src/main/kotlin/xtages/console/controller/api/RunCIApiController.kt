@@ -20,7 +20,6 @@ import xtages.console.query.tables.pojos.XtagesUser
 import xtages.console.query.tables.references.BUILD_EVENTS
 import xtages.console.service.AuthenticationService
 import xtages.console.service.AwsService
-import xtages.console.service.CodeBuildStarterRequest
 import xtages.console.service.CodeBuildType
 
 private val logger = KotlinLogging.logger { }
@@ -51,9 +50,8 @@ class RunCIApiController(
         buildEventsRecord.store();
         logger.debug { "Build Event created with id: ${buildEventsRecord.id}" }
 
-        val codeBuildStarter = CodeBuildStarterRequest(project = project, organization = organization,
+        awsService.startCodeBuildProject(project = project, organization = organization,
             commit = runCIReq.commitId, codeBuildType = CodeBuildType.CI)
-        awsService.startCodeBuildProject(codeBuildStarter)
         return ResponseEntity.ok(RunCI(id = buildEventsRecord.id))
     }
 

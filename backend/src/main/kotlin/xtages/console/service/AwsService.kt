@@ -62,27 +62,28 @@ class AwsService(
      * codeBuildStarterRequest provides information about the [CodeBuildType] to run and
      * al the necessary information to make the build run
      */
-    fun startCodeBuildProject(codeBuildStarterRequest: CodeBuildStarterRequest) {
-        logger.info { "running CodeBuild: ${codeBuildStarterRequest}" }
-        val token = gitHubService.token(codeBuildStarterRequest.organization)
-        val cbProjectName = if (codeBuildStarterRequest.codeBuildType == CodeBuildType.CI)
-            codeBuildStarterRequest.project.codeBuildCiProjectName
+    fun startCodeBuildProject(project: Project, organization: Organization,
+                              commit: String, codeBuildType: CodeBuildType) {
+        logger.info { "running CodeBuild: ${codeBuildType} for project : ${project.name} commit: ${commit} organization: ${organization.name}" }
+        val token = gitHubService.token(organization)
+        val cbProjectName = if (codeBuildType == CodeBuildType.CI)
+            project.codeBuildCiProjectName
         else
-            codeBuildStarterRequest.project.codeBuildCdBuildSpecName
+            project.codeBuildCdBuildSpecName
 
         codeBuildAsyncClient.startBuild(
             StartBuildRequest.builder()
                 .projectName(cbProjectName)
                 .environmentVariablesOverride(
                     listOf(
-                        buildEnvironmentVariable("XTAGES_COMMIT", codeBuildStarterRequest.commit),
-                        buildEnvironmentVariable("XTAGES_REPO", codeBuildStarterRequest.project.ghRepoFullName),
+                        buildEnvironmentVariable("XTAGES_COMMIT", commit),
+                        buildEnvironmentVariable("XTAGES_REPO", project.ghRepoFullName),
                         buildEnvironmentVariable("XTAGES_GITHUB_TOKEN", token)
                     )
                 )
                 .build()
         ).get()
-        logger.info { "started CodeBuild: ${codeBuildStarterRequest}" }
+        logger.info { "started CodeBuild project: ${cbProjectName}" }
     }
 
     private fun createCodeBuildCiProject(project: Project) {
@@ -192,5 +193,3 @@ private fun buildEnvironmentVariable(name: String, value: String? = null) = Envi
     .value( value ?: "FILL_ME")
     .build()
 
-data class CodeBuildStarterRequest (val project: Project, val organization: Organization,
-                                    val commit: String, val codeBuildType: CodeBuildType)
