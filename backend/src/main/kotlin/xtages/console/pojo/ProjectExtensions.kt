@@ -130,3 +130,4 @@ val Project.codeBuildCdLogsStreamName: String
         val name = ensure.notNull(value = name, valueDesc = "project.name")
         return "${name}_cd_logs"
     }
+

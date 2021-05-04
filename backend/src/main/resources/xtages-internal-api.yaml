@@ -9,6 +9,29 @@ servers:
 security:
   - bearerAuth: []
 paths:
+  /runci:
+    post:
+      summary: Run continuous integration for the project and commit specified
+      operationId: runCI
+      tags:
+        - runci
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RunCIReq"
+      responses:
+        "200":
+          description: Request to run a CI was successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RunCI"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        default:
+          $ref: "#/components/responses/DefaultError"
   /project:
     post:
       summary: Creates a new Xtages project
@@ -177,6 +200,24 @@ components:
         passCheckRuleEnabled:
           type: boolean
           default: false
+    RunCI:
+      description: A reference to the run CI
+      properties:
+        id:
+          type: integer
+          format: int64
+    RunCIReq:
+      description: Request made to POST /runCI
+      required:
+        - project
+        - commitId
+      properties:
+        project:
+          type: string
+          minLength: 1
+        commitId:
+          type: string
+          minLength: 1
     CreateCheckoutSessionReq:
       description: Request made to POST /checkout/session
       required:
