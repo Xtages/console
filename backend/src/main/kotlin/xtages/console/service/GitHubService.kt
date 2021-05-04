@@ -146,8 +146,12 @@ class GitHubService(
             value = organization.githubAppInstallationId,
             valueDesc = "organization.githubAppInstallationId"
         )
-        return gitHubClient.app.getInstallationById(githubAppInstallationId)
-            .createToken().create().token
+        return ensure.notNull(
+            gitHubClient.app.getInstallationById(githubAppInstallationId)
+            .createToken().create().token,
+            "gitHubClient.token",
+            "GitHub App Token"
+        )
     }
 
     private fun buildGitHubAppClient(installationToken: GHAppInstallationToken): GitHub {
