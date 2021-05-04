@@ -137,6 +137,23 @@ class GitHubService(
         projectDao.merge(project)
     }
 
+    /**
+     * Returns the app token assigned to the GH app for that [Organization]
+     * Note: this is not a JWT, however allows the app to use the token to authenticate itself against GH
+     */
+    fun appToken(organization: Organization): String? {
+        val githubAppInstallationId = ensure.notNull(
+            value = organization.githubAppInstallationId,
+            valueDesc = "organization.githubAppInstallationId"
+        )
+        return ensure.notNull(
+            gitHubClient.app.getInstallationById(githubAppInstallationId)
+            .createToken().create().token,
+            "gitHubClient.token",
+            "GitHub App Token"
+        )
+    }
+
     private fun buildGitHubAppClient(installationToken: GHAppInstallationToken): GitHub {
         return GitHubBuilder().withAppInstallationToken(installationToken.token).build()!!
     }
