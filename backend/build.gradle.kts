@@ -217,3 +217,7 @@ tasks.compileKotlin {
     dependsOn(copyFrontendToResources)
     dependsOn(tasks.openApiGenerate)
 }
+
+springBoot {
+    buildInfo()
+}
