@@ -4,10 +4,7 @@ import mu.KotlinLogging
 import org.springframework.http.HttpStatus.CREATED
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Controller
-import xtages.console.controller.api.model.CI
-import xtages.console.controller.api.model.CIReq
-import xtages.console.controller.api.model.CreateProjectReq
-import xtages.console.controller.api.model.Project
+import xtages.console.controller.api.model.*
 import xtages.console.controller.model.projectPojoToProjectConverter
 import xtages.console.dao.findByCognitoUserId
 import xtages.console.dao.findByNameAndOrganization
@@ -71,22 +68,30 @@ class ProjectApiController(
     override fun ci(projectName: String, ciReq: CIReq): ResponseEntity<CI> {
         val (user, organization, project) = checkRepoBelongsToOrg(projectName)
 
-        val buildEventsPojo = BuildEvents(
-            environment = "DEV",
-            operation = "CI",
-            status = "starting",
-            user = user.id,
-            projectId = project.id,
-            commit = ciReq.commitId
-        )
+        val buildEvent = createBuildEvent(user, project, CodeBuildType.CI, ciReq.commitId)
 
-        val buildEventsRecord = buildEventsDao.ctx().newRecord(BUILD_EVENTS, buildEventsPojo)
-        buildEventsRecord.store();
+        val buildEventsRecord = buildEventsDao.ctx().newRecord(BUILD_EVENTS, buildEvent)
+        buildEventsRecord.store()
         logger.debug { "Build Event created with id: ${buildEventsRecord.id}" }
 
         awsService.startCodeBuildProject(project = project, organization = organization,
             commit = ciReq.commitId, codeBuildType = CodeBuildType.CI)
         return ResponseEntity.ok(CI(id = buildEventsRecord.id))
+    }
+
+    override fun cd(projectName: String, cdReq: CDReq): ResponseEntity<CD> {
+        val (user, organization, project) = checkRepoBelongsToOrg(projectName)
+
+        val buildEvent = createBuildEvent(user, project, CodeBuildType.CD,
+            cdReq.commitId, cdReq.env)
+
+        val buildEventsRecord = buildEventsDao.ctx().newRecord(BUILD_EVENTS, buildEvent)
+        buildEventsRecord.store()
+        logger.debug { "Build Event created with id: ${buildEventsRecord.id}" }
+
+        awsService.startCodeBuildProject(project = project, organization = organization,
+            commit = cdReq.commitId, codeBuildType = CodeBuildType.CD)
+        return ResponseEntity.ok(CD(id = buildEventsRecord.id))
     }
 
     private fun checkRepoBelongsToOrg(projectName: String): Triple<XtagesUser, Organization, xtages.console.query.tables.pojos.Project> {
@@ -107,4 +112,21 @@ class ProjectApiController(
         )
         return Triple(user, organization, project)
     }
+}
+
+private fun createBuildEvent(
+    user: XtagesUser,
+    project: xtages.console.query.tables.pojos.Project,
+    type: CodeBuildType,
+    commitId: String,
+    env: String? = "dev"
+): BuildEvents {
+    return BuildEvents(
+        environment = env,
+        operation = type.name,
+        status = "starting",
+        user = user.id,
+        projectId = project.id,
+        commit = commitId
+    )
 }
