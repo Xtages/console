@@ -12,7 +12,7 @@ import xtages.console.query.tables.references.XTAGES_USER
 fun OrganizationDao.findByCognitoUserId(cognitoUserId: CognitoUserId): Organization? {
     return ctx().select(ORGANIZATION.asterisk())
         .from(ORGANIZATION)
-        .join(XTAGES_USER).on(ORGANIZATION.OWNER_ID.eq(XTAGES_USER.ID))
+        .join(XTAGES_USER).on(ORGANIZATION.NAME.eq(XTAGES_USER.ORGANIZATION_NAME))
         .where(XTAGES_USER.COGNITO_USER_ID.eq(cognitoUserId.id))
         .fetchOneInto(Organization::class.java)
 }
