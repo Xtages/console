@@ -34,7 +34,7 @@ paths:
           $ref: "#/components/responses/DefaultError"
   /project/{projectName}/ci:
     post:
-      summary: Run continuous integration for the project and commit specified
+      summary: Run continuous integration for the project specified
       operationId: ci
       tags:
         - ci
@@ -59,6 +59,37 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/CI"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        default:
+          $ref: "#/components/responses/DefaultError"
+  /project/{projectName}/cd:
+    post:
+      summary: Run continuous delivery for the project specified
+      operationId: cd
+      tags:
+        - cd
+      parameters:
+        - in: path
+          name: projectName
+          schema:
+            type: string
+            minLength: 1
+          required: true
+          description: Name of the project to run the CD operation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CDReq"
+      responses:
+        "200":
+          description: Request to run a CI was successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CD"
         "401":
           $ref: "#/components/responses/UnauthorizedError"
         default:
@@ -220,6 +251,24 @@ components:
         - commitId
       properties:
         commitId:
+          type: string
+          minLength: 1
+    CD:
+      description: A reference to the run CD
+      properties:
+        id:
+          type: integer
+          format: int64
+    CDReq:
+      description: Request made to POST /cd
+      required:
+        - commitId
+        - env
+      properties:
+        commitId:
+          type: string
+          minLength: 1
+        env:
           type: string
           minLength: 1
     CreateCheckoutSessionReq:
