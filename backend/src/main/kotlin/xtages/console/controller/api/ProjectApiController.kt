@@ -68,10 +68,9 @@ class ProjectApiController(
     override fun ci(projectName: String, ciReq: CIReq): ResponseEntity<CI> {
         val (user, organization, project) = checkRepoBelongsToOrg(projectName)
 
-        val buildEvents = createBuildEvent(user, project, CodeBuildType.CI)
-        buildEvents.commit = ciReq.commitId
+        val buildEvent = createBuildEvent(user, project, CodeBuildType.CI, ciReq.commitId)
 
-        val buildEventsRecord = buildEventsDao.ctx().newRecord(BUILD_EVENTS, buildEvents)
+        val buildEventsRecord = buildEventsDao.ctx().newRecord(BUILD_EVENTS, buildEvent)
         buildEventsRecord.store()
         logger.debug { "Build Event created with id: ${buildEventsRecord.id}" }
 
@@ -83,11 +82,10 @@ class ProjectApiController(
     override fun cd(projectName: String, cdReq: CDReq): ResponseEntity<CD> {
         val (user, organization, project) = checkRepoBelongsToOrg(projectName)
 
-        val buildEvents = createBuildEvent(user, project, CodeBuildType.CD)
-        buildEvents.commit = cdReq.commitId
-        buildEvents.environment = cdReq.env.toLowerCase()
+        val buildEvent = createBuildEvent(user, project, CodeBuildType.CD,
+            cdReq.commitId, cdReq.env)
 
-        val buildEventsRecord = buildEventsDao.ctx().newRecord(BUILD_EVENTS, buildEvents)
+        val buildEventsRecord = buildEventsDao.ctx().newRecord(BUILD_EVENTS, buildEvent)
         buildEventsRecord.store()
         logger.debug { "Build Event created with id: ${buildEventsRecord.id}" }
 
@@ -116,12 +114,19 @@ class ProjectApiController(
     }
 }
 
-private fun createBuildEvent(user: XtagesUser, project: ProjectPojo, cd: CodeBuildType): BuildEvents {
+private fun createBuildEvent(
+    user: XtagesUser,
+    project: xtages.console.query.tables.pojos.Project,
+    type: CodeBuildType,
+    commitId: String,
+    env: String? = "dev"
+): BuildEvents {
     return BuildEvents(
-        environment = "dev",
-        operation = cd.name,
+        environment = env,
+        operation = type.name,
         status = "starting",
         user = user.id,
         projectId = project.id,
+        commit = commitId
     )
 }
