@@ -66,6 +66,7 @@ class ProjectApiController(
             awsService.registerProject(project = projectPojo, organization = organization)
             return ResponseEntity.status(CREATED).body(projectPojoToProjectConverter.convert(projectPojo))
         }
+        logger.error { "Cannot create project [${projectPojo.name}] for organization [${organization.name}]. The repo already exists in GitHub" }
         return ResponseEntity.status(CONFLICT).build()
     }
 
