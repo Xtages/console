@@ -3,6 +3,8 @@ package xtages.console.controller.api
 import org.springframework.http.HttpStatus.CREATED
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Controller
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PostMapping
 import xtages.console.controller.api.model.CreateOrgReq
 import xtages.console.controller.api.model.Organization
 import xtages.console.controller.model.organizationPojoToOrganizationConverter
@@ -19,14 +21,17 @@ class OrganizationApiController(
     OrganizationApiControllerBase {
 
     override fun createOrganization(createOrgReq: CreateOrgReq): ResponseEntity<Organization> {
-        val owner = XtagesUser(cognitoUserId = createOrgReq.ownerCognitoUserId)
-        userDao.insert(owner)
         val organization = xtages.console.query.tables.pojos.Organization(
             name = createOrgReq.organizationName,
             subscriptionStatus = OrganizationSubscriptionStatus.UNCONFIRMED,
-            ownerId = owner.id
         )
         organizationDao.insert(organization)
+        val owner = XtagesUser(
+            cognitoUserId = createOrgReq.ownerCognitoUserId,
+            organizationName = organization.name,
+            isOwner = true
+        )
+        userDao.insert(owner)
         return ResponseEntity.status(CREATED)
             .body(organizationPojoToOrganizationConverter.convert(organization))
     }
