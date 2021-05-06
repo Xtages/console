@@ -8,6 +8,7 @@ import com.nimbusds.jose.jwk.JWK
 import com.nimbusds.jwt.JWTClaimsSet
 import com.nimbusds.jwt.SignedJWT
 import org.kohsuke.github.GHAppInstallationToken
+import org.kohsuke.github.GHRepository
 import org.kohsuke.github.GitHub
 import org.kohsuke.github.GitHubBuilder
 import org.springframework.stereotype.Service
@@ -21,6 +22,7 @@ import xtages.console.query.tables.daos.OrganizationDao
 import xtages.console.query.tables.daos.ProjectDao
 import xtages.console.query.tables.pojos.Organization
 import xtages.console.query.tables.pojos.Project
+import java.io.IOException
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.*
@@ -119,6 +121,28 @@ class GitHubService(
         }
     }
 
+    /**
+     * Returns a [GHRepository] for the [project] in [organization].
+     */
+    fun getRepositoryForProject(project: Project, organization: Organization) : GHRepository? {
+        val githubAppInstallationId = ensure.notNull(
+            value = organization.githubAppInstallationId,
+            valueDesc = "organization.githubAppInstallationId"
+        )
+        val gitHubAppClient = buildGitHubAppClient(
+            gitHubClient.app.getInstallationById(githubAppInstallationId).createToken().create()
+        )
+        return try {
+            gitHubAppClient.getRepository("${organization.name}/${project.name}")
+        } catch (e: IOException) {
+            null
+        }
+    }
+
+    /**
+     * Creates a new GitHub repository for [project]. It will use a template repository as a starting point, the
+     * template repository will be selected based on [Project.type] and [Project.version].
+     */
     fun createRepoForProject(project: Project, organization: Organization) {
         val githubAppInstallationId = ensure.notNull(
                 value = organization.githubAppInstallationId,
