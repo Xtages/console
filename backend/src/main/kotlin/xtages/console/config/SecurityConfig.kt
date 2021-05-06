@@ -144,13 +144,13 @@ class OrganizationInGoodStandingAccessDecisionVoter(val organizationDao: Organiz
                 return AccessDecisionVoter.ACCESS_GRANTED
             } else {
                 if (organization.name != organizationName) {
-                    logger.debug {
-                        "User [${cognitoUserId.id}] tried to access organization [$organizationName](from JWT claim) but it not an organization the user belongs to."
+                    logger.warn{
+                        "User [${cognitoUserId.id}] tried to access organization [$organizationName](from JWT claim) but it's not an organization the user belongs to."
                     }
                 }
                 if (organization.subscriptionStatus !in validOrgSubscriptionStatus) {
-                    logger.debug {
-                        "User [${cognitoUserId.id}] tried to access organization [$organizationName](from JWT claim) but the organization's subscription status is [${organization.subscriptionStatus}"
+                    logger.info{
+                        "User [${cognitoUserId.id}] tried to access organization [$organizationName](from JWT claim) but the organization's subscription status is [${organization.subscriptionStatus}]"
                     }
                 }
             }
