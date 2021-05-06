@@ -67,6 +67,34 @@ class Ensure internal constructor() {
     }
 
     /**
+     * Checks that return value of [operation] is of type [T], otherwise throws an [IllegalArgumentException].
+     *
+     * @param operation - The lambda to run when checking for type [T].
+     * @param valueDesc - The description of the value that should have been of type [T].
+     * @throws IllegalArgumentException if [operation] returns a value that is not of type [T].
+     */
+    inline fun <reified T> ofType(operation: () -> Any?, valueDesc: String): T =
+        ofType(value = operation(), valueDesc = valueDesc)
+
+    /**
+     * Checks that [value] is of type [T], otherwise throws an [IllegalArgumentException].
+     *
+     * @param value - The value to check that is of type [T].
+     * @param valueDesc - The description of the value that should have been of type [T].
+     * @throws IllegalArgumentException if [value] is not of type [T].
+     */
+    inline fun <reified T> ofType(value: Any?, valueDesc: String): T {
+        if (value is T) {
+            return value
+        }
+        throw IllegalArgumentException(
+            code = ExceptionCode.INVALID_TYPE,
+            innerMessage = "$valueDesc should have been ${T::class.java} but was ${value?.javaClass}"
+        )
+    }
+
+
+    /**
      * Checks that the result of calling [operation] is `true`, otherwise throws an [IllegalArgumentException] with
      * [code] and [message].
      *
