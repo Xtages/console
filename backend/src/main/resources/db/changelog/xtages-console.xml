@@ -12,4 +12,7 @@
     <include file="changesets/add-build.postgresql.sql" relativeToChangelogFile="true" />
     <include file="changesets/adjust-project-table.postgresql.sql" relativeToChangelogFile="true" />
     <include file="changesets/add-arn-to-org-and-project.postgresql.sql" relativeToChangelogFile="true" />
+    <include file="changesets/flattening-build-table.postgresql.sql" relativeToChangelogFile="true" />
+    <include file="changesets/add-org-users.postgresql.sql" relativeToChangelogFile="true" />
+    <include file="changesets/update-project-type.postgresql.sql" relativeToChangelogFile="true" />
 </databaseChangeLog>

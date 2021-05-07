@@ -61,7 +61,7 @@ val Project.codeBuildCiImageName: String
     get() {
         val type = ensure.notNull(value = type, valueDesc = "project.type")
         val version = ensure.notNull(value = version, valueDesc = "project.version")
-        return "${type}_${version}_ci".toLowerCase()
+        return "${type}_ci:${version}".toLowerCase()
     }
 
 /**
@@ -71,7 +71,7 @@ val Project.codeBuildCdImageName: String
     get() {
         val type = ensure.notNull(value = type, valueDesc = "project.type")
         val version = ensure.notNull(value = version, valueDesc = "project.version")
-        return "${type}_${version}_cd".toLowerCase()
+        return "${type}_cd:${version}".toLowerCase()
     }
 
 
@@ -82,7 +82,7 @@ val Project.codeBuildCiBuildSpecName: String
     get() {
         val type = ensure.notNull(value = type, valueDesc = "project.type")
         val version = ensure.notNull(value = version, valueDesc = "project.version")
-        return "${type}_${version}_ci".toLowerCase()
+        return "ci/${type}/${version}-buildspec.yml".toLowerCase()
     }
 
 /**
@@ -92,7 +92,7 @@ val Project.codeBuildCdBuildSpecName: String
     get() {
         val type = ensure.notNull(value = type, valueDesc = "project.type")
         val version = ensure.notNull(value = version, valueDesc = "project.version")
-        return "${type}_${version}_cd".toLowerCase()
+        return "cd/${type}/${version}-buildspec.yml".toLowerCase()
     }
 
 /**
@@ -130,3 +130,4 @@ val Project.codeBuildCdLogsStreamName: String
         val name = ensure.notNull(value = name, valueDesc = "project.name")
         return "${name}_cd_logs"
     }
+
