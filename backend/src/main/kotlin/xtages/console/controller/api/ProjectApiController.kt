@@ -25,7 +25,6 @@ import xtages.console.service.AuthenticationService
 import xtages.console.service.AwsService
 import xtages.console.service.CodeBuildType
 import xtages.console.service.GitHubService
-import kotlin.math.log
 import xtages.console.query.tables.pojos.Project as ProjectPojo
 
 private val logger = KotlinLogging.logger { }
