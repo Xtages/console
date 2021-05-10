@@ -18,6 +18,7 @@ plugins {
 group = "com.xtages"
 version = "0.0.1-SNAPSHOT"
 java.sourceCompatibility = JavaVersion.VERSION_11
+val awspringVersion = "2.3.1"
 
 repositories {
     mavenCentral()
@@ -28,9 +29,10 @@ dependencies {
     developmentOnly("org.springframework.boot:spring-boot-devtools")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
     implementation("com.stripe:stripe-java:20.45.0")
-    implementation("io.awspring.cloud:spring-cloud-aws-autoconfigure:2.3.1")
-    implementation("io.awspring.cloud:spring-cloud-starter-aws-parameter-store-config:2.3.1")
-    implementation("io.awspring.cloud:spring-cloud-starter-aws:2.3.1")
+    implementation("io.awspring.cloud:spring-cloud-aws-autoconfigure:$awspringVersion")
+    implementation("io.awspring.cloud:spring-cloud-aws-messaging:$awspringVersion")
+    implementation("io.awspring.cloud:spring-cloud-starter-aws-parameter-store-config:$awspringVersion")
+    implementation("io.awspring.cloud:spring-cloud-starter-aws:$awspringVersion")
     implementation("io.github.microutils:kotlin-logging-jvm:2.0.5")
     implementation("io.projectreactor.kotlin:reactor-kotlin-extensions")
     implementation("javax.validation:validation-api:2.0.1.Final")
@@ -41,6 +43,7 @@ dependencies {
     implementation("org.liquibase:liquibase-core")
     implementation(platform("software.amazon.awssdk:bom:2.16.48"))
     implementation("software.amazon.awssdk:codebuild")
+    implementation("software.amazon.awssdk:codestarnotifications")
     implementation("software.amazon.awssdk:cognitoidentity")
     implementation("software.amazon.awssdk:ecr")
     implementation("software.amazon.awssdk:sts")
