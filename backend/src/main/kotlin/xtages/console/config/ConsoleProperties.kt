@@ -13,12 +13,14 @@ data class ConsoleProperties(val stripe: Stripe, val server: Server, val gitHubA
 
     data class GitHubApp(val privateKey: String, val identifier: String, val webhookSecret: String)
 
-    data class Aws(
-        val accountId: String,
-        val cognitoIdentityProviderName: String,
-        val cognitoIdentityPoolId: String,
+    data class Cognito(val identityProviderName: String, val identityPoolId: String)
+
+    data class CodeBuild(
         val ecrRepository: String,
         val buildSpecsS3BucketArn: String,
-        val aimRoleArnPrefix: String
+        val buildEventsSnsTopicArn: String,
+        val buildEventsSqsQueueArn: String
     )
+
+    data class Aws(val accountId: String, val aimRoleArnPrefix: String, val cognito: Cognito, val codeBuild: CodeBuild)
 }

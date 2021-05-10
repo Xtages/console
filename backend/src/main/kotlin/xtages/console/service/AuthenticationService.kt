@@ -42,7 +42,7 @@ class AuthenticationService(
      * Returns a [Map<String,String>] of `cognitoIdentityProviderName` to `JWT` id token.
      */
     val loginsMap: Map<String, String>
-        get() = mapOf(consoleProperties.aws.cognitoIdentityProviderName to jwt.tokenValue)
+        get() = mapOf(consoleProperties.aws.cognito.identityProviderName to jwt.tokenValue)
 
     /**
      * Returns the [AwsSessionCredentials] for the currently logged in user.

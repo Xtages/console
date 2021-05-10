@@ -22,6 +22,64 @@ import { DUMMY_BASE_URL, assertParamExists, setApiKeyToObject, setBasicAuthToObj
 import { BASE_PATH, COLLECTION_FORMATS, RequestArgs, BaseAPI, RequiredError } from './base';
 
 /**
+ * A reference to the run CD
+ * @export
+ * @interface CD
+ */
+export interface CD {
+    /**
+     * 
+     * @type {number}
+     * @memberof CD
+     */
+    id?: number;
+}
+/**
+ * Request made to POST /cd
+ * @export
+ * @interface CDReq
+ */
+export interface CDReq {
+    /**
+     * 
+     * @type {string}
+     * @memberof CDReq
+     */
+    commitId: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof CDReq
+     */
+    env: string;
+}
+/**
+ * A reference to the run CI
+ * @export
+ * @interface CI
+ */
+export interface CI {
+    /**
+     * 
+     * @type {number}
+     * @memberof CI
+     */
+    id?: number;
+}
+/**
+ * Request made to POST /ci
+ * @export
+ * @interface CIReq
+ */
+export interface CIReq {
+    /**
+     * 
+     * @type {string}
+     * @memberof CIReq
+     */
+    commitId: string;
+}
+/**
  * Request made to POST /checkout/session
  * @export
  * @interface CreateCheckoutSessionReq
@@ -96,7 +154,7 @@ export interface CreateProjectReq {
     * @enum {string}
     */
 export enum CreateProjectReqTypeEnum {
-    Nodejs = 'NODEJS'
+    Node = 'NODE'
 }
 
 /**
@@ -193,7 +251,125 @@ export interface Project {
     * @enum {string}
     */
 export enum ProjectTypeEnum {
-    Nodejs = 'NODEJS'
+    Node = 'NODE'
+}
+
+
+/**
+ * CdApi - axios parameter creator
+ * @export
+ */
+export const CdApiAxiosParamCreator = function (configuration?: Configuration) {
+    return {
+        /**
+         * 
+         * @summary Run continuous delivery for the project specified
+         * @param {string} projectName Name of the project to run the CD operation
+         * @param {CDReq} cDReq 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        cd: async (projectName: string, cDReq: CDReq, options: any = {}): Promise<RequestArgs> => {
+            // verify required parameter 'projectName' is not null or undefined
+            assertParamExists('cd', 'projectName', projectName)
+            // verify required parameter 'cDReq' is not null or undefined
+            assertParamExists('cd', 'cDReq', cDReq)
+            const localVarPath = `/project/{projectName}/cd`
+                .replace(`{${"projectName"}}`, encodeURIComponent(String(projectName)));
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'POST', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            // authentication bearerAuth required
+            // http bearer authentication required
+            await setBearerAuthToObject(localVarHeaderParameter, configuration)
+
+
+    
+            localVarHeaderParameter['Content-Type'] = 'application/json';
+
+            setSearchParams(localVarUrlObj, localVarQueryParameter, options.query);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+            localVarRequestOptions.data = serializeDataIfNeeded(cDReq, localVarRequestOptions, configuration)
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+    }
+};
+
+/**
+ * CdApi - functional programming interface
+ * @export
+ */
+export const CdApiFp = function(configuration?: Configuration) {
+    const localVarAxiosParamCreator = CdApiAxiosParamCreator(configuration)
+    return {
+        /**
+         * 
+         * @summary Run continuous delivery for the project specified
+         * @param {string} projectName Name of the project to run the CD operation
+         * @param {CDReq} cDReq 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async cd(projectName: string, cDReq: CDReq, options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<CD>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.cd(projectName, cDReq, options);
+            return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
+        },
+    }
+};
+
+/**
+ * CdApi - factory interface
+ * @export
+ */
+export const CdApiFactory = function (configuration?: Configuration, basePath?: string, axios?: AxiosInstance) {
+    const localVarFp = CdApiFp(configuration)
+    return {
+        /**
+         * 
+         * @summary Run continuous delivery for the project specified
+         * @param {string} projectName Name of the project to run the CD operation
+         * @param {CDReq} cDReq 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        cd(projectName: string, cDReq: CDReq, options?: any): AxiosPromise<CD> {
+            return localVarFp.cd(projectName, cDReq, options).then((request) => request(axios, basePath));
+        },
+    };
+};
+
+/**
+ * CdApi - object-oriented interface
+ * @export
+ * @class CdApi
+ * @extends {BaseAPI}
+ */
+export class CdApi extends BaseAPI {
+    /**
+     * 
+     * @summary Run continuous delivery for the project specified
+     * @param {string} projectName Name of the project to run the CD operation
+     * @param {CDReq} cDReq 
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof CdApi
+     */
+    public cd(projectName: string, cDReq: CDReq, options?: any) {
+        return CdApiFp(this.configuration).cd(projectName, cDReq, options).then((request) => request(this.axios, this.basePath));
+    }
 }
 
 
@@ -368,6 +544,124 @@ export class CheckoutApi extends BaseAPI {
      */
     public getCustomerPortalSession(options?: any) {
         return CheckoutApiFp(this.configuration).getCustomerPortalSession(options).then((request) => request(this.axios, this.basePath));
+    }
+}
+
+
+/**
+ * CiApi - axios parameter creator
+ * @export
+ */
+export const CiApiAxiosParamCreator = function (configuration?: Configuration) {
+    return {
+        /**
+         * 
+         * @summary Run continuous integration for the project specified
+         * @param {string} projectName Name of the project to run the CI operation
+         * @param {CIReq} cIReq 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        ci: async (projectName: string, cIReq: CIReq, options: any = {}): Promise<RequestArgs> => {
+            // verify required parameter 'projectName' is not null or undefined
+            assertParamExists('ci', 'projectName', projectName)
+            // verify required parameter 'cIReq' is not null or undefined
+            assertParamExists('ci', 'cIReq', cIReq)
+            const localVarPath = `/project/{projectName}/ci`
+                .replace(`{${"projectName"}}`, encodeURIComponent(String(projectName)));
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'POST', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            // authentication bearerAuth required
+            // http bearer authentication required
+            await setBearerAuthToObject(localVarHeaderParameter, configuration)
+
+
+    
+            localVarHeaderParameter['Content-Type'] = 'application/json';
+
+            setSearchParams(localVarUrlObj, localVarQueryParameter, options.query);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+            localVarRequestOptions.data = serializeDataIfNeeded(cIReq, localVarRequestOptions, configuration)
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+    }
+};
+
+/**
+ * CiApi - functional programming interface
+ * @export
+ */
+export const CiApiFp = function(configuration?: Configuration) {
+    const localVarAxiosParamCreator = CiApiAxiosParamCreator(configuration)
+    return {
+        /**
+         * 
+         * @summary Run continuous integration for the project specified
+         * @param {string} projectName Name of the project to run the CI operation
+         * @param {CIReq} cIReq 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async ci(projectName: string, cIReq: CIReq, options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<CI>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.ci(projectName, cIReq, options);
+            return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
+        },
+    }
+};
+
+/**
+ * CiApi - factory interface
+ * @export
+ */
+export const CiApiFactory = function (configuration?: Configuration, basePath?: string, axios?: AxiosInstance) {
+    const localVarFp = CiApiFp(configuration)
+    return {
+        /**
+         * 
+         * @summary Run continuous integration for the project specified
+         * @param {string} projectName Name of the project to run the CI operation
+         * @param {CIReq} cIReq 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        ci(projectName: string, cIReq: CIReq, options?: any): AxiosPromise<CI> {
+            return localVarFp.ci(projectName, cIReq, options).then((request) => request(axios, basePath));
+        },
+    };
+};
+
+/**
+ * CiApi - object-oriented interface
+ * @export
+ * @class CiApi
+ * @extends {BaseAPI}
+ */
+export class CiApi extends BaseAPI {
+    /**
+     * 
+     * @summary Run continuous integration for the project specified
+     * @param {string} projectName Name of the project to run the CI operation
+     * @param {CIReq} cIReq 
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof CiApi
+     */
+    public ci(projectName: string, cIReq: CIReq, options?: any) {
+        return CiApiFp(this.configuration).ci(projectName, cIReq, options).then((request) => request(this.axios, this.basePath));
     }
 }
 
