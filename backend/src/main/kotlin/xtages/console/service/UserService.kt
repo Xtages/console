@@ -23,7 +23,7 @@ class UserService(
     fun createUser(cognitoUserId: String, organizationName: String, isOwner: Boolean = false) {
         val idResponse = anonymousCognitoIdentityClient.getId(
             GetIdRequest.builder()
-                .identityPoolId(consoleProperties.aws.cognitoIdentityPoolId)
+                .identityPoolId(consoleProperties.aws.cognito.identityPoolId)
                 .logins(authenticationService.loginsMap)
                 .accountId(consoleProperties.aws.accountId)
                 .build()
