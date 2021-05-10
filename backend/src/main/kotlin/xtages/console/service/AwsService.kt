@@ -2,6 +2,7 @@ package xtages.console.service
 
 import mu.KotlinLogging
 import org.springframework.stereotype.Service
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
 import software.amazon.awssdk.services.codebuild.CodeBuildAsyncClient
 import software.amazon.awssdk.services.codebuild.model.*
 import software.amazon.awssdk.services.ecr.EcrAsyncClient
@@ -18,10 +19,7 @@ import software.amazon.awssdk.services.codebuild.model.Tag as CodebuildTag
 import software.amazon.awssdk.services.ecr.model.Tag as EcrTag
 
 private val xtagesEcrTag: EcrTag = EcrTag.builder().key("XTAGES_CONSOLE_CREATED").value("true").build()
-private val xtagesCodeBuildTag: CodebuildTag = CodebuildTag.builder()
-    .key("XTAGES_CONSOLE_CREATED")
-    .value("true")
-    .build()
+private val xtagesCodeBuildTag = buildCodeBuildProjectTag(key = "XTAGES_CONSOLE_CREATED", value = "true")
 
 private val envVars = listOf(
     buildEnvironmentVariable("XTAGES_COMMIT"),
@@ -43,7 +41,8 @@ class AwsService(
     private val codeBuildAsyncClient: CodeBuildAsyncClient,
     private val organizationDao: OrganizationDao,
     private val projectDao: ProjectDao,
-    private val consoleProperties: ConsoleProperties
+    private val consoleProperties: ConsoleProperties,
+    private val authenticationService: AuthenticationService,
 ) {
     /**
      * Creates a [Project]-related infrastructure in AWS. Specifically creates:
@@ -62,8 +61,10 @@ class AwsService(
      * codeBuildStarterRequest provides information about the [CodeBuildType] to run and
      * al the necessary information to make the build run
      */
-    fun startCodeBuildProject(project: Project, organization: Organization,
-                              commit: String, codeBuildType: CodeBuildType) {
+    fun startCodeBuildProject(
+        project: Project, organization: Organization,
+        commit: String, codeBuildType: CodeBuildType
+    ) {
         logger.info { "running CodeBuild: ${codeBuildType} for project : ${project.name} commit: ${commit} organization: ${organization.name}" }
         val token = gitHubService.appToken(organization)
         val cbProjectName = if (codeBuildType == CodeBuildType.CI)
@@ -71,7 +72,7 @@ class AwsService(
         else
             project.codeBuildCdBuildSpecName
 
-        codeBuildAsyncClient.startBuild(
+        userSessionCodeBuildClient().startBuild(
             StartBuildRequest.builder()
                 .projectName(cbProjectName)
                 .environmentVariablesOverride(
@@ -84,6 +85,12 @@ class AwsService(
                 .build()
         ).get()
         logger.info { "started CodeBuild project: ${cbProjectName}" }
+    }
+
+    private fun userSessionCodeBuildClient(): CodeBuildAsyncClient {
+        return CodeBuildAsyncClient.builder()
+            .credentialsProvider(StaticCredentialsProvider.create(authenticationService.userAwsSessionCredentials))
+            .build()
     }
 
     private fun createCodeBuildCiProject(project: Project) {
@@ -162,7 +169,7 @@ class AwsService(
                     )
                     .build()
             )
-            .tags(xtagesCodeBuildTag)
+            .tags(xtagesCodeBuildTag, buildCodeBuildProjectTag(key = "organization", value = project.organization!!))
             .badgeEnabled(false)
         if (concurrentBuildLimit != null) {
             builder.concurrentBuildLimit(concurrentBuildLimit)
@@ -190,6 +197,9 @@ class AwsService(
 private fun buildEnvironmentVariable(name: String, value: String? = null) = EnvironmentVariable.builder()
     .type(EnvironmentVariableType.PLAINTEXT)
     .name(name)
-    .value( value ?: "FILL_ME")
+    .value(value ?: "FILL_ME")
     .build()
+
+private fun buildCodeBuildProjectTag(key: String, value: String) =
+    CodebuildTag.builder().key(key).value(value).build()
 

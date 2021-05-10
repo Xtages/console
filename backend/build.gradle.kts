@@ -1,6 +1,5 @@
 import com.github.gradle.node.npm.task.NpmTask
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-import org.springframework.boot.gradle.tasks.bundling.BootJar
 import nu.studer.gradle.jooq.JooqEdition
 import nu.studer.gradle.jooq.JooqGenerate
 
@@ -10,7 +9,7 @@ plugins {
     id("com.github.node-gradle.node") version "3.0.1"
     id("org.openapi.generator") version "5.1.0"
     id("nu.studer.jooq") version "5.2.1"
-    id ("org.liquibase.gradle") version "2.0.4"
+    id("org.liquibase.gradle") version "2.0.4"
     id("org.barfuin.gradle.taskinfo") version "1.0.5"
     kotlin("jvm") version "1.4.31"
     kotlin("plugin.spring") version "1.4.31"
@@ -41,8 +40,10 @@ dependencies {
     implementation("org.kohsuke:github-api:1.127")
     implementation("org.liquibase:liquibase-core")
     implementation(platform("software.amazon.awssdk:bom:2.16.48"))
-    implementation("software.amazon.awssdk:ecr")
     implementation("software.amazon.awssdk:codebuild")
+    implementation("software.amazon.awssdk:cognitoidentity")
+    implementation("software.amazon.awssdk:ecr")
+    implementation("software.amazon.awssdk:sts")
 
     liquibaseRuntime("org.liquibase:liquibase-core")
     liquibaseRuntime(sourceSets.getByName("main").compileClasspath)
@@ -50,11 +51,13 @@ dependencies {
     liquibaseRuntime("org.postgresql:postgresql")
 
     implementation("org.springframework.boot:spring-boot-starter-actuator")
+    implementation("org.springframework.boot:spring-boot-starter-cache")
     implementation("org.springframework.boot:spring-boot-starter-jooq")
     implementation("org.springframework.boot:spring-boot-starter-oauth2-resource-server")
     implementation("org.springframework.boot:spring-boot-starter-security")
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-webflux")
+    implementation("com.github.ben-manes.caffeine:caffeine:3.0.2")
     jooqGenerator("org.postgresql:postgresql")
     runtimeOnly("org.bouncycastle:bcpkix-jdk15to18:1.68")
     runtimeOnly("org.postgresql:postgresql")
@@ -67,7 +70,7 @@ val apiSpecFile = file("${sourceSets["main"].resources.srcDirs.first()}/xtages-i
 
 val env = System.getenv("ENV") ?: "local"
 val dbEndpoint = if (env == "local") "localhost" else "xtages-development.c9ijuglx54eu.us-east-1.rds.amazonaws.com"
-val dbPass = System.getenv("DB_PASS")
+val dbPass: String? = System.getenv("DB_PASS")
 
 kotlin {
     sourceSets {
@@ -89,16 +92,29 @@ allOpen {
     annotation("javax.persistence.Entity")
 }
 
+val liquibaseRunList: String? by project
+
 // Liquibase configuration
 liquibase {
     activities.register("main") {
         arguments = mapOf(
-                "logLevel" to "info",
-                "changeLogFile" to "src/main/resources/db/changelog/xtages-console.xml",
-                "url" to "jdbc:postgresql://" + dbEndpoint + ":5432/xtages_console",
-                "username" to "xtages_console",
-                "password" to dbPass)
+            "logLevel" to "info",
+            "changeLogFile" to "src/main/resources/db/changelog/xtages-console.xml",
+            "url" to "jdbc:postgresql://$dbEndpoint:5432/xtages_console",
+            "username" to "xtages_console",
+            "password" to dbPass
+        )
     }
+    activities.register("seed-dev-db") {
+        arguments = mapOf(
+            "logLevel" to "info",
+            "changeLogFile" to "src/main/resources/db/changelog/seed-xtages-console-dev-db.xml",
+            "url" to "jdbc:postgresql://localhost:5432/xtages_console",
+            "username" to "xtages_console"
+        )
+    }
+    println(liquibaseRunList)
+    runList = liquibaseRunList ?: "main"
 }
 
 // Generate type-safe JOOQ files based on the DB
@@ -112,7 +128,7 @@ jooq {
                 jdbc.apply {
                     driver = "org.postgresql.Driver"
                     user = "xtages_console"
-                    url = "jdbc:postgresql://" + dbEndpoint + ":5432/xtages_console"
+                    url = "jdbc:postgresql://$dbEndpoint:5432/xtages_console"
                     password = dbPass
                 }
                 generator.apply {

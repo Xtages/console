@@ -125,7 +125,7 @@ class OrganizationInGoodStandingAccessDecisionVoter(val organizationDao: Organiz
     ): Int {
         if (authentication is JwtAuthenticationToken) {
             val organizationName = ensure.ofType<String>(
-                authentication.tokenAttributes["custom:org"],
+                authentication.tokenAttributes["custom:organization"],
                 "organization"
             )
             val cognitoUserId = CognitoUserId.fromJwt(authentication.principal)
