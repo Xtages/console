@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {ReactNode} from 'react';
 import {useQuery} from 'react-query';
 import {checkoutApi} from 'service/Services';
 
@@ -15,7 +15,7 @@ export default function AccountPage() {
     () => checkoutApi.getCustomerPortalSession(),
   );
 
-  let content: string | JSX.Element;
+  let content: string | ReactNode;
   if (isLoading) {
     content = 'Loading...';
   } else if (error) {
