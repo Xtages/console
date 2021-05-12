@@ -79,8 +79,8 @@ class AwsService(
     fun startCodeBuildProject(
         project: Project, organization: Organization,
         commit: String, codeBuildType: CodeBuildType
-    ): StartBuildResponse? {
-        logger.info { "running CodeBuild: ${codeBuildType} for project : ${project.name} commit: ${commit} organization: ${organization.name}" }
+    ): StartBuildResponse {
+        logger.info { "running CodeBuild: $codeBuildType for project : ${project.name} commit: $commit organization: ${organization.name}" }
         val token = gitHubService.appToken(organization)
         val cbProjectName = if (codeBuildType == CodeBuildType.CI)
             project.codeBuildCiProjectName
@@ -98,8 +98,8 @@ class AwsService(
                     )
                 )
                 .build()
-        ).get()
-        logger.info { "started CodeBuild project: ${cbProjectName}" }
+        ).get()!!
+        logger.info { "started CodeBuild project: $cbProjectName" }
         return startBuildResponse
     }
 

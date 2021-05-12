@@ -83,8 +83,8 @@ class ProjectApiController(
             commit = ciReq.commitId, codeBuildType = CodeBuildType.CI
         )
 
-        logger.debug { "StartBuildResponse Object: ${startCodeBuildResponse?.build()?.arn()}" }
-        buildEventsRecord.buildArn = startCodeBuildResponse?.build()?.arn()
+        logger.debug { "StartBuildResponse Object: ${startCodeBuildResponse.build()?.arn()}" }
+        buildEventsRecord.buildArn = startCodeBuildResponse.build()?.arn()
         buildEventsRecord.update()
 
         return ResponseEntity.ok(CI(id = buildEventsRecord.id))
@@ -107,8 +107,8 @@ class ProjectApiController(
             commit = cdReq.commitId, codeBuildType = CodeBuildType.CD
         )
 
-        logger.debug { "StartBuildResponse Object: ${startCodeBuildResponse?.build()?.arn()}" }
-        buildEventsRecord.buildArn = startCodeBuildResponse?.build()?.arn()
+        logger.debug { "StartBuildResponse Object: ${startCodeBuildResponse.build()?.arn()}" }
+        buildEventsRecord.buildArn = startCodeBuildResponse.build()?.arn()
         buildEventsRecord.update()
 
         return ResponseEntity.ok(CD(id = buildEventsRecord.id))
