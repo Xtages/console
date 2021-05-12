@@ -27,6 +27,7 @@ repositories {
 dependencies {
     annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
     developmentOnly("org.springframework.boot:spring-boot-devtools")
+    implementation("com.fasterxml.jackson.datatype:jackson-datatype-jdk8")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
     implementation("com.stripe:stripe-java:20.45.0")
     implementation("io.awspring.cloud:spring-cloud-aws-autoconfigure:$awspringVersion")

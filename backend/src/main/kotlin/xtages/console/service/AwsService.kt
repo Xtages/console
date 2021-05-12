@@ -1,5 +1,15 @@
 package xtages.console.service
 
+import com.amazonaws.services.sns.message.SnsMessageManager
+import com.amazonaws.services.sns.message.SnsNotification
+import com.fasterxml.jackson.core.JsonParser
+import com.fasterxml.jackson.databind.DeserializationContext
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.PropertyNamingStrategy
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize
+import com.fasterxml.jackson.databind.annotation.JsonNaming
+import com.fasterxml.jackson.databind.deser.std.StdDeserializer
+import io.awspring.cloud.messaging.listener.SqsMessageDeletionPolicy
 import io.awspring.cloud.messaging.listener.annotation.SqsListener
 import mu.KotlinLogging
 import org.springframework.stereotype.Service
@@ -23,6 +33,8 @@ import xtages.console.query.tables.pojos.Organization
 import xtages.console.query.tables.pojos.Project
 import java.time.Duration
 import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import software.amazon.awssdk.services.codebuild.model.Tag as CodebuildTag
 import software.amazon.awssdk.services.ecr.model.Tag as EcrTag
 
@@ -52,11 +64,18 @@ class AwsService(
     private val projectDao: ProjectDao,
     private val consoleProperties: ConsoleProperties,
     private val authenticationService: AuthenticationService,
+    private val objectMapper: ObjectMapper,
 ) {
+    private val snsMessageManager = SnsMessageManager()
 
-//    @SqsListener("build-updates-queue")
-    fun codeBuildEventListener(event: CodeBuildEvent) {
-//        println(event)
+//    @SqsListener("build-updates-queue", deletionPolicy = SqsMessageDeletionPolicy.ON_SUCCESS)
+    fun codeBuildEventListener(event: String) {
+        val notification = ensure.ofType<SnsNotification>(
+            value = snsMessageManager.parseMessage(event.byteInputStream()),
+            valueDesc = "received message"
+        )
+        val codeBuildEvent = objectMapper.readValue(notification.message, CodeBuildEvent::class.java)
+        println(codeBuildEvent)
     }
 
     /**
@@ -248,46 +267,75 @@ private fun buildCodeBuildProjectTag(key: String, value: String) =
 
 
 data class CodeBuildEvent(
-    val accountId: String,
+    val account: String,
     val region: String,
-    val detailType: DetailType,
+    val detailType: String,
     val source: String,
-    val version: String,
+    val version: String?,
     val time: Instant,
-    val id: String,
+    val id: String?,
     val resources: List<String>,
     val detail: CodeBuildEventDetail,
 )
 
+@JsonNaming(PropertyNamingStrategy.KebabCaseStrategy::class)
 data class CodeBuildEventDetail(
-    val buildStatus: String,
+    val buildStatus: String?,
     val projectName: String,
     val buildId: String,
     val additionalInformation: CodeBuildAdditionalInformation,
-    val currentPhase: String,
-    val currentPhaseContext: String,
-    val version: String,
-    val completedPhaseStatus: String,
-    val completedPhase: String,
-    val completedPhaseContext: String,
-    val completedPhaseStart: Instant,
-    val completedPhaseEnd: Instant,
+    val currentPhase: String?,
+    val currentPhaseContext: String?,
+    val version: String?,
+    val completedPhaseStatus: String?,
+    val completedPhase: String?,
+    val completedPhaseContext: String?,
+    @JsonDeserialize(using = TimeZonelessInstantDeserializer::class)
+    val completedPhaseStart: Instant?,
+    @JsonDeserialize(using = TimeZonelessInstantDeserializer::class)
+    val completedPhaseEnd: Instant?,
 )
 
+@JsonNaming(PropertyNamingStrategy.KebabCaseStrategy::class)
 data class CodeBuildAdditionalInformation(
-    val artifact: BuildArtifacts,
-    val environment: ProjectEnvironment,
-    val timeout: Duration,
+    val timeout: Duration?,
     val buildComplete: Boolean,
     val initiator: String,
+    @JsonDeserialize(using = TimeZonelessInstantDeserializer::class)
     val buildStartTime: Instant,
-    val source: ProjectSource,
     val logs: CodeBuildLogs,
-    val phases: List<BuildPhase>,
+    val phases: List<CodeBuildPhase>?,
 )
 
+@JsonNaming(PropertyNamingStrategy.KebabCaseStrategy::class)
 data class CodeBuildLogs(
-    val groupName: String,
-    val streamName: String,
+    val groupName: String?,
+    val streamName: String?,
     val deepLink: String,
 )
+
+@JsonNaming(PropertyNamingStrategy.KebabCaseStrategy::class)
+data class CodeBuildPhase(
+    val phaseContext: List<Any>?,
+    @JsonDeserialize(using = TimeZonelessInstantDeserializer::class)
+    val startTime: Instant,
+    @JsonDeserialize(using = TimeZonelessInstantDeserializer::class)
+    val endTime: Instant?,
+    val durationInSeconds: Duration?,
+    val phaseType: String,
+    val phaseStatus: String?,
+)
+
+/**
+ * An [StdDeserializer] for [Instant] that assumes that the source string is formatted using `MMM dd, yyyy h:mm:ss a`
+ * with the UTC time zone.
+ */
+object TimeZonelessInstantDeserializer : StdDeserializer<Instant>(Instant::class.java) {
+
+    private val dateTimeFormatter = DateTimeFormatter.ofPattern("MMM dd, yyyy h:mm:ss a")
+        .withZone(ZoneId.of("UTC"))
+
+    override fun deserialize(parser: JsonParser, context: DeserializationContext): Instant {
+        return Instant.from(dateTimeFormatter.parse(parser.text.trim()))
+    }
+}
