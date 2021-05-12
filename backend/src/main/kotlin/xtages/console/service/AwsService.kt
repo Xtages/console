@@ -54,9 +54,9 @@ class AwsService(
     private val authenticationService: AuthenticationService,
 ) {
 
-    @SqsListener("build-updates-queue")
+//    @SqsListener("build-updates-queue")
     fun codeBuildEventListener(event: CodeBuildEvent) {
-        println(event)
+//        println(event)
     }
 
     /**
@@ -79,15 +79,15 @@ class AwsService(
     fun startCodeBuildProject(
         project: Project, organization: Organization,
         commit: String, codeBuildType: CodeBuildType
-    ) {
-        logger.info { "running CodeBuild: ${codeBuildType} for project : ${project.name} commit: ${commit} organization: ${organization.name}" }
+    ): StartBuildResponse {
+        logger.info { "running CodeBuild: $codeBuildType for project : ${project.name} commit: $commit organization: ${organization.name}" }
         val token = gitHubService.appToken(organization)
         val cbProjectName = if (codeBuildType == CodeBuildType.CI)
             project.codeBuildCiProjectName
         else
             project.codeBuildCdBuildSpecName
 
-        userSessionCodeBuildClient().startBuild(
+        val startBuildResponse = userSessionCodeBuildClient().startBuild(
             StartBuildRequest.builder()
                 .projectName(cbProjectName)
                 .environmentVariablesOverride(
@@ -98,8 +98,9 @@ class AwsService(
                     )
                 )
                 .build()
-        ).get()
-        logger.info { "started CodeBuild project: ${cbProjectName}" }
+        ).get()!!
+        logger.info { "started CodeBuild project: $cbProjectName" }
+        return startBuildResponse
     }
 
     private fun userSessionCodeBuildClient(): CodeBuildAsyncClient {

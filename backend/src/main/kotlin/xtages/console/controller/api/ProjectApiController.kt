@@ -78,10 +78,15 @@ class ProjectApiController(
         buildEventsRecord.store()
         logger.debug { "Build Event created with id: ${buildEventsRecord.id}" }
 
-        awsService.startCodeBuildProject(
+        val startCodeBuildResponse = awsService.startCodeBuildProject(
             project = project, organization = organization,
             commit = ciReq.commitId, codeBuildType = CodeBuildType.CI
         )
+
+        logger.debug { "StartBuildResponse Object: ${startCodeBuildResponse.build()?.arn()}" }
+        buildEventsRecord.buildArn = startCodeBuildResponse.build()?.arn()
+        buildEventsRecord.update()
+
         return ResponseEntity.ok(CI(id = buildEventsRecord.id))
     }
 
@@ -97,10 +102,15 @@ class ProjectApiController(
         buildEventsRecord.store()
         logger.debug { "Build Event created with id: ${buildEventsRecord.id}" }
 
-        awsService.startCodeBuildProject(
+        val startCodeBuildResponse = awsService.startCodeBuildProject(
             project = project, organization = organization,
             commit = cdReq.commitId, codeBuildType = CodeBuildType.CD
         )
+
+        logger.debug { "StartBuildResponse Object: ${startCodeBuildResponse.build()?.arn()}" }
+        buildEventsRecord.buildArn = startCodeBuildResponse.build()?.arn()
+        buildEventsRecord.update()
+
         return ResponseEntity.ok(CD(id = buildEventsRecord.id))
     }
 
