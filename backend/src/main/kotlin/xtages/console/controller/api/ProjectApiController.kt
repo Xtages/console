@@ -126,6 +126,16 @@ class ProjectApiController(
         return ResponseEntity.ok(CD(id = sentToBuildStartedEventRecord.id))
     }
 
+    override fun logs(projectName: String, ciId: Long): ResponseEntity<CILogs> {
+        val (user, organization, project) = checkRepoBelongsToOrg(projectName)
+
+        val buildEvent = buildEventDao.fetchById(ciId).first()
+
+        val logs = awsService.getLogsFrom(CodeBuildType.CI, buildEvent, project, organization)
+
+        return ResponseEntity.ok( )
+    }
+
     private fun persistSentToBuildOutcome(
         build: Build,
         sentToBuildStartedEventRecord: BuildEventRecord,

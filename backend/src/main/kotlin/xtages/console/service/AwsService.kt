@@ -29,6 +29,7 @@ import software.amazon.awssdk.services.ecr.EcrAsyncClient
 import software.amazon.awssdk.services.ecr.model.CreateRepositoryRequest
 import software.amazon.awssdk.services.ecr.model.ImageTagMutability
 import xtages.console.config.ConsoleProperties
+import xtages.console.controller.model.LogEvent
 import xtages.console.dao.fetchOneByBuildArnAndNameAndStatus
 import xtages.console.exception.ensure
 import xtages.console.pojo.*
@@ -244,6 +245,11 @@ class AwsService(
         ).get()!!
         logger.info { "started CodeBuild project: $cbProjectName" }
         return startBuildResponse
+    }
+
+    fun getLogsFrom(buildArn: CodeBuildType, buildEvent: BuildEvents, project: Project, organization: Organization, ) : List<LogEvent> {
+
+        return listOf(LogEvent("event", Instant.now()))
     }
 
     private fun userSessionCodeBuildClient(): CodeBuildAsyncClient {
