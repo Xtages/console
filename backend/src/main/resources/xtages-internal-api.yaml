@@ -63,6 +63,38 @@ paths:
           $ref: "#/components/responses/UnauthorizedError"
         default:
           $ref: "#/components/responses/DefaultError"
+  /project/{projectName}/ci/{id}/logs:
+    get:
+      summary: Retrieve logs for a given CI and certain project
+      operationId: logs
+      tags:
+        - logs
+      parameters:
+        - in: path
+          name: projectName
+          schema:
+            type: string
+            minLength: 1
+          required: true
+          description: Name of the project to get the logs from
+        - in: path
+          name: id
+          schema:
+            type: integer
+            format: int64
+          required: true
+          description: CI id that was run for the project. This is the output of /project/{projectName}/ci
+      responses:
+        "200":
+          description: Logs successfully returned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CILogs"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        default:
+          $ref: "#/components/responses/DefaultError"
   /project/{projectName}/cd:
     post:
       summary: Run continuous delivery for the project specified
@@ -253,6 +285,13 @@ components:
         commitId:
           type: string
           minLength: 1
+    CILogs:
+      description: CI Logs
+      properties:
+        events:
+          type: array
+          items:
+            $ref: '#/components/schemas/LogEvent'
     CD:
       description: A reference to the run CD
       properties:
@@ -285,6 +324,15 @@ components:
           items:
             type: string
             minItems: 1
+    LogEvent:
+      description: Log events
+      properties:
+        timestamp:
+          type: integer
+          format: int64
+        message:
+          type: string
+          minLength: 1
   responses:
     DefaultError:
       description: Default error
