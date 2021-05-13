@@ -96,24 +96,6 @@ val Project.codeBuildCdBuildSpecName: String
     }
 
 /**
- * Returns the name of the CloudWatch Logs group to use in the CodeBuild CI project.
- */
-val Project.codeBuildCiLogsGroupName: String
-    get() {
-        val organization = ensure.notNull(value = organization, valueDesc = "project.organization")
-        return "${organization}_ci_logs"
-    }
-
-/**
- * Returns the name of the CloudWatch Logs group to use in the CodeBuild CD project.
- */
-val Project.codeBuildCdLogsGroupName: String
-    get() {
-        val organization = ensure.notNull(value = organization, valueDesc = "project.organization")
-        return "${organization}_cd_logs"
-    }
-
-/**
  * Returns the name of the CloudWatch Logs stream to use in the CodeBuild CI project.
  */
 val Project.codeBuildCiLogsStreamName: String

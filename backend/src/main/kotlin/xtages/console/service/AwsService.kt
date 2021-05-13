@@ -1,5 +1,6 @@
 package xtages.console.service
 
+import com.amazonaws.arn.Arn
 import com.amazonaws.services.sns.message.SnsMessageManager
 import com.amazonaws.services.sns.message.SnsNotification
 import com.fasterxml.jackson.core.JsonParser
@@ -9,11 +10,14 @@ import com.fasterxml.jackson.databind.PropertyNamingStrategy
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import com.fasterxml.jackson.databind.annotation.JsonNaming
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer
+import io.awspring.cloud.autoconfigure.context.properties.AwsRegionProperties
 import io.awspring.cloud.messaging.listener.SqsMessageDeletionPolicy
 import io.awspring.cloud.messaging.listener.annotation.SqsListener
 import mu.KotlinLogging
 import org.springframework.stereotype.Service
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
+import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsAsyncClient
+import software.amazon.awssdk.services.cloudwatchlogs.model.CreateLogGroupRequest
 import software.amazon.awssdk.services.codebuild.CodeBuildAsyncClient
 import software.amazon.awssdk.services.codebuild.model.*
 import software.amazon.awssdk.services.codestarnotifications.CodestarNotificationsAsyncClient
@@ -39,7 +43,7 @@ import java.time.format.DateTimeFormatter
 import software.amazon.awssdk.services.codebuild.model.Tag as CodebuildTag
 import software.amazon.awssdk.services.ecr.model.Tag as EcrTag
 
-private val xtagesEcrTag: EcrTag = EcrTag.builder().key("XTAGES_CONSOLE_CREATED").value("true").build()
+private val xtagesEcrTag: EcrTag = buildEcrTag(key = "XTAGES_CONSOLE_CREATED", value = "true")
 private val xtagesCodeBuildTag = buildCodeBuildProjectTag(key = "XTAGES_CONSOLE_CREATED", value = "true")
 
 private val envVars = listOf(
@@ -59,11 +63,13 @@ private val logger = KotlinLogging.logger { }
 class AwsService(
     private val gitHubService: GitHubService,
     private val ecrAsyncClient: EcrAsyncClient,
+    private val cloudWatchLogsAsyncClient: CloudWatchLogsAsyncClient,
     private val codeBuildAsyncClient: CodeBuildAsyncClient,
     private val codestarNotificationsAsyncClient: CodestarNotificationsAsyncClient,
     private val organizationDao: OrganizationDao,
     private val projectDao: ProjectDao,
     private val buildEventDao: BuildEventDao,
+    private val awsRegionProperties: AwsRegionProperties,
     private val consoleProperties: ConsoleProperties,
     private val authenticationService: AuthenticationService,
     private val objectMapper: ObjectMapper,
@@ -175,13 +181,37 @@ class AwsService(
     /**
      * Creates a [Project]-related infrastructure in AWS. Specifically creates:
      *   * an ECR repository for the [organization] if one hasn't been created already
+     *   * Cloud Watch Log groups for the [organization] if they haven't been created already
      *   * a CodeBuild project for CI
      *   * a CodeBuild project for CD
      */
     fun registerProject(project: Project, organization: Organization) {
-        createEcrRepositoryForOrganization(organization = organization)
-        createCodeBuildCiProject(project = project)
-        createCodeBuildCdProject(project = project)
+        registerOrganization(organization)
+        createCodeBuildCiProject(organization = organization, project = project)
+        createCodeBuildCdProject(organization = organization, project = project)
+    }
+
+    private fun registerOrganization(organization: Organization) {
+        maybeCreateEcrRepositoryForOrganization(organization = organization)
+        maybeCreateLogGroupForOrganization(organization = organization)
+    }
+
+    fun unregisterProject(project: Project, organization: Organization) {
+        TODO("(czuniga): Use the list below to implement this")
+        // unregisterOrganization(organization = organization)
+        // Remove CI CodeBuild Project
+        //   * Remove Notification Rule (use project.codebuildCiNotificationRuleArn)
+        //   * Remove Project  (use project.codebuildCiProjectArn)
+        // Remove CD CodeBuild Project
+        //   * Remove Notification Rule (use project.codebuildCdNotificationRuleArn)
+        //   * Remove Project  (use project.codebuildCdProjectArn)
+    }
+
+    private fun unregisterOrganization(organization: Organization) {
+        TODO("(czuniga): Use the list below to implement this")
+        // Remove ECR repository
+        // Remove CI log group
+        // Remove CD log group
     }
 
     /**
@@ -222,22 +252,30 @@ class AwsService(
             .build()
     }
 
-    private fun createCodeBuildCiProject(project: Project) {
+    private fun createCodeBuildCiProject(organization: Organization, project: Project) {
         val response = codeBuildAsyncClient.createProject(
             buildCreateProjectRequest(
+                organization = organization,
                 project = project,
                 codeBuildType = CodeBuildType.CI,
                 serviceRoleName = "xtages-codebuild-ci-role",
             )
         ).get()
-        project.codebuildCiProjectArn = response.project().arn()
-        createNotificationRule(project.codeBuildCiNotificationRuleName, response.project().arn())
+        val arn = response.project().arn()
+        project.codebuildCiProjectArn = arn
+        val organizationName = ensure.notNull(project.organization, valueDesc = "project.organization")
+        project.codebuildCiNotificationRuleArn = createNotificationRule(
+            notificationRuleName = project.codeBuildCiNotificationRuleName,
+            projectArn = arn,
+            organizationName = organizationName
+        )
         projectDao.merge(project)
     }
 
-    private fun createCodeBuildCdProject(project: Project) {
+    private fun createCodeBuildCdProject(organization: Organization, project: Project) {
         val response = codeBuildAsyncClient.createProject(
             buildCreateProjectRequest(
+                organization = organization,
                 project = project,
                 codeBuildType = CodeBuildType.CD,
                 privilegedMode = true,
@@ -245,12 +283,19 @@ class AwsService(
                 concurrentBuildLimit = 2,
             )
         ).get()
-        project.codebuildCdProjectArn = response.project().arn()
-        createNotificationRule(project.codeBuildCdNotificationRuleName, response.project().arn())
+        val arn = response.project().arn()
+        project.codebuildCdProjectArn = arn
+        val organizationName = ensure.notNull(project.organization, valueDesc = "project.organization")
+        project.codebuildCdNotificationRuleArn = createNotificationRule(
+            notificationRuleName = project.codeBuildCdNotificationRuleName,
+            projectArn = arn,
+            organizationName = organizationName
+        )
         projectDao.merge(project)
     }
 
     private fun buildCreateProjectRequest(
+        organization: Organization,
         project: Project,
         codeBuildType: CodeBuildType,
         privilegedMode: Boolean = false,
@@ -261,7 +306,7 @@ class AwsService(
         val imageName = buildTypeVar(project.codeBuildCiImageName, project.codeBuildCdImageName)
         val projectName = buildTypeVar(project.codeBuildCiProjectName, project.codeBuildCdProjectName)
         val projectDesc = buildTypeVar(project.codeBuildCiProjectDescription, project.codeBuildCdProjectDescription)
-        val logsGroupName = buildTypeVar(project.codeBuildCiLogsGroupName, project.codeBuildCdLogsGroupName)
+        val logsGroupName = buildTypeVar(organization.codeBuildCiLogsGroupName, organization.codeBuildCdLogsGroupName)
         val logsStreamName = buildTypeVar(project.codeBuildCiLogsStreamName, project.codeBuildCdLogsStreamName)
         val buildSpecLocation = buildTypeVar(project.codeBuildCiBuildSpecName, project.codeBuildCdBuildSpecName)
         val builder = CreateProjectRequest.builder()
@@ -307,8 +352,12 @@ class AwsService(
         return builder.build()
     }
 
-    private fun createNotificationRule(notificationRuleName: String, projectArn: String) {
-        codestarNotificationsAsyncClient.createNotificationRule(
+    private fun createNotificationRule(
+        notificationRuleName: String,
+        projectArn: String,
+        organizationName: String
+    ): String {
+        return codestarNotificationsAsyncClient.createNotificationRule(
             CreateNotificationRuleRequest.builder()
                 .name(notificationRuleName)
                 .resource(projectArn)
@@ -328,18 +377,19 @@ class AwsService(
                         .build()
                 )
                 .status(NotificationRuleStatus.ENABLED)
+                .tags(mapOf("organization" to organizationName))
                 .build()
-        ).get()
+        ).get().arn()
     }
 
-    private fun createEcrRepositoryForOrganization(organization: Organization) {
+    private fun maybeCreateEcrRepositoryForOrganization(organization: Organization) {
         if (organization.ecrRepositoryArn == null) {
             val name = ensure.notNull(value = organization.name, valueDesc = "organization.name")
             val createRepositoryResponse = ecrAsyncClient.createRepository(
                 CreateRepositoryRequest.builder()
                     .repositoryName(name.toLowerCase())
                     .imageTagMutability(ImageTagMutability.IMMUTABLE)
-                    .tags(xtagesEcrTag)
+                    .tags(xtagesEcrTag, buildEcrTag("organization", name))
                     .build()
             ).get()
             organization.ecrRepositoryArn = createRepositoryResponse.repository().repositoryArn()
@@ -347,6 +397,38 @@ class AwsService(
         }
     }
 
+    private fun maybeCreateLogGroupForOrganization(organization: Organization) {
+        if (organization.cdLogGroupArn == null || organization.ciLogGroupArn == null) {
+            val name = ensure.notNull(value = organization.name, valueDesc = "organization.name")
+            cloudWatchLogsAsyncClient.createLogGroup(
+                CreateLogGroupRequest.builder()
+                    .logGroupName(organization.codeBuildCiLogsGroupName)
+                    .tags(mapOf("organization" to name))
+                    .build()
+            ).get()
+            cloudWatchLogsAsyncClient.createLogGroup(
+                CreateLogGroupRequest.builder()
+                    .logGroupName(organization.codeBuildCdLogsGroupName)
+                    .tags(mapOf("organization" to name))
+                    .build()
+            ).get()
+            // For some reason the `createLogGroup` call doesn't return anything in it's response, so we have to create the
+            // ARNs for the LogGroups by hand.
+            val cdLogGroupArn = Arn.builder()
+                .withPartition("aws")
+                .withService("logs")
+                .withRegion(awsRegionProperties.static)
+                .withAccountId(consoleProperties.aws.accountId)
+                .withResource("log-group:${organization.cdLogGroupArn}")
+                .build()
+            organization.cdLogGroupArn = cdLogGroupArn.toString()
+            val ciLogGroupArn = cdLogGroupArn.toBuilder()
+                .withResource("log-group:${organization.ciLogGroupArn}")
+                .build()
+            organization.ciLogGroupArn = ciLogGroupArn.toString()
+            organizationDao.merge(organization)
+        }
+    }
 }
 
 private fun buildEnvironmentVariable(name: String, value: String? = null) = EnvironmentVariable.builder()
@@ -358,6 +440,7 @@ private fun buildEnvironmentVariable(name: String, value: String? = null) = Envi
 private fun buildCodeBuildProjectTag(key: String, value: String) =
     CodebuildTag.builder().key(key).value(value).build()
 
+private fun buildEcrTag(key: String, value: String) = EcrTag.builder().key(key).value(value).build()
 
 private enum class CodeBuildEventDetailType(private val internalName: String) {
     CODE_BUILD_PHASE_CHANGE("CodeBuild Build Phase Change"),
