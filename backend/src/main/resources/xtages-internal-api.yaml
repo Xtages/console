@@ -325,7 +325,7 @@ components:
             type: string
             minItems: 1
     LogEvent:
-      description: Log events
+      description: Log event
       properties:
         timestamp:
           type: integer
