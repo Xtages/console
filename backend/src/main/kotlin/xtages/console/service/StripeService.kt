@@ -12,7 +12,7 @@ import xtages.console.query.enums.OrganizationSubscriptionStatus.ACTIVE
 import xtages.console.query.tables.daos.OrganizationDao
 import xtages.console.query.tables.daos.StripeCheckoutSessionDao
 import xtages.console.query.tables.pojos.StripeCheckoutSession
-import xtages.console.dao.findByCognitoUserId
+import xtages.console.dao.fetchOneByCognitoUserId
 import xtages.console.exception.ExceptionCode.*
 import java.net.URI
 import com.stripe.model.billingportal.Session as PortalSession
@@ -79,11 +79,7 @@ class StripeService(
      */
     fun createCustomerPortalSession(): URI {
         val returnUrl = UriComponentsBuilder.fromUri(URI(consoleProperties.server.basename)).pathSegment("account")
-        val organization = ensure.foundOne(
-            operation = { organizationDao.findByCognitoUserId(authenticationService.currentCognitoUserId) },
-            code = ORG_NOT_FOUND,
-            message = "Could not found organization associated to current user"
-        )
+        val organization = organizationDao.fetchOneByCognitoUserId(authenticationService.currentCognitoUserId)
         val stripeCustomerId = ensure.notNull(
             value = organization.stripeCustomerId,
             valueDesc = "organization.stripeCustomerId",

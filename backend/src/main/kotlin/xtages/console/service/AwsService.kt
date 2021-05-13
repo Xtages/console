@@ -25,15 +25,16 @@ import software.amazon.awssdk.services.ecr.EcrAsyncClient
 import software.amazon.awssdk.services.ecr.model.CreateRepositoryRequest
 import software.amazon.awssdk.services.ecr.model.ImageTagMutability
 import xtages.console.config.ConsoleProperties
+import xtages.console.dao.fetchOneByBuildArnAndName
 import xtages.console.exception.ensure
 import xtages.console.pojo.*
+import xtages.console.query.tables.daos.BuildEventDao
 import xtages.console.query.tables.daos.OrganizationDao
 import xtages.console.query.tables.daos.ProjectDao
+import xtages.console.query.tables.pojos.BuildEvent
 import xtages.console.query.tables.pojos.Organization
 import xtages.console.query.tables.pojos.Project
-import java.time.Duration
-import java.time.Instant
-import java.time.ZoneId
+import java.time.*
 import java.time.format.DateTimeFormatter
 import software.amazon.awssdk.services.codebuild.model.Tag as CodebuildTag
 import software.amazon.awssdk.services.ecr.model.Tag as EcrTag
@@ -62,20 +63,94 @@ class AwsService(
     private val codestarNotificationsAsyncClient: CodestarNotificationsAsyncClient,
     private val organizationDao: OrganizationDao,
     private val projectDao: ProjectDao,
+    private val buildEventDao: BuildEventDao,
     private val consoleProperties: ConsoleProperties,
     private val authenticationService: AuthenticationService,
     private val objectMapper: ObjectMapper,
 ) {
     private val snsMessageManager = SnsMessageManager()
 
-//    @SqsListener("build-updates-queue", deletionPolicy = SqsMessageDeletionPolicy.ON_SUCCESS)
-    fun codeBuildEventListener(event: String) {
+    @SqsListener("build-updates-queue", deletionPolicy = SqsMessageDeletionPolicy.ON_SUCCESS)
+    fun codeBuildEventListener(eventStr: String) {
         val notification = ensure.ofType<SnsNotification>(
-            value = snsMessageManager.parseMessage(event.byteInputStream()),
+            value = snsMessageManager.parseMessage(eventStr.byteInputStream()),
             valueDesc = "received message"
         )
-        val codeBuildEvent = objectMapper.readValue(notification.message, CodeBuildEvent::class.java)
-        println(codeBuildEvent)
+        logger.info { "Processing SNS Notification id [${notification.messageId}]" }
+        val event = objectMapper.readValue(notification.message, CodeBuildEvent::class.java)
+        ensure.isEqual(event.account, expected = consoleProperties.aws.accountId, valueDesc = "event.account")
+        ensure.isEqual(event.source, expected = "aws.codebuild", valueDesc = "event.source")
+        // We only care about changes to the `STATUS_CHANGE`s and not `PHASE_CHANGE`s because
+        // in `STATUS_CHANGE` events we can see phase changes.
+        if (event.detailType == CodeBuildEventDetailType.CODE_BUILD_STATUS_CHANGE) {
+            if (buildEventDao.fetchByNotificationId(notification.messageId).isNotEmpty()) {
+                logger.info { "SNS Notification id [${notification.messageId}] has already been processed, bailing out early" }
+                return
+            }
+            val sentToBuildEvent = buildEventDao.fetchOneByBuildArnAndName(
+                buildArn = event.detail.buildId,
+                name = "SENT_TO_BUILD"
+            )
+            ensure.isEqual(sentToBuildEvent.status, expected = "SUCCEEDED", valueDesc = "buildEvent.id")
+            logger.info { "Processing CodeBuildEvent with event.detail.currentPhase [${event.detail.currentPhase}] for build [${event.detail.buildId}]" }
+            if (event.detail.currentPhase == "COMPLETED") {
+                val phases = ensure.notNull(
+                    value = event.detail.additionalInformation.phases,
+                    valueDesc = "event.detail.additionalInformation.phases"
+                )
+                // Sort the phases based on their end time, the last phase with `phase-type` == "COMPLETED" has a `null`
+                // `end-time` order it last.
+                val sortedPhases = phases.sortedWith { a, b ->
+                    when {
+                        a.endTime == null -> 1
+                        b.endTime == null -> -1
+                        else -> a.endTime.compareTo(b.endTime)
+                    }
+                }
+                ensure.isEqual(
+                    actual = sortedPhases.last().phaseType,
+                    expected = "COMPLETED",
+                    valueDesc = "event.detail.additionalInformation.phases.last.phaseType"
+                )
+                // For each `phase` we create a `BuildEvent`. The last `phase` (`phase-type` == "COMPLETED") will have a
+                // `null` `end-time` so we default it to it's `start-time`.
+                val buildEvents = sortedPhases.map { phase ->
+                    BuildEvent(
+                        notificationId = notification.messageId,
+                        name = phase.phaseType,
+                        status = if (phase.phaseType == "COMPLETED") "SUCCEEDED" else phase.phaseStatus,
+                        startTime = phase.startTime.atOffset(ZoneOffset.UTC),
+                        endTime = phase.endTime?.atOffset(ZoneOffset.UTC) ?: phase.startTime.atOffset(ZoneOffset.UTC),
+                        message = phase.message,
+                        operation = sentToBuildEvent.operation,
+                        user = sentToBuildEvent.user,
+                        environment = sentToBuildEvent.environment,
+                        projectId = sentToBuildEvent.projectId,
+                        commit = sentToBuildEvent.commit,
+                        buildArn = sentToBuildEvent.buildArn,
+                    )
+                }
+                buildEventDao.insert(buildEvents)
+            } else {
+                buildEventDao.insert(
+                    BuildEvent(
+                        notificationId = notification.messageId,
+                        name = event.detail.currentPhase,
+                        status = event.detail.buildStatus,
+                        startTime = event.time.atOffset(ZoneOffset.UTC),
+                        endTime = event.time.atOffset(ZoneOffset.UTC),
+                        operation = sentToBuildEvent.operation,
+                        user = sentToBuildEvent.user,
+                        environment = sentToBuildEvent.environment,
+                        projectId = sentToBuildEvent.projectId,
+                        commit = sentToBuildEvent.commit,
+                        buildArn = sentToBuildEvent.buildArn,
+                    )
+                )
+            }
+        } else {
+            logger.debug { "Dropping CodeBuildEvent of detailType [${event.detailType}] for build [${event.detail.buildId}]" }
+        }
     }
 
     /**
@@ -266,10 +341,22 @@ private fun buildCodeBuildProjectTag(key: String, value: String) =
     CodebuildTag.builder().key(key).value(value).build()
 
 
-data class CodeBuildEvent(
+private enum class CodeBuildEventDetailType(private val internalName: String) {
+    CODE_BUILD_PHASE_CHANGE("CodeBuild Build Phase Change"),
+    CODE_BUILD_STATUS_CHANGE("CodeBuild Build State Change");
+
+    companion object {
+        fun fromInternalName(internalName: String): CodeBuildEventDetailType {
+            return values().single { it.internalName.equals(internalName, ignoreCase = true) }
+        }
+    }
+}
+
+private data class CodeBuildEvent(
     val account: String,
     val region: String,
-    val detailType: String,
+    @JsonDeserialize(using = CodeBuildEventDetailTypeDeserializer::class)
+    val detailType: CodeBuildEventDetailType,
     val source: String,
     val version: String?,
     val time: Instant,
@@ -279,7 +366,7 @@ data class CodeBuildEvent(
 )
 
 @JsonNaming(PropertyNamingStrategy.KebabCaseStrategy::class)
-data class CodeBuildEventDetail(
+private data class CodeBuildEventDetail(
     val buildStatus: String?,
     val projectName: String,
     val buildId: String,
@@ -297,7 +384,7 @@ data class CodeBuildEventDetail(
 )
 
 @JsonNaming(PropertyNamingStrategy.KebabCaseStrategy::class)
-data class CodeBuildAdditionalInformation(
+private data class CodeBuildAdditionalInformation(
     val timeout: Duration?,
     val buildComplete: Boolean,
     val initiator: String,
@@ -308,15 +395,15 @@ data class CodeBuildAdditionalInformation(
 )
 
 @JsonNaming(PropertyNamingStrategy.KebabCaseStrategy::class)
-data class CodeBuildLogs(
+private data class CodeBuildLogs(
     val groupName: String?,
     val streamName: String?,
     val deepLink: String,
 )
 
 @JsonNaming(PropertyNamingStrategy.KebabCaseStrategy::class)
-data class CodeBuildPhase(
-    val phaseContext: List<Any>?,
+private data class CodeBuildPhase(
+    val phaseContext: List<Any?>?,
     @JsonDeserialize(using = TimeZonelessInstantDeserializer::class)
     val startTime: Instant,
     @JsonDeserialize(using = TimeZonelessInstantDeserializer::class)
@@ -324,18 +411,28 @@ data class CodeBuildPhase(
     val durationInSeconds: Duration?,
     val phaseType: String,
     val phaseStatus: String?,
-)
+) {
+    private val context = phaseContext ?: emptyList()
+    val message = if (phaseStatus == "FAILED") context.joinToString(separator = "\n") { "${it ?: ""}" } else null
+}
 
 /**
  * An [StdDeserializer] for [Instant] that assumes that the source string is formatted using `MMM dd, yyyy h:mm:ss a`
  * with the UTC time zone.
  */
-object TimeZonelessInstantDeserializer : StdDeserializer<Instant>(Instant::class.java) {
+private object TimeZonelessInstantDeserializer : StdDeserializer<Instant>(Instant::class.java) {
 
     private val dateTimeFormatter = DateTimeFormatter.ofPattern("MMM dd, yyyy h:mm:ss a")
         .withZone(ZoneId.of("UTC"))
 
     override fun deserialize(parser: JsonParser, context: DeserializationContext): Instant {
         return Instant.from(dateTimeFormatter.parse(parser.text.trim()))
+    }
+}
+
+private object CodeBuildEventDetailTypeDeserializer :
+    StdDeserializer<CodeBuildEventDetailType>(CodeBuildEventDetailType::class.java) {
+    override fun deserialize(parser: JsonParser, context: DeserializationContext): CodeBuildEventDetailType {
+        return CodeBuildEventDetailType.fromInternalName(parser.text.trim())
     }
 }

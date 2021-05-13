@@ -6,25 +6,25 @@ import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Controller
 import xtages.console.controller.api.model.*
 import xtages.console.controller.model.projectPojoToProjectConverter
-import xtages.console.dao.findByCognitoUserId
-import xtages.console.dao.findByNameAndOrganization
-import xtages.console.exception.ExceptionCode
-import xtages.console.exception.ExceptionCode.ORG_NOT_FOUND
+import xtages.console.dao.fetchOneByCognitoUserId
+import xtages.console.dao.fetchOneByNameAndOrganization
 import xtages.console.exception.ExceptionCode.USER_NOT_FOUND
 import xtages.console.exception.ensure
 import xtages.console.query.enums.ProjectType
-import xtages.console.query.tables.daos.BuildEventsDao
+import xtages.console.query.tables.daos.BuildEventDao
 import xtages.console.query.tables.daos.OrganizationDao
 import xtages.console.query.tables.daos.ProjectDao
 import xtages.console.query.tables.daos.XtagesUserDao
-import xtages.console.query.tables.pojos.BuildEvents
+import xtages.console.query.tables.pojos.BuildEvent
 import xtages.console.query.tables.pojos.Organization
 import xtages.console.query.tables.pojos.XtagesUser
-import xtages.console.query.tables.references.BUILD_EVENTS
+import xtages.console.query.tables.references.BUILD_EVENT
 import xtages.console.service.AuthenticationService
 import xtages.console.service.AwsService
 import xtages.console.service.CodeBuildType
 import xtages.console.service.GitHubService
+import java.time.OffsetDateTime
+import java.time.ZoneOffset
 import xtages.console.query.tables.pojos.Project as ProjectPojo
 
 private val logger = KotlinLogging.logger { }
@@ -37,7 +37,7 @@ class ProjectApiController(
     private val authenticationService: AuthenticationService,
     private val gitHubService: GitHubService,
     private val awsService: AwsService,
-    private val buildEventsDao: BuildEventsDao,
+    private val buildEventDao: BuildEventDao,
 ) : ProjectApiControllerBase {
 
     override fun createProject(createProjectReq: CreateProjectReq): ResponseEntity<Project> {
@@ -46,11 +46,7 @@ class ProjectApiController(
             code = USER_NOT_FOUND,
             message = "User not found"
         )
-        val organization = ensure.foundOne(
-            operation = { organizationDao.findByCognitoUserId(authenticationService.currentCognitoUserId) },
-            code = ORG_NOT_FOUND,
-            "Could not find organization associated to user"
-        )
+        val organization = organizationDao.fetchOneByCognitoUserId(authenticationService.currentCognitoUserId)
         val projectPojo = ProjectPojo(
             name = createProjectReq.name,
             organization = organization.name,
@@ -72,9 +68,15 @@ class ProjectApiController(
     override fun ci(projectName: String, ciReq: CIReq): ResponseEntity<CI> {
         val (user, organization, project) = checkRepoBelongsToOrg(projectName)
 
-        val buildEvent = createBuildEvent(user, project, CodeBuildType.CI, ciReq.commitId)
+        val buildEvent = createSentToBuildEvent(
+            user = user,
+            project = project,
+            type = CodeBuildType.CI,
+            commitId = ciReq.commitId,
+            status = "STARTED"
+        )
 
-        val buildEventsRecord = buildEventsDao.ctx().newRecord(BUILD_EVENTS, buildEvent)
+        val buildEventsRecord = buildEventDao.ctx().newRecord(BUILD_EVENT, buildEvent)
         buildEventsRecord.store()
         logger.debug { "Build Event created with id: ${buildEventsRecord.id}" }
 
@@ -85,6 +87,8 @@ class ProjectApiController(
 
         logger.debug { "StartBuildResponse Object: ${startCodeBuildResponse.build()?.arn()}" }
         buildEventsRecord.buildArn = startCodeBuildResponse.build()?.arn()
+        buildEventsRecord.status = "SUCCEEDED"
+        buildEventsRecord.endTime = OffsetDateTime.now(ZoneOffset.UTC)
         buildEventsRecord.update()
 
         return ResponseEntity.ok(CI(id = buildEventsRecord.id))
@@ -93,12 +97,16 @@ class ProjectApiController(
     override fun cd(projectName: String, cdReq: CDReq): ResponseEntity<CD> {
         val (user, organization, project) = checkRepoBelongsToOrg(projectName)
 
-        val buildEvent = createBuildEvent(
-            user, project, CodeBuildType.CD,
-            cdReq.commitId, cdReq.env
+        val buildEvent = createSentToBuildEvent(
+            user = user,
+            project = project,
+            type = CodeBuildType.CD,
+            commitId = cdReq.commitId,
+            status = "STARTED",
+            env = cdReq.env
         )
 
-        val buildEventsRecord = buildEventsDao.ctx().newRecord(BUILD_EVENTS, buildEvent)
+        val buildEventsRecord = buildEventDao.ctx().newRecord(BUILD_EVENT, buildEvent)
         buildEventsRecord.store()
         logger.debug { "Build Event created with id: ${buildEventsRecord.id}" }
 
@@ -109,42 +117,38 @@ class ProjectApiController(
 
         logger.debug { "StartBuildResponse Object: ${startCodeBuildResponse.build()?.arn()}" }
         buildEventsRecord.buildArn = startCodeBuildResponse.build()?.arn()
+        buildEventsRecord.status = "SUCCEEDED"
+        buildEventsRecord.endTime = OffsetDateTime.now(ZoneOffset.UTC)
         buildEventsRecord.update()
 
         return ResponseEntity.ok(CD(id = buildEventsRecord.id))
     }
 
-    private fun checkRepoBelongsToOrg(projectName: String): Triple<XtagesUser, Organization, xtages.console.query.tables.pojos.Project> {
+    private fun checkRepoBelongsToOrg(projectName: String): Triple<XtagesUser, Organization, ProjectPojo> {
         val user = ensure.foundOne(
             operation = { userDao.fetchOneByCognitoUserId(authenticationService.currentCognitoUserId.id) },
             code = USER_NOT_FOUND,
             message = "User not found"
         )
-        val organization = ensure.foundOne(
-            operation = { organizationDao.findByCognitoUserId(authenticationService.currentCognitoUserId) },
-            code = ORG_NOT_FOUND,
-            "Could not find organization associated to user"
-        )
-        val project = ensure.foundOne(
-            operation = { projectDao.findByNameAndOrganization(projectName, organization.name!!) },
-            code = ExceptionCode.PROJECT_NOT_FOUND,
-            message = "Could not find project in organization"
-        )
+        val organization = organizationDao.fetchOneByCognitoUserId(authenticationService.currentCognitoUserId)
+        val project = projectDao.fetchOneByNameAndOrganization(projectName, organization.name!!)
         return Triple(user, organization, project)
     }
 }
 
-private fun createBuildEvent(
+private fun createSentToBuildEvent(
     user: XtagesUser,
-    project: xtages.console.query.tables.pojos.Project,
+    project: ProjectPojo,
     type: CodeBuildType,
     commitId: String,
+    status: String,
     env: String? = "dev"
-): BuildEvents {
-    return BuildEvents(
+): BuildEvent {
+    return BuildEvent(
         environment = env,
         operation = type.name,
-        status = "starting",
+        name = "SENT_TO_BUILD",
+        status = status,
         user = user.id,
         projectId = project.id,
         commit = commitId

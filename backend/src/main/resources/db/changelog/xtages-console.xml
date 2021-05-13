@@ -17,4 +17,5 @@
     <include file="changesets/update-project-type.postgresql.sql" relativeToChangelogFile="true" />
     <include file="changesets/add-cognito-identity-id-col.postgresql.sql" relativeToChangelogFile="true" />
     <include file="changesets/add-build-arn-buildevents.postgresql.sql" relativeToChangelogFile="true" />
+    <include file="changesets/adjust-buildevents.postgresql.sql" relativeToChangelogFile="true" />
 </databaseChangeLog>
