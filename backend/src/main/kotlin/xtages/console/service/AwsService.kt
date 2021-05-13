@@ -301,10 +301,9 @@ class AwsService(
             )
             .tags(xtagesCodeBuildTag, buildCodeBuildProjectTag(key = "organization", value = project.organization!!))
             .badgeEnabled(false)
-        // TODO(czuniga): Uncomment when we figure out what's up with the account's limit
-//        if (concurrentBuildLimit != null) {
-//            builder.concurrentBuildLimit(concurrentBuildLimit)
-//        }
+        if (concurrentBuildLimit != null) {
+            builder.concurrentBuildLimit(concurrentBuildLimit)
+        }
         return builder.build()
     }
 
