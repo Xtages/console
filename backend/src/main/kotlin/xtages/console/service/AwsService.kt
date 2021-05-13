@@ -25,7 +25,7 @@ import software.amazon.awssdk.services.ecr.EcrAsyncClient
 import software.amazon.awssdk.services.ecr.model.CreateRepositoryRequest
 import software.amazon.awssdk.services.ecr.model.ImageTagMutability
 import xtages.console.config.ConsoleProperties
-import xtages.console.dao.fetchOneByBuildArnAndName
+import xtages.console.dao.fetchOneByBuildArnAndNameAndStatus
 import xtages.console.exception.ensure
 import xtages.console.pojo.*
 import xtages.console.query.tables.daos.BuildEventDao
@@ -80,65 +80,44 @@ class AwsService(
         val event = objectMapper.readValue(notification.message, CodeBuildEvent::class.java)
         ensure.isEqual(event.account, expected = consoleProperties.aws.accountId, valueDesc = "event.account")
         ensure.isEqual(event.source, expected = "aws.codebuild", valueDesc = "event.source")
+
         // We only care about changes to the `STATUS_CHANGE`s and not `PHASE_CHANGE`s because
         // in `STATUS_CHANGE` events we can see phase changes.
         if (event.detailType == CodeBuildEventDetailType.CODE_BUILD_STATUS_CHANGE) {
+            // Make sure that we only process the [CodeBuildEvent] once, even if it's delivered multiple times.
             if (buildEventDao.fetchByNotificationId(notification.messageId).isNotEmpty()) {
                 logger.info { "SNS Notification id [${notification.messageId}] has already been processed, bailing out early" }
                 return
             }
-            val sentToBuildEvent = buildEventDao.fetchOneByBuildArnAndName(
+
+            val sentToBuildEvent = buildEventDao.fetchOneByBuildArnAndNameAndStatus(
                 buildArn = event.detail.buildId,
-                name = "SENT_TO_BUILD"
+                name = "SENT_TO_BUILD",
+                status = "IN_PROGRESS"
             )
-            ensure.isEqual(sentToBuildEvent.status, expected = "SUCCEEDED", valueDesc = "buildEvent.id")
+
             logger.info { "Processing CodeBuildEvent with event.detail.currentPhase [${event.detail.currentPhase}] for build [${event.detail.buildId}]" }
             if (event.detail.currentPhase == "COMPLETED") {
+                // When handling a "COMPLETED" build status we take all the phases from the event and persist them as
+                // [BuildEvent]s.
+                val notificationId = notification.messageId
                 val phases = ensure.notNull(
                     value = event.detail.additionalInformation.phases,
                     valueDesc = "event.detail.additionalInformation.phases"
                 )
-                // Sort the phases based on their end time, the last phase with `phase-type` == "COMPLETED" has a `null`
-                // `end-time` order it last.
-                val sortedPhases = phases.sortedWith { a, b ->
-                    when {
-                        a.endTime == null -> 1
-                        b.endTime == null -> -1
-                        else -> a.endTime.compareTo(b.endTime)
-                    }
-                }
-                ensure.isEqual(
-                    actual = sortedPhases.last().phaseType,
-                    expected = "COMPLETED",
-                    valueDesc = "event.detail.additionalInformation.phases.last.phaseType"
+                handleCompletedBuildStatusChange(
+                    notificationId,
+                    sentToBuildEvent,
+                    phases,
                 )
-                // For each `phase` we create a `BuildEvent`. The last `phase` (`phase-type` == "COMPLETED") will have a
-                // `null` `end-time` so we default it to it's `start-time`.
-                val buildEvents = sortedPhases.map { phase ->
-                    BuildEvent(
-                        notificationId = notification.messageId,
-                        name = phase.phaseType,
-                        status = if (phase.phaseType == "COMPLETED") "SUCCEEDED" else phase.phaseStatus,
-                        startTime = phase.startTime.atOffset(ZoneOffset.UTC),
-                        endTime = phase.endTime?.atOffset(ZoneOffset.UTC) ?: phase.startTime.atOffset(ZoneOffset.UTC),
-                        message = phase.message,
-                        operation = sentToBuildEvent.operation,
-                        user = sentToBuildEvent.user,
-                        environment = sentToBuildEvent.environment,
-                        projectId = sentToBuildEvent.projectId,
-                        commit = sentToBuildEvent.commit,
-                        buildArn = sentToBuildEvent.buildArn,
-                    )
-                }
-                buildEventDao.insert(buildEvents)
             } else {
                 buildEventDao.insert(
                     BuildEvent(
                         notificationId = notification.messageId,
                         name = event.detail.currentPhase,
                         status = event.detail.buildStatus,
-                        startTime = event.time.atOffset(ZoneOffset.UTC),
-                        endTime = event.time.atOffset(ZoneOffset.UTC),
+                        startTime = LocalDateTime.ofInstant(event.time, ZoneOffset.UTC),
+                        endTime = LocalDateTime.ofInstant(event.time, ZoneOffset.UTC),
                         operation = sentToBuildEvent.operation,
                         user = sentToBuildEvent.user,
                         environment = sentToBuildEvent.environment,
@@ -151,6 +130,46 @@ class AwsService(
         } else {
             logger.debug { "Dropping CodeBuildEvent of detailType [${event.detailType}] for build [${event.detail.buildId}]" }
         }
+    }
+
+    private fun handleCompletedBuildStatusChange(
+        notificationId: String,
+        sentToBuildEvent: BuildEvent,
+        phases: List<CodeBuildPhase>
+    ) {
+        // Sort the phases based on their end time, the last phase with `phase-type` == "COMPLETED" has a `null`
+        // `end-time` order it last.
+        val sortedPhases = phases.sortedWith { a, b ->
+            when {
+                a.endTime == null -> 1
+                b.endTime == null -> -1
+                else -> a.endTime.compareTo(b.endTime)
+            }
+        }
+        ensure.isEqual(
+            actual = sortedPhases.last().phaseType,
+            expected = "COMPLETED",
+            valueDesc = "event.detail.additionalInformation.phases.last.phaseType"
+        )
+        // For each `phase` we create a `BuildEvent`. The last `phase` (`phase-type` == "COMPLETED") will have a
+        // `null` `end-time` so we default it to it's `start-time`.
+        val buildEvents = sortedPhases.map { phase ->
+            BuildEvent(
+                notificationId = notificationId,
+                name = phase.phaseType,
+                status = if (phase.phaseType == "COMPLETED") "SUCCEEDED" else phase.phaseStatus,
+                startTime = LocalDateTime.ofInstant(phase.startTime, ZoneOffset.UTC),
+                endTime = LocalDateTime.ofInstant(phase.endTime ?: phase.startTime, ZoneOffset.UTC),
+                message = phase.message,
+                operation = sentToBuildEvent.operation,
+                user = sentToBuildEvent.user,
+                environment = sentToBuildEvent.environment,
+                projectId = sentToBuildEvent.projectId,
+                commit = sentToBuildEvent.commit,
+                buildArn = sentToBuildEvent.buildArn,
+            )
+        }
+        buildEventDao.insert(buildEvents)
     }
 
     /**

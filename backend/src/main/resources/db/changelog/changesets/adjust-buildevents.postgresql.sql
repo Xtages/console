@@ -22,3 +22,9 @@ ALTER TABLE "build_events" RENAME TO "build_event";
 
 -- changeset czuniga:14 logicalFilePath:xtages-console.xml
 ALTER TABLE "build_event" ADD COLUMN "notification_id" VARCHAR(100);
+
+-- changeset czuniga:15 logicalFilePath:xtages-console.xml
+ALTER TABLE "build_event"
+    ALTER COLUMN "start_time" TYPE TIMESTAMP WITHOUT TIME ZONE,
+    ALTER COLUMN "end_time" TYPE TIMESTAMP WITHOUT TIME ZONE;
+
