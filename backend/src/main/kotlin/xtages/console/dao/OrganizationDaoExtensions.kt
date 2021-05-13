@@ -21,6 +21,6 @@ fun OrganizationDao.fetchOneByCognitoUserId(cognitoUserId: CognitoUserId): Organ
                 .fetchOneInto(Organization::class.java)
         },
         code = ExceptionCode.ORG_NOT_FOUND,
-        message = "Organization not found by cognitoUserId [${cognitoUserId}]"
+        message = "Organization not found by cognitoUserId [$cognitoUserId]"
     )
 }

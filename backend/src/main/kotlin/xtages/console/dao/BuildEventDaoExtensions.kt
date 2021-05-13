@@ -21,6 +21,6 @@ fun BuildEventDao.fetchOneByBuildArnAndNameAndStatus(buildArn: String, name: Str
                 ).fetchOneInto(BuildEvent::class.java)
         },
         code = ExceptionCode.BUILD_EVENT_NOT_FOUND,
-        message = "BuildEvent with arn [${buildArn}] and name [${name}] and [${status}] not found"
+        message = "BuildEvent with arn [$buildArn] and name [$name] and [$status] not found"
     )
 }
