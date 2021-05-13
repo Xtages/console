@@ -18,7 +18,7 @@ import org.springframework.security.oauth2.jwt.Jwt
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken
 import org.springframework.security.web.access.expression.WebExpressionVoter
 import org.springframework.stereotype.Component
-import xtages.console.dao.findByCognitoUserId
+import xtages.console.dao.fetchOneByCognitoUserId
 import xtages.console.exception.ExceptionCode
 import xtages.console.exception.ensure
 import xtages.console.query.enums.OrganizationSubscriptionStatus
@@ -129,23 +129,19 @@ class OrganizationInGoodStandingAccessDecisionVoter(val organizationDao: Organiz
                 "organization"
             )
             val cognitoUserId = CognitoUserId.fromJwt(authentication.principal)
-            val organization =
-                ensure.foundOne(
-                    operation = { organizationDao.findByCognitoUserId(cognitoUserId) },
-                    code = ExceptionCode.ORG_NOT_FOUND
-                )
+            val organization = organizationDao.fetchOneByCognitoUserId(cognitoUserId)
             if (organization.name == organizationName &&
                 organization.subscriptionStatus in validOrgSubscriptionStatus
             ) {
                 return AccessDecisionVoter.ACCESS_GRANTED
             } else {
                 if (organization.name != organizationName) {
-                    logger.warn{
+                    logger.warn {
                         "User [${cognitoUserId.id}] tried to access organization [$organizationName](from JWT claim) but it's not an organization the user belongs to."
                     }
                 }
                 if (organization.subscriptionStatus !in validOrgSubscriptionStatus) {
-                    logger.info{
+                    logger.info {
                         "User [${cognitoUserId.id}] tried to access organization [$organizationName](from JWT claim) but the organization's subscription status is [${organization.subscriptionStatus}]"
                     }
                 }

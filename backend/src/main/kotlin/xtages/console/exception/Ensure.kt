@@ -150,6 +150,37 @@ class Ensure internal constructor() {
     }
 
     /**
+     * Checks that the return value of [operation] is equal (==) to [expected], otherwise throws an
+     * [IllegalArgumentException] with [ExceptionCode.NOT_EQUALS] and [valueDesc].
+     *
+     * @param operation - Lambda to run to get the value to compare against [expected].
+     * @param expected - The expected value.
+     * @param valueDesc - A description of the value being compared.
+     * @throws IllegalArgumentException if `[operation]()` != [expected].
+     */
+    fun <T : Any> isEqual(operation: () -> T?, expected: T, valueDesc: String): T =
+        isEqual(actual = operation(), expected = expected, valueDesc = valueDesc)
+
+    /**
+     * Checks that [actual] is equal (==) to [expected], otherwise throws an [IllegalArgumentException] with
+     * [ExceptionCode.NOT_EQUALS] and [valueDesc].
+     *
+     * @param actual - The actual value to compare.
+     * @param expected - The expected value.
+     * @param valueDesc - A description of the value being compared.
+     * @throws IllegalArgumentException if [actual] != [expected].
+     */
+    fun <T> isEqual(actual: T?, expected: T, valueDesc: String): T {
+        if (actual == expected) {
+            return actual!!
+        }
+        throw IllegalArgumentException(
+            code = ExceptionCode.NOT_EQUALS,
+            innerMessage = "actual [$actual] is not equal to [$expected] for [$valueDesc]"
+        )
+    }
+
+    /**
      * Checks that the result of calling [operation] is found exactly one result, otherwise throws a [NotFoundException]
      * with [code] and [message].
      *
