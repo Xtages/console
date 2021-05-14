@@ -43,6 +43,7 @@ dependencies {
     implementation("org.kohsuke:github-api:1.127")
     implementation("org.liquibase:liquibase-core")
     implementation(platform("software.amazon.awssdk:bom:2.16.48"))
+    implementation("software.amazon.awssdk:cloudwatchlogs")
     implementation("software.amazon.awssdk:codebuild")
     implementation("software.amazon.awssdk:codestarnotifications")
     implementation("software.amazon.awssdk:cognitoidentity")

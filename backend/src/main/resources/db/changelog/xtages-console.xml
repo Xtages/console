@@ -18,4 +18,6 @@
     <include file="changesets/add-cognito-identity-id-col.postgresql.sql" relativeToChangelogFile="true" />
     <include file="changesets/add-build-arn-buildevents.postgresql.sql" relativeToChangelogFile="true" />
     <include file="changesets/adjust-buildevents.postgresql.sql" relativeToChangelogFile="true" />
+    <include file="changesets/add-loggroups-arn-to-org.postgresql.sql" relativeToChangelogFile="true" />
+    <include file="changesets/add-notif-rule-arn-to-project.postgresql.sql" relativeToChangelogFile="true" />
 </databaseChangeLog>
