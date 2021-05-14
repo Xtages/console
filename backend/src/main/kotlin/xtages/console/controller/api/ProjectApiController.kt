@@ -1,7 +1,8 @@
 package xtages.console.controller.api
 
 import mu.KotlinLogging
-import org.springframework.http.HttpStatus.*
+import org.springframework.http.HttpStatus.CONFLICT
+import org.springframework.http.HttpStatus.CREATED
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Controller
 import software.amazon.awssdk.services.codebuild.model.Build
@@ -80,18 +81,18 @@ class ProjectApiController(
             endTime = LocalDateTime.now(ZoneOffset.UTC),
         )
 
-        val buildEventsRecord = buildEventDao.ctx().newRecord(BUILD_EVENT, buildEvent)
-        buildEventsRecord.store()
-        logger.debug { "Build Event created with id: ${buildEventsRecord.id}" }
+        val buildEventRecord = buildEventDao.ctx().newRecord(BUILD_EVENT, buildEvent)
+        buildEventRecord.store()
+        logger.debug { "Build Event created with id: ${buildEventRecord.id}" }
 
         val startCodeBuildResponse = awsService.startCodeBuildProject(
             project = project, organization = organization,
             commit = ciReq.commitId, codeBuildType = CodeBuildType.CI
         )
 
-        persistSentToBuildOutcome(startCodeBuildResponse.build(), buildEventsRecord, buildEvent)
+        persistSentToBuildOutcome(startCodeBuildResponse.build(), buildEventRecord, buildEvent)
 
-        return ResponseEntity.ok(CI(id = buildEventsRecord.id))
+        return ResponseEntity.ok(CI(id = buildEventRecord.id))
     }
 
     override fun cd(projectName: String, cdReq: CDReq): ResponseEntity<CD> {

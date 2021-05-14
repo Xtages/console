@@ -253,11 +253,11 @@ class AwsService(
     /**
      * This function retrieve the logs from CloudWatch.
      * The log group name is build using the name of the [Organization] and the type of run from [CodeBuildType]
-     * The log stream name is build using the [Project], [BuildEvents.buildArn] and [CodeBuildType]
+     * The log stream name is build using the [Project], [BuildEvent.buildArn] and [CodeBuildType]
      * This method is currently not paginated and relying in the 10k (1MB) events that returns
      * TODO(mdellamerlina): Fast-follow add pagination for this method
      */
-    fun getLogsFor(codeBuildType: CodeBuildType, buildEvent: BuildEvents, project: Project, organization: Organization, ) : List<LogEvent> {
+    fun getLogsFor(codeBuildType: CodeBuildType, buildEvent: BuildEvent, project: Project, organization: Organization, ) : List<LogEvent> {
         val logGroupName = buildLogGroupName(organization, codeBuildType)
         val logStreamName = buildLogStreamName(project, codeBuildType, buildEvent)
         logger.info { "logGroupName: $logGroupName logStreamName: $logStreamName" }
@@ -273,7 +273,7 @@ class AwsService(
     private fun buildLogStreamName(
         project: Project,
         codeBuildType: CodeBuildType,
-        buildEvent: BuildEvents
+        buildEvent: BuildEvent
     ) =
         project.name + "_" + codeBuildType.name.toLowerCase() + "_logs/" + AmazonResourceName.fromString(buildEvent.buildArn).resourceName
 
