@@ -312,11 +312,11 @@ class AwsService(
         val builder = CreateProjectRequest.builder()
             .name(projectName)
             .description(projectDesc)
-            .serviceRole("${consoleProperties.aws.aimRoleArnPrefix}/${serviceRoleName}")
+            .serviceRole("${consoleProperties.aws.aimRoleArnPrefix}/$serviceRoleName")
             .source(
                 ProjectSource.builder()
                     .type(SourceType.NO_SOURCE)
-                    .buildspec("${consoleProperties.aws.codeBuild.buildSpecsS3BucketArn}/${buildSpecLocation}")
+                    .buildspec("${consoleProperties.aws.codeBuild.buildSpecsS3BucketArn}/$buildSpecLocation")
                     .build()
             )
             .artifacts(
@@ -326,7 +326,7 @@ class AwsService(
             )
             .environment(
                 ProjectEnvironment.builder()
-                    .image("${consoleProperties.aws.codeBuild.ecrRepository}/${imageName}")
+                    .image("${consoleProperties.aws.codeBuild.ecrRepository}/$imageName")
                     .computeType(ComputeType.BUILD_GENERAL1_SMALL)
                     .type(EnvironmentType.LINUX_CONTAINER)
                     .environmentVariables(envVars)

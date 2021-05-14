@@ -41,7 +41,7 @@ val Project.codeBuildCiProjectDescription: String
     get() {
         val name = ensure.notNull(value = name, valueDesc = "project.name")
         val organization = ensure.notNull(value = organization, valueDesc = "project.organization")
-        return "CI for ${organization}/${name}"
+        return "CI for $organization/$name"
     }
 
 /**
@@ -51,7 +51,7 @@ val Project.codeBuildCdProjectDescription: String
     get() {
         val name = ensure.notNull(value = name, valueDesc = "project.name")
         val organization = ensure.notNull(value = organization, valueDesc = "project.organization")
-        return "CD for ${organization}/${name}"
+        return "CD for $organization/$name"
     }
 
 /**
@@ -61,7 +61,7 @@ val Project.codeBuildCiImageName: String
     get() {
         val type = ensure.notNull(value = type, valueDesc = "project.type")
         val version = ensure.notNull(value = version, valueDesc = "project.version")
-        return "${type}_ci:${version}".toLowerCase()
+        return "${type}_ci:$version".toLowerCase()
     }
 
 /**
@@ -71,7 +71,7 @@ val Project.codeBuildCdImageName: String
     get() {
         val type = ensure.notNull(value = type, valueDesc = "project.type")
         val version = ensure.notNull(value = version, valueDesc = "project.version")
-        return "${type}_cd:${version}".toLowerCase()
+        return "${type}_cd:$version".toLowerCase()
     }
 
 
@@ -82,7 +82,7 @@ val Project.codeBuildCiBuildSpecName: String
     get() {
         val type = ensure.notNull(value = type, valueDesc = "project.type")
         val version = ensure.notNull(value = version, valueDesc = "project.version")
-        return "ci/${type}/${version}-buildspec.yml".toLowerCase()
+        return "ci/$type/$version-buildspec.yml".toLowerCase()
     }
 
 /**
@@ -92,7 +92,7 @@ val Project.codeBuildCdBuildSpecName: String
     get() {
         val type = ensure.notNull(value = type, valueDesc = "project.type")
         val version = ensure.notNull(value = version, valueDesc = "project.version")
-        return "cd/${type}/${version}-buildspec.yml".toLowerCase()
+        return "cd/$type/$version-buildspec.yml".toLowerCase()
     }
 
 /**
