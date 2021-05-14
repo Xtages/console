@@ -10,7 +10,7 @@ import xtages.console.query.tables.references.PROJECT
 /**
  * Finds a [Project] given a name and an [Organization].
  */
-fun ProjectDao.fetchOneByNameAndOrganization(projectName: String, orgName: String): Project {
+fun ProjectDao.fetchOneByNameAndOrganization(orgName: String, projectName: String): Project {
     return ensure.foundOne(
         operation = {
             ctx().select(PROJECT.asterisk())

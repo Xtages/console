@@ -7,12 +7,13 @@ import com.nimbusds.jose.crypto.RSASSASigner
 import com.nimbusds.jose.jwk.JWK
 import com.nimbusds.jwt.JWTClaimsSet
 import com.nimbusds.jwt.SignedJWT
-import org.kohsuke.github.GHAppInstallationToken
-import org.kohsuke.github.GHRepository
-import org.kohsuke.github.GitHub
-import org.kohsuke.github.GitHubBuilder
+import mu.KotlinLogging
+import org.kohsuke.github.*
 import org.springframework.stereotype.Service
 import xtages.console.config.ConsoleProperties
+import xtages.console.controller.model.CodeBuildType
+import xtages.console.dao.fetchOneByNameAndOrganization
+import xtages.console.dao.fetchOrganizationsOwner
 import xtages.console.exception.ExceptionCode.*
 import xtages.console.exception.IllegalArgumentException
 import xtages.console.exception.ensure
@@ -20,31 +21,67 @@ import xtages.console.pojo.templateRepoName
 import xtages.console.query.enums.GithubAppInstallationStatus.*
 import xtages.console.query.tables.daos.OrganizationDao
 import xtages.console.query.tables.daos.ProjectDao
+import xtages.console.query.tables.daos.XtagesUserDao
 import xtages.console.query.tables.pojos.Organization
 import xtages.console.query.tables.pojos.Project
+import xtages.console.service.GitHubWebhookEventType.*
 import java.io.IOException
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.*
 import kotlin.reflect.KProperty
 
+private val logger = KotlinLogging.logger { }
+
 @Service
 class GitHubService(
     consoleProperties: ConsoleProperties,
-    val objectMapper: ObjectMapper,
-    val organizationDao: OrganizationDao,
-    val projectDao: ProjectDao,
+    private val objectMapper: ObjectMapper,
+    private val organizationDao: OrganizationDao,
+    private val projectDao: ProjectDao,
+    private val userDao: XtagesUserDao,
+    private val awsService: AwsService,
 ) {
     private val gitHubClient by GitHubClientDelegate(consoleProperties)
 
     fun handleWebhookRequest(eventType: GitHubWebhookEventType?, eventJson: String) {
         when (eventType) {
-            GitHubWebhookEventType.INSTALLATION -> onInstallation(eventJson)
-            GitHubWebhookEventType.INSTALLATION_REPOSITORIES -> throw IllegalArgumentException(
+            INSTALLATION -> onInstallation(eventJson)
+            INSTALLATION_REPOSITORIES -> throw IllegalArgumentException(
                 code = GH_APP_INSTALLATION_INVALID,
                 innerMessage = "GitHub app must be installed at the organization level."
             )
-            GitHubWebhookEventType.REPOSITORY -> TODO()
+            PUSH -> onPush(eventJson)
+        }
+    }
+
+    private fun onPush(eventJson: String) {
+        val push = gitHubClient.parseEventPayload(eventJson.reader(), GHEventPayload.Push::class.java)
+        logger.debug { "Handling GitHub Push event for commit [${push.head}]" }
+        if (push.ref.endsWith("/main") || push.ref.endsWith("/master")) {
+            val organization = ensure.foundOne(
+                operation = { organizationDao.fetchOneByName(push.organization.login) },
+                code = ORG_NOT_FOUND
+            )
+            val appToken = appToken(organization)
+            val project = projectDao.fetchOneByNameAndOrganization(
+                orgName = push.organization.login,
+                projectName = push.repository.name
+            )
+            // TODO(czuniga): This is a stop-gap measure, because we currently don't have a way to associate a GitHub
+            // user to an Xtages user. We should be taking the user information from the Push event itself.
+            val owner = userDao.fetchOrganizationsOwner(organization)
+            awsService.startCodeBuildProject(
+                gitHubAppToken = appToken,
+                user = owner,
+                project = project,
+                organization = organization,
+                commit = push.head,
+                codeBuildType = CodeBuildType.CI,
+                fromGitHubApp = true,
+            )
+        } else {
+            logger.debug { "Commit happened on branch [${push.ref}] and therefore we are ignoring it" }
         }
     }
 
@@ -124,7 +161,7 @@ class GitHubService(
     /**
      * Returns a [GHRepository] for the [project] in [organization].
      */
-    fun getRepositoryForProject(project: Project, organization: Organization) : GHRepository? {
+    fun getRepositoryForProject(project: Project, organization: Organization): GHRepository? {
         val githubAppInstallationId = ensure.notNull(
             value = organization.githubAppInstallationId,
             valueDesc = "organization.githubAppInstallationId"
@@ -145,9 +182,9 @@ class GitHubService(
      */
     fun createRepoForProject(project: Project, organization: Organization) {
         val githubAppInstallationId = ensure.notNull(
-                value = organization.githubAppInstallationId,
-                valueDesc = "organization.githubAppInstallationId"
-            )
+            value = organization.githubAppInstallationId,
+            valueDesc = "organization.githubAppInstallationId"
+        )
         val gitHubAppClient = buildGitHubAppClient(
             gitHubClient.app.getInstallationById(githubAppInstallationId).createToken().create()
         )
@@ -165,14 +202,14 @@ class GitHubService(
      * Returns the app token assigned to the GH app for that [Organization]
      * Note: this is not a JWT, however allows the app to use the token to authenticate itself against GH
      */
-    fun appToken(organization: Organization): String? {
+    fun appToken(organization: Organization): String {
         val githubAppInstallationId = ensure.notNull(
             value = organization.githubAppInstallationId,
             valueDesc = "organization.githubAppInstallationId"
         )
         return ensure.notNull(
             gitHubClient.app.getInstallationById(githubAppInstallationId)
-            .createToken().create().token,
+                .createToken().create().token,
             "gitHubClient.token",
             "GitHub App Token"
         )
@@ -222,7 +259,7 @@ class GitHubService(
 enum class GitHubWebhookEventType {
     INSTALLATION,
     INSTALLATION_REPOSITORIES,
-    REPOSITORY;
+    PUSH;
 
     companion object {
         fun fromGitHubWebhookEventName(stripeEvent: String) =

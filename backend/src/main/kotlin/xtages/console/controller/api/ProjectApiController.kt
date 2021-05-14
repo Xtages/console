@@ -5,7 +5,6 @@ import org.springframework.http.HttpStatus.CONFLICT
 import org.springframework.http.HttpStatus.CREATED
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Controller
-import software.amazon.awssdk.services.codebuild.model.Build
 import xtages.console.controller.api.model.*
 import xtages.console.controller.model.CodeBuildType
 import xtages.console.controller.model.projectPojoToProjectConverter
@@ -19,16 +18,11 @@ import xtages.console.query.tables.daos.BuildEventDao
 import xtages.console.query.tables.daos.OrganizationDao
 import xtages.console.query.tables.daos.ProjectDao
 import xtages.console.query.tables.daos.XtagesUserDao
-import xtages.console.query.tables.pojos.BuildEvent
 import xtages.console.query.tables.pojos.Organization
 import xtages.console.query.tables.pojos.XtagesUser
-import xtages.console.query.tables.records.BuildEventRecord
-import xtages.console.query.tables.references.BUILD_EVENT
 import xtages.console.service.AuthenticationService
 import xtages.console.service.AwsService
 import xtages.console.service.GitHubService
-import java.time.LocalDateTime
-import java.time.ZoneOffset
 import xtages.console.query.tables.pojos.Project as ProjectPojo
 
 private val logger = KotlinLogging.logger { }
@@ -72,60 +66,32 @@ class ProjectApiController(
     override fun ci(projectName: String, ciReq: CIReq): ResponseEntity<CI> {
         val (user, organization, project) = checkRepoBelongsToOrg(projectName)
 
-        val buildEvent = createSentToBuildEvent(
+        val startCodeBuildResponse = awsService.startCodeBuildProject(
+            gitHubAppToken = gitHubService.appToken(organization),
             user = user,
             project = project,
-            type = CodeBuildType.CI,
-            commitId = ciReq.commitId,
-            status = "STARTED",
-            startTime = LocalDateTime.now(ZoneOffset.UTC),
-            endTime = LocalDateTime.now(ZoneOffset.UTC),
+            organization = organization,
+            commit = ciReq.commitId,
+            codeBuildType = CodeBuildType.CI
         )
 
-        val buildEventRecord = buildEventDao.ctx().newRecord(BUILD_EVENT, buildEvent)
-        buildEventRecord.store()
-        logger.debug { "Build Event created with id: ${buildEventRecord.id}" }
-
-        val startCodeBuildResponse = awsService.startCodeBuildProject(
-            project = project, organization = organization,
-            commit = ciReq.commitId, codeBuildType = CodeBuildType.CI
-        )
-
-        persistSentToBuildOutcome(startCodeBuildResponse.build(), buildEventRecord, buildEvent)
-
-        return ResponseEntity.ok(CI(id = buildEventRecord.id))
+        return ResponseEntity.ok(CI(id = startCodeBuildResponse.second.id))
     }
 
     override fun cd(projectName: String, cdReq: CDReq): ResponseEntity<CD> {
         val (user, organization, project) = checkRepoBelongsToOrg(projectName)
 
-        val sentToBuildStartedEvent = createSentToBuildEvent(
+        val startCodeBuildResponse = awsService.startCodeBuildProject(
+            gitHubAppToken = gitHubService.appToken(organization),
             user = user,
             project = project,
-            type = CodeBuildType.CD,
-            commitId = cdReq.commitId,
-            status = "STARTED",
-            env = cdReq.env,
-            startTime = LocalDateTime.now(ZoneOffset.UTC),
-            endTime = LocalDateTime.now(ZoneOffset.UTC),
+            organization = organization,
+            commit = cdReq.commitId,
+            codeBuildType = CodeBuildType.CD,
+            environment = cdReq.env,
         )
 
-        val sentToBuildStartedEventRecord = buildEventDao.ctx().newRecord(BUILD_EVENT, sentToBuildStartedEvent)
-        sentToBuildStartedEventRecord.store()
-        logger.debug { "Build Event created with id: ${sentToBuildStartedEventRecord.id}" }
-
-        val startCodeBuildResponse = awsService.startCodeBuildProject(
-            project = project, organization = organization,
-            commit = cdReq.commitId, codeBuildType = CodeBuildType.CD
-        )
-
-        persistSentToBuildOutcome(
-            startCodeBuildResponse.build(),
-            sentToBuildStartedEventRecord,
-            sentToBuildStartedEvent
-        )
-
-        return ResponseEntity.ok(CD(id = sentToBuildStartedEventRecord.id))
+        return ResponseEntity.ok(CD(id = startCodeBuildResponse.second.id))
     }
 
     /**
@@ -145,25 +111,6 @@ class ProjectApiController(
         return ResponseEntity.ok(CILogs(events = logs))
     }
 
-    private fun persistSentToBuildOutcome(
-        build: Build,
-        sentToBuildStartedEventRecord: BuildEventRecord,
-        sentToBuildStartedEvent: BuildEvent
-    ) {
-        logger.debug { "StartBuildResponse Object: ${build.arn()}" }
-        sentToBuildStartedEventRecord.buildArn = build.arn()
-        sentToBuildStartedEventRecord.update()
-
-        val outcomeBuildEvent = sentToBuildStartedEvent.copy(
-            id = null,
-            status = build.buildStatus().toString(),
-            buildArn = build.arn(),
-            startTime = LocalDateTime.now(ZoneOffset.UTC),
-            endTime = LocalDateTime.now(ZoneOffset.UTC),
-        )
-        buildEventDao.insert(outcomeBuildEvent)
-    }
-
     private fun checkRepoBelongsToOrg(projectName: String): Triple<XtagesUser, Organization, ProjectPojo> {
         val user = ensure.foundOne(
             operation = { userDao.fetchOneByCognitoUserId(authenticationService.currentCognitoUserId.id) },
@@ -171,30 +118,7 @@ class ProjectApiController(
             message = "User not found"
         )
         val organization = organizationDao.fetchOneByCognitoUserId(authenticationService.currentCognitoUserId)
-        val project = projectDao.fetchOneByNameAndOrganization(projectName, organization.name!!)
+        val project = projectDao.fetchOneByNameAndOrganization(organization.name!!, projectName)
         return Triple(user, organization, project)
     }
-}
-
-private fun createSentToBuildEvent(
-    user: XtagesUser,
-    project: xtages.console.query.tables.pojos.Project,
-    type: CodeBuildType,
-    commitId: String,
-    status: String,
-    env: String? = "dev",
-    startTime: LocalDateTime,
-    endTime: LocalDateTime,
-): BuildEvent {
-    return BuildEvent(
-        environment = env,
-        operation = type.name,
-        name = "SENT_TO_BUILD",
-        status = status,
-        user = user.id,
-        projectId = project.id,
-        commit = commitId,
-        startTime = startTime,
-        endTime = endTime,
-    )
 }
