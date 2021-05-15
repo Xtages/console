@@ -49,6 +49,7 @@ dependencies {
     implementation("software.amazon.awssdk:cognitoidentity")
     implementation("software.amazon.awssdk:ecr")
     implementation("software.amazon.awssdk:sts")
+    implementation("software.amazon.awssdk:cloudwatchlogs")
 
     liquibaseRuntime("org.liquibase:liquibase-core")
     liquibaseRuntime(sourceSets.getByName("main").compileClasspath)
