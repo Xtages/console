@@ -10,8 +10,8 @@ import com.fasterxml.jackson.databind.PropertyNamingStrategy
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import com.fasterxml.jackson.databind.annotation.JsonNaming
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer
-import io.awspring.cloud.core.naming.AmazonResourceName
 import io.awspring.cloud.autoconfigure.context.properties.AwsRegionProperties
+import io.awspring.cloud.core.naming.AmazonResourceName
 import io.awspring.cloud.messaging.listener.SqsMessageDeletionPolicy
 import io.awspring.cloud.messaging.listener.annotation.SqsListener
 import mu.KotlinLogging
@@ -33,6 +33,7 @@ import software.amazon.awssdk.services.ecr.model.CreateRepositoryRequest
 import software.amazon.awssdk.services.ecr.model.ImageTagMutability
 import xtages.console.config.ConsoleProperties
 import xtages.console.controller.api.model.LogEvent
+import xtages.console.controller.model.CodeBuildType
 import xtages.console.dao.fetchOneByBuildArnAndNameAndStatus
 import xtages.console.exception.ensure
 import xtages.console.pojo.*
@@ -55,11 +56,6 @@ private val envVars = listOf(
     buildEnvironmentVariable("XTAGES_REPO"),
     buildEnvironmentVariable("XTAGES_GITHUB_TOKEN"),
 )
-
-enum class CodeBuildType {
-    CI,
-    CD
-}
 
 private val logger = KotlinLogging.logger { }
 
@@ -258,7 +254,7 @@ class AwsService(
      * TODO(mdellamerlina): Fast-follow add pagination for this method
      */
     fun getLogsFor(codeBuildType: CodeBuildType, buildEvent: BuildEvent, project: Project, organization: Organization, ) : List<LogEvent> {
-        val logGroupName = buildLogGroupName(organization, codeBuildType)
+        val logGroupName = organization.codeBuildLogsGroupNameFor(codeBuildType)
         val logStreamName = buildLogStreamName(project, codeBuildType, buildEvent)
         logger.info { "logGroupName: $logGroupName logStreamName: $logStreamName" }
         val logEventRequest = GetLogEventsRequest.builder()
@@ -266,7 +262,7 @@ class AwsService(
             .logStreamName(logStreamName)
             .startFromHead(true)
             .build()
-        val logEvents = cloudWatchLogsClient.getLogEvents(logEventRequest).events()
+        val logEvents = cloudWatchLogsAsyncClient.getLogEvents(logEventRequest).get().events()
         return logEvents.map { it -> it.toLogEvent() }
     }
 
@@ -275,12 +271,7 @@ class AwsService(
         codeBuildType: CodeBuildType,
         buildEvent: BuildEvent
     ) =
-        project.name + "_" + codeBuildType.name.toLowerCase() + "_logs/" + AmazonResourceName.fromString(buildEvent.buildArn).resourceName
-
-    private fun buildLogGroupName(
-        organization: Organization,
-        codeBuildType: CodeBuildType
-    ) = organization.name + "_" + codeBuildType.name.toLowerCase() + "_logs"
+        "${project.codeBuildLogsStreamNameFor(codeBuildType)}/${AmazonResourceName.fromString(buildEvent.buildArn).resourceName}"
 
     private fun OutputLogEvent.toLogEvent() = LogEvent(
         message = message(),
@@ -347,8 +338,13 @@ class AwsService(
         val imageName = buildTypeVar(project.codeBuildCiImageName, project.codeBuildCdImageName)
         val projectName = buildTypeVar(project.codeBuildCiProjectName, project.codeBuildCdProjectName)
         val projectDesc = buildTypeVar(project.codeBuildCiProjectDescription, project.codeBuildCdProjectDescription)
-        val logsGroupName = buildTypeVar(organization.codeBuildCiLogsGroupName, organization.codeBuildCdLogsGroupName)
-        val logsStreamName = buildTypeVar(project.codeBuildCiLogsStreamName, project.codeBuildCdLogsStreamName)
+        val logsGroupName = buildTypeVar(
+            organization.codeBuildLogsGroupNameFor(CodeBuildType.CI),
+            organization.codeBuildLogsGroupNameFor(CodeBuildType.CD)
+        )
+        val logsStreamName = buildTypeVar(
+            project.codeBuildLogsStreamNameFor(CodeBuildType.CI),
+            project.codeBuildLogsStreamNameFor(CodeBuildType.CD))
         val buildSpecLocation = buildTypeVar(project.codeBuildCiBuildSpecName, project.codeBuildCdBuildSpecName)
         val builder = CreateProjectRequest.builder()
             .name(projectName)
@@ -443,13 +439,13 @@ class AwsService(
             val name = ensure.notNull(value = organization.name, valueDesc = "organization.name")
             cloudWatchLogsAsyncClient.createLogGroup(
                 CreateLogGroupRequest.builder()
-                    .logGroupName(organization.codeBuildCiLogsGroupName)
+                    .logGroupName(organization.codeBuildLogsGroupNameFor(CodeBuildType.CI))
                     .tags(mapOf("organization" to name))
                     .build()
             ).get()
             cloudWatchLogsAsyncClient.createLogGroup(
                 CreateLogGroupRequest.builder()
-                    .logGroupName(organization.codeBuildCdLogsGroupName)
+                    .logGroupName(organization.codeBuildLogsGroupNameFor(CodeBuildType.CD))
                     .tags(mapOf("organization" to name))
                     .build()
             ).get()

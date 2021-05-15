@@ -7,9 +7,11 @@ import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Controller
 import software.amazon.awssdk.services.codebuild.model.Build
 import xtages.console.controller.api.model.*
+import xtages.console.controller.model.CodeBuildType
 import xtages.console.controller.model.projectPojoToProjectConverter
 import xtages.console.dao.fetchOneByCognitoUserId
 import xtages.console.dao.fetchOneByNameAndOrganization
+import xtages.console.exception.ExceptionCode
 import xtages.console.exception.ExceptionCode.USER_NOT_FOUND
 import xtages.console.exception.ensure
 import xtages.console.query.enums.ProjectType
@@ -24,7 +26,6 @@ import xtages.console.query.tables.records.BuildEventRecord
 import xtages.console.query.tables.references.BUILD_EVENT
 import xtages.console.service.AuthenticationService
 import xtages.console.service.AwsService
-import xtages.console.service.CodeBuildType
 import xtages.console.service.GitHubService
 import java.time.LocalDateTime
 import java.time.ZoneOffset
@@ -127,12 +128,20 @@ class ProjectApiController(
         return ResponseEntity.ok(CD(id = sentToBuildStartedEventRecord.id))
     }
 
-    override fun logs(projectName: String, id: Long): ResponseEntity<CILogs> {
+    override fun logs(projectName: String, logsReq: LogsReq): ResponseEntity<CILogs> {
         val (user, organization, project) = checkRepoBelongsToOrg(projectName)
-
-        val buildEvent = buildEventDao.fetchById(id).first()
-
-        val logs = awsService.getLogsFor(CodeBuildType.CI, buildEvent, project, organization)
+        val buildEvent = buildEventDao.fetchById(logsReq.operationId).first()
+        var operation = CodeBuildType.CI
+        val operationCaps = logsReq.operation.toUpperCase()
+        ensure.isTrue(
+            operation = { operationCaps == CodeBuildType.CD.name || operationCaps == CodeBuildType.CI.name },
+            code = ExceptionCode.OPERATION_NOT_VALID,
+            message = "Operation not valid."
+        )
+        when(operationCaps) {
+            CodeBuildType.CD.name -> operation = CodeBuildType.CD
+        }
+        val logs = awsService.getLogsFor(operation, buildEvent, project, organization)
         return ResponseEntity.ok(CILogs(events = logs))
     }
 

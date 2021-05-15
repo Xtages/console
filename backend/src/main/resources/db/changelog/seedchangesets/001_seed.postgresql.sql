@@ -5,10 +5,12 @@
 -- Xtages
 INSERT INTO
     "organization"(name, stripe_customer_id, subscription_status, github_app_installation_id,
-    github_app_installation_status, ecr_repository_arn)
+    github_app_installation_status, ecr_repository_arn, ci_log_group_arn, cd_log_group_arn)
 	VALUES
 	('Xtages', 'cus_JNlr07Ilq8tnxc', 'ACTIVE', 16569285,
-	'ACTIVE', 'arn:aws:ecr:us-east-1:606626603369:repository/xtages');
+	'ACTIVE', 'arn:aws:ecr:us-east-1:606626603369:repository/xtages',
+	'arn:aws:logs:us-east-1:606626603369:log-group:xtages_ci_logs',
+	'arn:aws:logs:us-east-1:606626603369:log-group:xtages_cd_logs');
 
 -- czuniga@xtages.com
 INSERT INTO "xtages_user"
@@ -21,9 +23,9 @@ INSERT INTO "project"
     (id, name, type, version, organization, "user", pass_check_rule_enabled,
     codebuild_ci_project_arn, codebuild_cd_project_arn, gh_repo_full_name)
 	VALUES
-	(1, 'test2', 'NODE', '15.13.0', 'Xtages', 1, false,
-	'arn:aws:codebuild:us-east-1:606626603369:project/xtages_test2_ci',
-    'arn:aws:codebuild:us-east-1:606626603369:project/xtages_test2_cd', 'Xtages/test');
+	(1, 'test', 'NODE', '15.13.0', 'Xtages', 1, false,
+	'arn:aws:codebuild:us-east-1:606626603369:project/xtages_test_ci',
+    'arn:aws:codebuild:us-east-1:606626603369:project/xtages_test_cd', 'Xtages/test');
 
 SELECT pg_catalog.setval('public.project_id_seq', 1, true);
 
