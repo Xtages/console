@@ -236,13 +236,13 @@ components:
     LogsReq:
       description: Request made to get logs
       required:
-        - operationId
-        - operation
+        - buildId
+        - buildType
       properties:
-        operationId:
+        buildId:
           type: integer
           format: int64
-        operation:
+        buildType:
           type: string
           minLength: 2
     Project:

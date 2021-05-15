@@ -128,19 +128,22 @@ class ProjectApiController(
         return ResponseEntity.ok(CD(id = sentToBuildStartedEventRecord.id))
     }
 
+    /**
+     * Retrieve logs from CloudWatch given a [Project] an [BuildEvent] id and
+     * an operation id ([CodeBuildType])
+     */
     override fun logs(projectName: String, logsReq: LogsReq): ResponseEntity<CILogs> {
         val (user, organization, project) = checkRepoBelongsToOrg(projectName)
-        val buildEvent = buildEventDao.fetchById(logsReq.operationId).first()
-        var operation = CodeBuildType.CI
-        val operationCaps = logsReq.operation.toUpperCase()
-        ensure.isTrue(
-            operation = { operationCaps == CodeBuildType.CD.name || operationCaps == CodeBuildType.CI.name },
-            code = ExceptionCode.OPERATION_NOT_VALID,
-            message = "Operation not valid."
+        val operation = ensure.ofType<CodeBuildType>(
+            operation = { CodeBuildType.valueOf(logsReq.buildType.toUpperCase()) },
+            valueDesc = "Operation not valid."
         )
-        when(operationCaps) {
-            CodeBuildType.CD.name -> operation = CodeBuildType.CD
-        }
+        val buildEvent = ensure.foundOne(
+            operation = { buildEventDao.fetchById(logsReq.buildId).first() },
+            code = ExceptionCode.OPERATION_NOT_FOUND,
+            lazyMessage = { "Operation [$operation] with id [${logsReq.buildId}] was not found" }
+        )
+
         val logs = awsService.getLogsFor(operation, buildEvent, project, organization)
         return ResponseEntity.ok(CILogs(events = logs))
     }

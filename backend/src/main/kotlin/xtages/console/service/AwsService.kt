@@ -255,7 +255,9 @@ class AwsService(
      */
     fun getLogsFor(codeBuildType: CodeBuildType, buildEvent: BuildEvent, project: Project, organization: Organization, ) : List<LogEvent> {
         val logGroupName = organization.codeBuildLogsGroupNameFor(codeBuildType)
-        val logStreamName = buildLogStreamName(project, codeBuildType, buildEvent)
+        val logStreamName =
+            "${project.codeBuildLogsStreamNameFor(codeBuildType)}/${AmazonResourceName.fromString(buildEvent.buildArn).resourceName}"
+
         logger.info { "logGroupName: $logGroupName logStreamName: $logStreamName" }
         val logEventRequest = GetLogEventsRequest.builder()
             .logGroupName(logGroupName)
@@ -265,13 +267,6 @@ class AwsService(
         val logEvents = cloudWatchLogsAsyncClient.getLogEvents(logEventRequest).get().events()
         return logEvents.map { it -> it.toLogEvent() }
     }
-
-    private fun buildLogStreamName(
-        project: Project,
-        codeBuildType: CodeBuildType,
-        buildEvent: BuildEvent
-    ) =
-        "${project.codeBuildLogsStreamNameFor(codeBuildType)}/${AmazonResourceName.fromString(buildEvent.buildArn).resourceName}"
 
     private fun OutputLogEvent.toLogEvent() = LogEvent(
         message = message(),
@@ -338,13 +333,8 @@ class AwsService(
         val imageName = buildTypeVar(project.codeBuildCiImageName, project.codeBuildCdImageName)
         val projectName = buildTypeVar(project.codeBuildCiProjectName, project.codeBuildCdProjectName)
         val projectDesc = buildTypeVar(project.codeBuildCiProjectDescription, project.codeBuildCdProjectDescription)
-        val logsGroupName = buildTypeVar(
-            organization.codeBuildLogsGroupNameFor(CodeBuildType.CI),
-            organization.codeBuildLogsGroupNameFor(CodeBuildType.CD)
-        )
-        val logsStreamName = buildTypeVar(
-            project.codeBuildLogsStreamNameFor(CodeBuildType.CI),
-            project.codeBuildLogsStreamNameFor(CodeBuildType.CD))
+        val logsGroupName = organization.codeBuildLogsGroupNameFor(codeBuildType)
+        val logsStreamName = project.codeBuildLogsStreamNameFor(codeBuildType)
         val buildSpecLocation = buildTypeVar(project.codeBuildCiBuildSpecName, project.codeBuildCdBuildSpecName)
         val builder = CreateProjectRequest.builder()
             .name(projectName)

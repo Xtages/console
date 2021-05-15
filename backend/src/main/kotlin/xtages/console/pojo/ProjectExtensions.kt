@@ -96,6 +96,10 @@ val Project.codeBuildCdBuildSpecName: String
         return "cd/$type/$version-buildspec.yml".toLowerCase()
     }
 
+/**
+ * Returns the name of the log stream associated to the CodeBuild project given the
+ * [CodeBuildType]
+ */
 fun Project.codeBuildLogsStreamNameFor(codeBuildType: CodeBuildType): String {
     val name = ensure.notNull(value = name, valueDesc = "project.name")
     return "${name}_${codeBuildType.name}_logs".toLowerCase()
