@@ -134,17 +134,14 @@ class ProjectApiController(
      */
     override fun logs(projectName: String, logsReq: LogsReq): ResponseEntity<CILogs> {
         val (user, organization, project) = checkRepoBelongsToOrg(projectName)
-        val operation = ensure.ofType<CodeBuildType>(
-            operation = { CodeBuildType.valueOf(logsReq.buildType.toUpperCase()) },
-            valueDesc = "Operation not valid."
-        )
+        val buildType = CodeBuildType.valueOf(logsReq.buildType.toUpperCase())
         val buildEvent = ensure.foundOne(
             operation = { buildEventDao.fetchById(logsReq.buildId).first() },
             code = ExceptionCode.OPERATION_NOT_FOUND,
-            lazyMessage = { "Operation [$operation] with id [${logsReq.buildId}] was not found" }
+            lazyMessage = { "Operation [$buildType] with id [${logsReq.buildId}] was not found" }
         )
 
-        val logs = awsService.getLogsFor(operation, buildEvent, project, organization)
+        val logs = awsService.getLogsFor(buildType, buildEvent, project, organization)
         return ResponseEntity.ok(CILogs(events = logs))
     }
 
