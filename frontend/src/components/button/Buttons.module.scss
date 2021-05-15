@@ -1,9 +1,15 @@
+@import '~bootstrap/scss/mixins';
 @import "../../assets/css/theme";
 
-.buttonAsLink {
+.btnAsLink {
   font-size: 80%;
 
   &:hover {
     color: $text-muted-hover !important;
   }
+}
+
+.btnXs {
+  @include button-size($btn-padding-y-xs, $btn-padding-x-xs, $btn-font-size-xs, $btn-line-height-xs, $btn-border-radius-xs);
+  font-weight: $font-weight-bolder;
 }
