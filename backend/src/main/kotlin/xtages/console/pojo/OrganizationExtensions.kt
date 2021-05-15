@@ -2,21 +2,12 @@ package xtages.console.pojo
 
 import xtages.console.exception.ensure
 import xtages.console.query.tables.pojos.Organization
+import xtages.console.controller.model.CodeBuildType
 
 /**
- * Returns the name of the CloudWatch Logs group to use in the CodeBuild CI project.
+ * Returns the name of the CloudWatch Logs group to use in the CodeBuild project.
  */
-val Organization.codeBuildCiLogsGroupName: String
-    get() {
-        val name = ensure.notNull(value = name, valueDesc = "organization.name")
-        return "${name}_ci_logs".toLowerCase()
-    }
-
-/**
- * Returns the name of the CloudWatch Logs group to use in the CodeBuild CD project.
- */
-val Organization.codeBuildCdLogsGroupName: String
-    get() {
-        val name = ensure.notNull(value = name, valueDesc = "organization.name")
-        return "${name}_cd_logs".toLowerCase()
-    }
+fun Organization.codeBuildLogsGroupNameFor(codeBuildType: CodeBuildType): String {
+    val name = ensure.notNull(value = name, valueDesc = "organization.name")
+    return "${name}_${codeBuildType.name}_logs".toLowerCase()
+}
