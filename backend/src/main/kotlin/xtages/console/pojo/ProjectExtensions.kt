@@ -1,5 +1,6 @@
 package xtages.console.pojo
 
+import xtages.console.controller.model.CodeBuildType
 import xtages.console.exception.ensure
 import xtages.console.query.tables.pojos.Project
 
@@ -96,22 +97,13 @@ val Project.codeBuildCdBuildSpecName: String
     }
 
 /**
- * Returns the name of the CloudWatch Logs stream to use in the CodeBuild CI project.
+ * Returns the name of the log stream associated to the CodeBuild project given the
+ * [CodeBuildType]
  */
-val Project.codeBuildCiLogsStreamName: String
-    get() {
-        val name = ensure.notNull(value = name, valueDesc = "project.name")
-        return "${name}_ci_logs"
-    }
-
-/**
- * Returns the name of the CloudWatch Logs stream to use in the CodeBuild CD project.
- */
-val Project.codeBuildCdLogsStreamName: String
-    get() {
-        val name = ensure.notNull(value = name, valueDesc = "project.name")
-        return "${name}_cd_logs"
-    }
+fun Project.codeBuildLogsStreamNameFor(codeBuildType: CodeBuildType): String {
+    val name = ensure.notNull(value = name, valueDesc = "project.name")
+    return "${name}_${codeBuildType.name}_logs".toLowerCase()
+}
 
 /**
  * Returns the name of the notifications rule to use in the CodeBuild CI project.

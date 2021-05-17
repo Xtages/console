@@ -63,7 +63,7 @@ paths:
           $ref: "#/components/responses/UnauthorizedError"
         default:
           $ref: "#/components/responses/DefaultError"
-  /project/{projectName}/ci/{id}/logs:
+  /project/{projectName}/logs:
     get:
       summary: Retrieve logs for a given CI and certain project
       operationId: logs
@@ -77,13 +77,12 @@ paths:
             minLength: 1
           required: true
           description: Name of the project to get the logs from
-        - in: path
-          name: id
-          schema:
-            type: integer
-            format: int64
-          required: true
-          description: CI id that was run for the project. This is the output of /project/{projectName}/ci
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LogsReq"
       responses:
         "200":
           description: Logs successfully returned
@@ -234,6 +233,18 @@ components:
         ownerCognitoUserId:
           type: string
           minLength: 1
+    LogsReq:
+      description: Request made to get logs
+      required:
+        - buildId
+        - buildType
+      properties:
+        buildId:
+          type: integer
+          format: int64
+        buildType:
+          type: string
+          minLength: 2
     Project:
       description: An Xtages project
       properties:
@@ -325,7 +336,7 @@ components:
             type: string
             minItems: 1
     LogEvent:
-      description: Log events
+      description: Log event
       properties:
         timestamp:
           type: integer
