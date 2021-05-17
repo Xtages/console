@@ -43,6 +43,8 @@ import xtages.console.query.tables.daos.ProjectDao
 import xtages.console.query.tables.pojos.BuildEvent
 import xtages.console.query.tables.pojos.Organization
 import xtages.console.query.tables.pojos.Project
+import xtages.console.query.tables.pojos.XtagesUser
+import xtages.console.query.tables.references.BUILD_EVENT
 import java.time.*
 import java.time.format.DateTimeFormatter
 import software.amazon.awssdk.services.codebuild.model.Tag as CodebuildTag
@@ -61,7 +63,6 @@ private val logger = KotlinLogging.logger { }
 
 @Service
 class AwsService(
-    private val gitHubService: GitHubService,
     private val ecrAsyncClient: EcrAsyncClient,
     private val cloudWatchLogsAsyncClient: CloudWatchLogsAsyncClient,
     private val codeBuildAsyncClient: CodeBuildAsyncClient,
@@ -220,30 +221,67 @@ class AwsService(
      * al the necessary information to make the build run
      */
     fun startCodeBuildProject(
-        project: Project, organization: Organization,
-        commit: String, codeBuildType: CodeBuildType
-    ): StartBuildResponse {
+        gitHubAppToken: String,
+        user: XtagesUser,
+        project: Project,
+        organization: Organization,
+        commit: String,
+        codeBuildType: CodeBuildType,
+        environment: String = "dev",
+        fromGitHubApp: Boolean = false,
+    ): Pair<StartBuildResponse, BuildEvent> {
+        val sentToBuildStartedEvent = BuildEvent(
+            environment = environment,
+            operation = codeBuildType.name,
+            name = "SENT_TO_BUILD",
+            status = "STARTED",
+            user = user.id,
+            projectId = project.id,
+            commit = commit,
+            startTime = LocalDateTime.now(ZoneOffset.UTC),
+            endTime = LocalDateTime.now(ZoneOffset.UTC),
+        )
+        val sentToBuildStartedEventRecord = buildEventDao.ctx().newRecord(BUILD_EVENT, sentToBuildStartedEvent)
+        sentToBuildStartedEventRecord.store()
+        logger.debug { "Build Event created with id: ${sentToBuildStartedEventRecord.id}" }
+
         logger.info { "running CodeBuild: $codeBuildType for project : ${project.name} commit: $commit organization: ${organization.name}" }
-        val token = gitHubService.appToken(organization)
         val cbProjectName = if (codeBuildType == CodeBuildType.CI)
             project.codeBuildCiProjectName
         else
             project.codeBuildCdBuildSpecName
 
-        val startBuildResponse = userSessionCodeBuildClient().startBuild(
+        val codeBuildClient = if (fromGitHubApp) codeBuildAsyncClient else userSessionCodeBuildClient()
+        val startBuildResponse = codeBuildClient.startBuild(
             StartBuildRequest.builder()
                 .projectName(cbProjectName)
                 .environmentVariablesOverride(
                     listOf(
                         buildEnvironmentVariable("XTAGES_COMMIT", commit),
                         buildEnvironmentVariable("XTAGES_REPO", project.ghRepoFullName),
-                        buildEnvironmentVariable("XTAGES_GITHUB_TOKEN", token)
+                        buildEnvironmentVariable("XTAGES_GITHUB_TOKEN", gitHubAppToken)
                     )
                 )
                 .build()
-        ).get()!!
+        ).get()
+
+        val build = startBuildResponse.build()
+        logger.debug { "StartBuildResponse Object: ${build.arn()}" }
+        sentToBuildStartedEventRecord.buildArn = build.arn()
+        sentToBuildStartedEventRecord.update()
+
+        val outcomeBuildEvent = sentToBuildStartedEvent
+            .copy(
+                id = null,
+                status = build.buildStatus().toString(),
+                buildArn = build.arn(),
+                startTime = LocalDateTime.now(ZoneOffset.UTC),
+                endTime = LocalDateTime.now(ZoneOffset.UTC),
+            )
+        buildEventDao.insert(outcomeBuildEvent)
+
         logger.info { "started CodeBuild project: $cbProjectName" }
-        return startBuildResponse
+        return Pair(startBuildResponse, outcomeBuildEvent)
     }
 
     /**
