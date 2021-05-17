@@ -2,7 +2,7 @@ import {AtSign, HelpCircle, Key} from 'react-feather';
 import React, {useState} from 'react';
 import ReactTooltip from 'react-tooltip';
 import LabeledFormField, {LabeledFormFieldProps} from 'components/form/LabeledFormField';
-import ButtonAsLink from 'components/button/Buttons';
+import {Button} from 'components/button/Buttons';
 
 /**
  * Email `formik` field.
@@ -67,13 +67,14 @@ export function PasswordField({
             </label>
           </div>
           <div className="mb-2">
-            <ButtonAsLink
-              type="button"
+            <Button
               onClick={() => setShowPassword(!showPassword)}
+              size="xs"
               className="small text-muted text-underline--dashed"
+              asLink
             >
               {showPassword ? 'Hide password' : 'Show password'}
-            </ButtonAsLink>
+            </Button>
           </div>
         </div>
     )}

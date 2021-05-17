@@ -11,9 +11,9 @@ import {organizationApi} from 'service/Services';
 import Logo from 'components/Logos';
 import LabeledFormField from 'components/form/LabeledFormField';
 import Alert from 'components/alert/Alerts';
+import {Button} from 'components/button/Buttons';
 import {EmailField, PasswordField} from './AuthFields';
 import {SignUpFormValues} from './SignUpPage';
-import ButtonAsLink from '../../components/button/Buttons';
 
 /** The properties that are available to the {@link ConfirmSignUpPage} component. */
 type ConfirmSignUpPageProps = RouteComponentProps<{}, {}, SignUpFormValues | null>;
@@ -74,9 +74,9 @@ function ResendCodeButton({state}: {state: SignUpFormValues | null | undefined})
                     )}
               <div className="row row-cols-1">
                 <div className="col-12 d-flex justify-content-center">
-                  <ButtonAsLink type="button" onClick={resendVerificationCode}>
+                  <Button onClick={resendVerificationCode} size="xs" asLink>
                     Re-send verification code
-                  </ButtonAsLink>
+                  </Button>
                 </div>
               </div>
             </div>
