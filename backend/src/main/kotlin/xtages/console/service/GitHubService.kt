@@ -18,13 +18,15 @@ import xtages.console.exception.ExceptionCode.*
 import xtages.console.exception.IllegalArgumentException
 import xtages.console.exception.ensure
 import xtages.console.pojo.templateRepoName
-import xtages.console.query.enums.GithubAppInstallationStatus.*
+import xtages.console.query.enums.GithubAppInstallationStatus.ACTIVE
+import xtages.console.query.enums.GithubAppInstallationStatus.SUSPENDED
 import xtages.console.query.tables.daos.OrganizationDao
 import xtages.console.query.tables.daos.ProjectDao
 import xtages.console.query.tables.daos.XtagesUserDao
 import xtages.console.query.tables.pojos.Organization
 import xtages.console.query.tables.pojos.Project
 import xtages.console.service.GitHubWebhookEventType.*
+import xtages.console.service.aws.CodeBuildService
 import java.io.IOException
 import java.time.Instant
 import java.time.temporal.ChronoUnit
@@ -40,7 +42,7 @@ class GitHubService(
     private val organizationDao: OrganizationDao,
     private val projectDao: ProjectDao,
     private val userDao: XtagesUserDao,
-    private val awsService: AwsService,
+    private val codeBuildService: CodeBuildService,
 ) {
     private val gitHubClient by GitHubClientDelegate(consoleProperties)
 
@@ -71,7 +73,7 @@ class GitHubService(
             // TODO(czuniga): This is a stop-gap measure, because we currently don't have a way to associate a GitHub
             // user to an Xtages user. We should be taking the user information from the Push event itself.
             val owner = userDao.fetchOrganizationsOwner(organization)
-            awsService.startCodeBuildProject(
+            codeBuildService.startCodeBuildProject(
                 gitHubAppToken = appToken,
                 user = owner,
                 project = project,
