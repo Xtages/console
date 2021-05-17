@@ -21,8 +21,9 @@ import xtages.console.query.tables.daos.XtagesUserDao
 import xtages.console.query.tables.pojos.Organization
 import xtages.console.query.tables.pojos.XtagesUser
 import xtages.console.service.AuthenticationService
-import xtages.console.service.AwsService
+import xtages.console.service.aws.AwsService
 import xtages.console.service.GitHubService
+import xtages.console.service.aws.CodeBuildService
 import xtages.console.query.tables.pojos.Project as ProjectPojo
 
 private val logger = KotlinLogging.logger { }
@@ -35,6 +36,7 @@ class ProjectApiController(
     private val authenticationService: AuthenticationService,
     private val gitHubService: GitHubService,
     private val awsService: AwsService,
+    private val codeBuildService: CodeBuildService,
     private val buildEventDao: BuildEventDao,
 ) : ProjectApiControllerBase {
 
@@ -66,7 +68,7 @@ class ProjectApiController(
     override fun ci(projectName: String, ciReq: CIReq): ResponseEntity<CI> {
         val (user, organization, project) = checkRepoBelongsToOrg(projectName)
 
-        val startCodeBuildResponse = awsService.startCodeBuildProject(
+        val startCodeBuildResponse = codeBuildService.startCodeBuildProject(
             gitHubAppToken = gitHubService.appToken(organization),
             user = user,
             project = project,
@@ -81,7 +83,7 @@ class ProjectApiController(
     override fun cd(projectName: String, cdReq: CDReq): ResponseEntity<CD> {
         val (user, organization, project) = checkRepoBelongsToOrg(projectName)
 
-        val startCodeBuildResponse = awsService.startCodeBuildProject(
+        val startCodeBuildResponse = codeBuildService.startCodeBuildProject(
             gitHubAppToken = gitHubService.appToken(organization),
             user = user,
             project = project,
@@ -107,7 +109,7 @@ class ProjectApiController(
             lazyMessage = { "Operation [$buildType] with id [${logsReq.buildId}] was not found" }
         )
 
-        val logs = awsService.getLogsFor(buildType, buildEvent, project, organization)
+        val logs = codeBuildService.getLogsFor(buildType, buildEvent, project, organization)
         return ResponseEntity.ok(CILogs(events = logs))
     }
 
