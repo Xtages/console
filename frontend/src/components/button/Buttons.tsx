@@ -1,20 +1,53 @@
 import React from 'react';
 import cx from 'classnames';
+import {button} from 'aws-amplify';
 import styles from './Buttons.module.scss';
 
+export type ButtonProps = {
+  /** Kind of button */
+  kind?: 'primary' | 'secondary' | 'success' | 'danger' | 'warning' | 'info' | 'light' | 'dark',
+  /** Whether the button is outlined */
+  outlined?: boolean,
+  size?: 'lg' | 'sm' | 'xs',
+  /** Whether the button should be rendered to look like a link */
+  asLink?: boolean,
+} & JSX.IntrinsicElements['button'];
+
 /**
- * Button that renders like a link. Useful for a de-emphasized clickable affordance.
- * @param children - The button's content
- * @param className - Optional `class` to apply to the element.
- * @param props - Everything else a button supports.
+ * Button component.
  */
-export default function ButtonAsLink({
+export function Button({
   children,
+  type = 'button',
   className,
+  kind = 'primary',
+  outlined = false,
+  size,
+  asLink = false,
   ...props
-}: JSX.IntrinsicElements['button']) {
+}: ButtonProps) {
   return (
-    <button {...props} type="button" className={cx('btn', 'btn-link', 'rounded-0', 'p-0', styles.buttonAsLink, className)}>
+    <button
+      {...props}
+      // eslint-disable-next-line react/button-has-type
+      type={asLink ? 'button' : type}
+      className={cx(
+        'btn',
+        {
+          [`btn${outlined ? '-outline' : ''}-${kind}`]: !asLink,
+          'btn-link': asLink,
+          'rounded-0': asLink,
+          'p-0': asLink,
+          [`${styles.buttonAsLink}`]: asLink,
+        },
+        {
+          'btn-lg': size === 'lg',
+          'btn-sm': size === 'sm',
+          [`${styles.btnXs}`]: size === 'xs',
+        },
+        className,
+      )}
+    >
       {children}
     </button>
   );
