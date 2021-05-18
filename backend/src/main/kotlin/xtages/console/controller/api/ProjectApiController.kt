@@ -102,7 +102,7 @@ class ProjectApiController(
      */
     override fun logs(projectName: String, logsReq: LogsReq): ResponseEntity<CILogs> {
         val (user, organization, project) = checkRepoBelongsToOrg(projectName)
-        val buildType = CodeBuildType.valueOf(logsReq.buildType.toUpperCase())
+        val buildType = CodeBuildType.valueOf(logsReq.buildType.name)
         val buildEvent = ensure.foundOne(
             operation = { buildEventDao.fetchById(logsReq.buildId).first() },
             code = ExceptionCode.OPERATION_NOT_FOUND,
