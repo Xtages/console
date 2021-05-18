@@ -1,0 +1,8 @@
+@import "../../assets/css/theme";
+
+.projectTable {
+  thead tr.subHead th {
+    color: $table-subhead-color;
+    font-size: $table-subhead-font-size;
+  }
+}
