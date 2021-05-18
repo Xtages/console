@@ -1,4 +1,5 @@
 @import '~bootstrap/scss/_functions';
+@import '~bootstrap/scss/_variables';
 @import 'functions';
 
 // Variables
@@ -430,15 +431,17 @@ $table-border-color:          $gray-200 !default;
 
 $table-head-spacer-y:         .75rem !default;
 $table-head-spacer-x:         1rem !default;
-$table-head-font-size:        .75rem !default;
+$table-head-font-size:        1.2rem !default;
 $table-head-font-weight:      $font-weight-bold !default;
 $table-head-text-transform:   none !default;
 $table-head-letter-spacing:   0 !default;
 $table-head-bg:               transparent !default;
 $table-head-color:            $gray-700 !default;
+$table-subhead-font-size:     0.9rem !default;
+$table-subhead-color:         $gray-600 !default;
 $table-action-color:          $gray-500 !default;
 
-$table-body-font-size:        .8125rem !default;
+$table-body-font-size:        1.1rem !default;
 
 $table-dark-bg:               $dark !default;
 $table-dark-accent-bg:        rgba($white, .05) !default;

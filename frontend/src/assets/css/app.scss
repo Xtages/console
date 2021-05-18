@@ -4,3 +4,7 @@
 @import 'bootstrap';
 
 @import url(#{$font});
+
+body {
+  background-color: $gray-100;
+}

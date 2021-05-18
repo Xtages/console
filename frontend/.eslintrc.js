@@ -9,7 +9,10 @@ module.exports = {
   },
   rules: {
     'tsdoc/syntax': 'warn',
-    'object-curly-newline': ['error', {ImportDeclaration: 'never', ExportDeclaration: 'never'}],
+    'object-curly-newline': ['error', {
+      ImportDeclaration: 'never',
+      ExportDeclaration: 'never',
+    }],
     '@typescript-eslint/object-curly-spacing': ['error', 'never'],
     'jsx-a11y/label-has-associated-control': ['error', {
       required: {
@@ -25,5 +28,10 @@ module.exports = {
     '@typescript-eslint/no-use-before-define': 'off',
     'react/jsx-props-no-spreading': 'off',
     'react/require-default-props': 'off',
+    'import/no-extraneous-dependencies': [
+      'error', {
+        devDependencies: ['**/*.stories.tsx'],
+      },
+    ],
   },
 };
