@@ -245,6 +245,9 @@ components:
         buildType:
           type: string
           minLength: 2
+          enum:
+            - CI
+            - CD
     Project:
       description: An Xtages project
       properties:
