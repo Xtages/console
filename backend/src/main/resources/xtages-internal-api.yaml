@@ -10,6 +10,30 @@ security:
   - bearerAuth: []
 paths:
   /project:
+    get:
+      summary: Returns the list of projects for the user's organization
+      operationId: getProjects
+      tags:
+        - project
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ListProjectsReq"
+      responses:
+        '200':
+          description: List of projects
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ProjectAndLastBuild"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        default:
+          $ref: "#/components/responses/DefaultError"
     post:
       summary: Creates a new Xtages project
       operationId: createProject
@@ -256,6 +280,12 @@ components:
         name:
           type: string
           minLength: 1
+        organization:
+          type: string
+          minLength: 1
+        ghRepoUrl:
+          type: string
+          minLength: 1
         type:
           type: string
           enum:
@@ -265,6 +295,13 @@ components:
           minLength: 1
         pass_check_rule_enabled:
           type: boolean
+    ListProjectsReq:
+      description: Request made to GET /project
+      properties:
+        includeLastBuild:
+          description: Whether to include data about the last Build executed for each Project.
+          type: boolean
+          default: false
     CreateProjectReq:
       description: Request made to POST /project
       required:
@@ -347,6 +384,78 @@ components:
         message:
           type: string
           minLength: 1
+    ProjectAndLastBuild:
+      description: A Project with its last Build data
+      properties:
+        project:
+          $ref: '#/components/schemas/Project'
+        lastBuild:
+          $ref: '#/components/schemas/Build'
+    Build:
+      description: A build (CI or CD) that ocurred
+      properties:
+        buildId:
+          type: integer
+          format: int64
+          description: This is actually the id of the first build_event for this build.
+        buildType:
+          type: string
+          minLength: 2
+          enum:
+            - CI
+            - CD
+        status:
+          type: string
+          enum:
+            - NOT_PROVISIONED
+            - SUCCEEDED
+            - FAILED
+            - RUNNING
+            - UNKNOWN
+        initiatorEmail:
+          type: string
+          minLength: 1
+        initiatorName:
+          type: string
+          minLength: 1
+        initiatorAvatarUrl:
+          type: string
+        commitHash:
+          type: string
+          minLength: 1
+        commitUrl:
+          type: string
+          minLength: 1
+        startTimestampInMillis:
+          type: integer
+          format: int64
+        endTimestampInMillis:
+          type: integer
+          format: int64
+        phases:
+          type: array
+          items:
+            $ref: "#/components/schemas/BuildPhase"
+    BuildPhase:
+      description: A phase of a Build
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+          minLength: 1
+        status:
+          type: string
+          minLength: 1
+        message:
+          type: string
+        startTimestampInMillis:
+          type: integer
+          format: int64
+        endTimestampInMillis:
+          type: integer
+          format: int64
   responses:
     DefaultError:
       description: Default error
