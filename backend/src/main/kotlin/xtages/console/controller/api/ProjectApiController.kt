@@ -5,9 +5,13 @@ import org.springframework.http.HttpStatus.CONFLICT
 import org.springframework.http.HttpStatus.CREATED
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Controller
+import xtages.console.controller.GitHubUrl
 import xtages.console.controller.api.model.*
+import xtages.console.controller.api.model.Build.Status
 import xtages.console.controller.model.CodeBuildType
+import xtages.console.controller.model.buildEventPojoToBuildPhaseConverter
 import xtages.console.controller.model.projectPojoToProjectConverter
+import xtages.console.dao.fetchLatestBuildEventsOfProjects
 import xtages.console.dao.fetchOneByCognitoUserId
 import xtages.console.dao.fetchOneByNameAndOrganization
 import xtages.console.exception.ExceptionCode
@@ -18,12 +22,14 @@ import xtages.console.query.tables.daos.BuildEventDao
 import xtages.console.query.tables.daos.OrganizationDao
 import xtages.console.query.tables.daos.ProjectDao
 import xtages.console.query.tables.daos.XtagesUserDao
+import xtages.console.query.tables.pojos.BuildEvent
 import xtages.console.query.tables.pojos.Organization
 import xtages.console.query.tables.pojos.XtagesUser
 import xtages.console.service.AuthenticationService
-import xtages.console.service.aws.AwsService
 import xtages.console.service.GitHubService
+import xtages.console.service.aws.AwsService
 import xtages.console.service.aws.CodeBuildService
+import xtages.console.time.toUtcMillis
 import xtages.console.query.tables.pojos.Project as ProjectPojo
 
 private val logger = KotlinLogging.logger { }
@@ -39,6 +45,65 @@ class ProjectApiController(
     private val codeBuildService: CodeBuildService,
     private val buildEventDao: BuildEventDao,
 ) : ProjectApiControllerBase {
+
+    override fun getProjects(listProjectsReq: ListProjectsReq?): ResponseEntity<List<ProjectAndLastBuild>> {
+        val organization = organizationDao.fetchOneByCognitoUserId(authenticationService.currentCognitoUserId)
+        val projects = projectDao.fetchByOrganization(organization.name!!).toMutableList()
+        if (listProjectsReq?.includeLastBuild == true) {
+            val latestBuildEventsPerProject = buildEventDao.fetchLatestBuildEventsOfProjects(projects)
+            val projectsWithBuild = latestBuildEventsPerProject.mapValues {
+                val project = it.key
+                projects.remove(project)
+                val events = it.value
+                val initialEvent =
+                    events.single { event -> event.name == "SENT_TO_BUILD" && event.status == "STARTED" }
+                val lastEvent = events.last()
+                // We create a "virtual" Build object. This object has the id of the first BuildEvent and we use the
+                // BuildEvents for a given CodeBuild build to determine if the "Build" as a whole was successful or has
+                // some other status. We use the first BuildEvent's start time as the startTimestamp and the last
+                // BuildEvent's end time as the endTimestamp
+                Build(
+                    buildId = initialEvent.id,
+                    buildType = Build.BuildType.valueOf(initialEvent.operation!!),
+                    status = determineBuildStatus(events),
+                    initiatorName = "Carlos",
+                    initiatorEmail = "czuniga@xtages.com",
+                    commitHash = initialEvent.commit,
+                    commitUrl = GitHubUrl(
+                        organizationName = organization.name!!,
+                        repoName = project.name,
+                        commitHash = initialEvent.commit
+                    ).toUriString(),
+                    startTimestampInMillis = initialEvent.startTime!!.toUtcMillis(),
+                    endTimestampInMillis = lastEvent.endTime!!.toUtcMillis(),
+                    phases = events.map { event -> buildEventPojoToBuildPhaseConverter.convert(event)!! }
+                )
+            }.mapKeys { entry ->
+                projectPojoToProjectConverter.convert(entry.key)
+            }.map { entry ->
+                ProjectAndLastBuild(
+                    project = entry.key,
+                    lastBuild = entry.value
+                )
+            }
+            val projectsWithoutBuild = projects
+                .sortedBy { it.name }
+                .map { projectPojoToProjectConverter.convert(it)!! }
+                .map { ProjectAndLastBuild(project = it) }
+            return ResponseEntity.ok(projectsWithBuild + projectsWithoutBuild)
+        }
+        return ResponseEntity.ok(
+            projectDao.findAll().map(projectPojoToProjectConverter::convert).map { ProjectAndLastBuild(project = it) }
+        )
+    }
+
+    private fun determineBuildStatus(events: List<BuildEvent>) =
+        when {
+            events.any { event -> event.status == "FAILED" } -> Status.FAILED
+            events.none { event -> event.name == "COMPLETED" } -> Status.RUNNING
+            events.any { event -> event.name == "COMPLETED" && event.status == "SUCCEEDED" } -> Status.SUCCEEDED
+            else -> Status.UNKNOWN
+        }
 
     override fun createProject(createProjectReq: CreateProjectReq): ResponseEntity<Project> {
         val user = ensure.foundOne(

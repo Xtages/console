@@ -31,6 +31,7 @@ import xtages.console.query.tables.pojos.Project
 import xtages.console.query.tables.pojos.XtagesUser
 import xtages.console.query.tables.references.BUILD_EVENT
 import xtages.console.service.AuthenticationService
+import xtages.console.time.toUtcLocalDateTime
 import java.time.*
 import java.time.format.DateTimeFormatter
 import software.amazon.awssdk.services.codebuild.model.Tag as CodebuildTag
@@ -117,8 +118,8 @@ class CodeBuildService(
                         notificationId = notification.messageId,
                         name = event.detail.currentPhase,
                         status = event.detail.buildStatus,
-                        startTime = LocalDateTime.ofInstant(event.time, ZoneOffset.UTC),
-                        endTime = LocalDateTime.ofInstant(event.time, ZoneOffset.UTC),
+                        startTime = event.time.toUtcLocalDateTime(),
+                        endTime = event.time.toUtcLocalDateTime(),
                         operation = sentToBuildEvent.operation,
                         user = sentToBuildEvent.user,
                         environment = sentToBuildEvent.environment,
@@ -159,8 +160,8 @@ class CodeBuildService(
                 notificationId = notificationId,
                 name = phase.phaseType,
                 status = if (phase.phaseType == "COMPLETED") "SUCCEEDED" else phase.phaseStatus,
-                startTime = LocalDateTime.ofInstant(phase.startTime, ZoneOffset.UTC),
-                endTime = LocalDateTime.ofInstant(phase.endTime ?: phase.startTime, ZoneOffset.UTC),
+                startTime = phase.startTime.toUtcLocalDateTime(),
+                endTime = (phase.endTime ?: phase.startTime).toUtcLocalDateTime(),
                 message = phase.message,
                 operation = sentToBuildEvent.operation,
                 user = sentToBuildEvent.user,
