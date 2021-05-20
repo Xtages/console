@@ -1,0 +1,83 @@
+import React, {Children, FC, ReactNode} from 'react';
+import * as ReactIs from 'react-is';
+import {IconProps} from 'react-feather';
+
+interface SectionTitleProps {
+  /** Optional Icon for the section */
+  icon?: FC<IconProps>,
+
+  /** Title of the section */
+  title: string,
+
+  /** Optional subtible for the section */
+  subtitle?: string,
+}
+
+/** A [Section] title. Only one may appear per section. */
+export function SectionTitle({
+  icon,
+  title,
+  subtitle,
+}: SectionTitleProps) {
+  const iconEl = icon && React.createElement(icon);
+  return (
+    <div className="row mx-n2">
+      <div className="d-flex align-items-center mb-4">
+        <div className="d-flex">
+          {iconEl
+                && (
+                <div className="h5 mb-0">
+                  {iconEl}
+                </div>
+                )}
+          <div className="col">
+            <h1 className="h5 mb-0">{title}</h1>
+            {subtitle
+                    && (
+                    <p className="text-muted mb-0">
+                      {subtitle}
+                    </p>
+                    )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+interface SectionProps {
+  /**
+   * Children for the section. Only 0 or 1 [SectionTitle] may appear here.
+   * The rest of the children will will be wrapped in a `<div class="row">`.
+   * */
+  children: ReactNode | ReactNode[]
+
+  last?: boolean,
+}
+
+/** A section in a page */
+export function Section({children, last = false} : SectionProps) {
+  let sectionTitle: ReactNode | undefined;
+  const restOfChildren: ReactNode[] = [];
+  Children.forEach(children, (child) => {
+    if (ReactIs.isElement(child) && child.type === SectionTitle) {
+      if (!sectionTitle) {
+        sectionTitle = child;
+      } else {
+        throw Error('At most one SectionTitle can be present');
+      }
+    } else {
+      restOfChildren.push(child);
+    }
+  });
+  return (
+    <>
+      {sectionTitle}
+      <div className="row mx-n2">
+        {restOfChildren}
+      </div>
+      {!last
+      && <hr />}
+    </>
+  );
+}

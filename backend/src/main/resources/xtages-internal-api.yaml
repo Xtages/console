@@ -15,12 +15,13 @@ paths:
       operationId: getProjects
       tags:
         - project
-      requestBody:
-        required: false
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/ListProjectsReq"
+      parameters:
+        - in: query
+          name: includeLastBuild
+          schema:
+            type: boolean
+            default: false
+          description: Whether to include data about the last Build executed for each Project.
       responses:
         '200':
           description: List of projects
@@ -293,15 +294,16 @@ components:
         version:
           type: string
           minLength: 1
-        pass_check_rule_enabled:
+        passCheckRuleEnabled:
           type: boolean
-    ListProjectsReq:
-      description: Request made to GET /project
-      properties:
-        includeLastBuild:
-          description: Whether to include data about the last Build executed for each Project.
-          type: boolean
-          default: false
+      required:
+        - id
+        - name
+        - organization
+        - ghRepoUrl
+        - type
+        - version
+        - passCheckRuleEnabled
     CreateProjectReq:
       description: Request made to POST /project
       required:
@@ -391,14 +393,16 @@ components:
           $ref: '#/components/schemas/Project'
         lastBuild:
           $ref: '#/components/schemas/Build'
+      required:
+        - project
     Build:
       description: A build (CI or CD) that ocurred
       properties:
-        buildId:
+        id:
           type: integer
           format: int64
           description: This is actually the id of the first build_event for this build.
-        buildType:
+        type:
           type: string
           minLength: 2
           enum:
@@ -436,6 +440,16 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/BuildPhase"
+      required:
+        - buildId
+        - type
+        - status
+        - initiatorEmail
+        - initiatorName
+        - commitHash
+        - commitUrl
+        - startTimestampInMillis
+        - phases
     BuildPhase:
       description: A phase of a Build
       properties:
@@ -456,6 +470,11 @@ components:
         endTimestampInMillis:
           type: integer
           format: int64
+      required:
+        - id
+        - name
+        - status
+        - startTimestampInMillis
   responses:
     DefaultError:
       description: Default error

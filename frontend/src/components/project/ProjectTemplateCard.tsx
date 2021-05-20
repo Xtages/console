@@ -1,4 +1,5 @@
 import React from 'react';
+import styles from 'components/card/Card.module.scss';
 import {Button} from '../button/Buttons';
 import Avatar from '../avatar/Avatar';
 
@@ -28,8 +29,8 @@ export default function ProjectTemplateCard({
   onClick,
 }: ProjectTemplateCardProps) {
   return (
-    <div className="card">
-      <div className="card-body text-center">
+    <div className={`card ${styles.card}`}>
+      <div className={`card-body ${styles.cardBody} text-center`}>
         <Avatar
           img={`img/project/template/${imageName}`}
           imgAltText={`Create new ${title} project`}

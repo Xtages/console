@@ -22,6 +22,143 @@ import { DUMMY_BASE_URL, assertParamExists, setApiKeyToObject, setBasicAuthToObj
 import { BASE_PATH, COLLECTION_FORMATS, RequestArgs, BaseAPI, RequiredError } from './base';
 
 /**
+ * A build (CI or CD) that ocurred
+ * @export
+ * @interface Build
+ */
+export interface Build {
+    /**
+     * This is actually the id of the first build_event for this build.
+     * @type {number}
+     * @memberof Build
+     */
+    id?: number;
+    /**
+     * 
+     * @type {string}
+     * @memberof Build
+     */
+    type: BuildTypeEnum;
+    /**
+     * 
+     * @type {string}
+     * @memberof Build
+     */
+    status: BuildStatusEnum;
+    /**
+     * 
+     * @type {string}
+     * @memberof Build
+     */
+    initiatorEmail: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof Build
+     */
+    initiatorName: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof Build
+     */
+    initiatorAvatarUrl?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof Build
+     */
+    commitHash: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof Build
+     */
+    commitUrl: string;
+    /**
+     * 
+     * @type {number}
+     * @memberof Build
+     */
+    startTimestampInMillis: number;
+    /**
+     * 
+     * @type {number}
+     * @memberof Build
+     */
+    endTimestampInMillis?: number;
+    /**
+     * 
+     * @type {Array<BuildPhase>}
+     * @memberof Build
+     */
+    phases: Array<BuildPhase>;
+}
+
+/**
+    * @export
+    * @enum {string}
+    */
+export enum BuildTypeEnum {
+    Ci = 'CI',
+    Cd = 'CD'
+}
+/**
+    * @export
+    * @enum {string}
+    */
+export enum BuildStatusEnum {
+    NotProvisioned = 'NOT_PROVISIONED',
+    Succeeded = 'SUCCEEDED',
+    Failed = 'FAILED',
+    Running = 'RUNNING',
+    Unknown = 'UNKNOWN'
+}
+
+/**
+ * A phase of a Build
+ * @export
+ * @interface BuildPhase
+ */
+export interface BuildPhase {
+    /**
+     * 
+     * @type {number}
+     * @memberof BuildPhase
+     */
+    id: number;
+    /**
+     * 
+     * @type {string}
+     * @memberof BuildPhase
+     */
+    name: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BuildPhase
+     */
+    status: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BuildPhase
+     */
+    message?: string;
+    /**
+     * 
+     * @type {number}
+     * @memberof BuildPhase
+     */
+    startTimestampInMillis: number;
+    /**
+     * 
+     * @type {number}
+     * @memberof BuildPhase
+     */
+    endTimestampInMillis?: number;
+}
+/**
  * A reference to the run CD
  * @export
  * @interface CD
@@ -65,6 +202,19 @@ export interface CI {
      * @memberof CI
      */
     id?: number;
+}
+/**
+ * CI Logs
+ * @export
+ * @interface CILogs
+ */
+export interface CILogs {
+    /**
+     * 
+     * @type {Array<LogEvent>}
+     * @memberof CILogs
+     */
+    events?: Array<LogEvent>;
 }
 /**
  * Request made to POST /ci
@@ -177,6 +327,54 @@ export interface ErrorDesc {
     message: string;
 }
 /**
+ * Log event
+ * @export
+ * @interface LogEvent
+ */
+export interface LogEvent {
+    /**
+     * 
+     * @type {number}
+     * @memberof LogEvent
+     */
+    timestamp?: number;
+    /**
+     * 
+     * @type {string}
+     * @memberof LogEvent
+     */
+    message?: string;
+}
+/**
+ * Request made to get logs
+ * @export
+ * @interface LogsReq
+ */
+export interface LogsReq {
+    /**
+     * 
+     * @type {number}
+     * @memberof LogsReq
+     */
+    buildId: number;
+    /**
+     * 
+     * @type {string}
+     * @memberof LogsReq
+     */
+    buildType: LogsReqBuildTypeEnum;
+}
+
+/**
+    * @export
+    * @enum {string}
+    */
+export enum LogsReqBuildTypeEnum {
+    Ci = 'CI',
+    Cd = 'CD'
+}
+
+/**
  * An Organization
  * @export
  * @interface Organization
@@ -219,31 +417,43 @@ export interface Project {
      * @type {number}
      * @memberof Project
      */
-    id?: number;
+    id: number;
     /**
      * 
      * @type {string}
      * @memberof Project
      */
-    name?: string;
+    name: string;
     /**
      * 
      * @type {string}
      * @memberof Project
      */
-    type?: ProjectTypeEnum;
+    organization: string;
     /**
      * 
      * @type {string}
      * @memberof Project
      */
-    version?: string;
+    ghRepoUrl: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof Project
+     */
+    type: ProjectTypeEnum;
+    /**
+     * 
+     * @type {string}
+     * @memberof Project
+     */
+    version: string;
     /**
      * 
      * @type {boolean}
      * @memberof Project
      */
-    pass_check_rule_enabled?: boolean;
+    passCheckRuleEnabled: boolean;
 }
 
 /**
@@ -254,6 +464,25 @@ export enum ProjectTypeEnum {
     Node = 'NODE'
 }
 
+/**
+ * A Project with its last Build data
+ * @export
+ * @interface ProjectAndLastBuild
+ */
+export interface ProjectAndLastBuild {
+    /**
+     * 
+     * @type {Project}
+     * @memberof ProjectAndLastBuild
+     */
+    project: Project;
+    /**
+     * 
+     * @type {Build}
+     * @memberof ProjectAndLastBuild
+     */
+    lastBuild?: Build;
+}
 
 /**
  * CdApi - axios parameter creator
@@ -667,6 +896,124 @@ export class CiApi extends BaseAPI {
 
 
 /**
+ * LogsApi - axios parameter creator
+ * @export
+ */
+export const LogsApiAxiosParamCreator = function (configuration?: Configuration) {
+    return {
+        /**
+         * 
+         * @summary Retrieve logs for a given CI and certain project
+         * @param {string} projectName Name of the project to get the logs from
+         * @param {LogsReq} logsReq 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        logs: async (projectName: string, logsReq: LogsReq, options: any = {}): Promise<RequestArgs> => {
+            // verify required parameter 'projectName' is not null or undefined
+            assertParamExists('logs', 'projectName', projectName)
+            // verify required parameter 'logsReq' is not null or undefined
+            assertParamExists('logs', 'logsReq', logsReq)
+            const localVarPath = `/project/{projectName}/logs`
+                .replace(`{${"projectName"}}`, encodeURIComponent(String(projectName)));
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            // authentication bearerAuth required
+            // http bearer authentication required
+            await setBearerAuthToObject(localVarHeaderParameter, configuration)
+
+
+    
+            localVarHeaderParameter['Content-Type'] = 'application/json';
+
+            setSearchParams(localVarUrlObj, localVarQueryParameter, options.query);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+            localVarRequestOptions.data = serializeDataIfNeeded(logsReq, localVarRequestOptions, configuration)
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+    }
+};
+
+/**
+ * LogsApi - functional programming interface
+ * @export
+ */
+export const LogsApiFp = function(configuration?: Configuration) {
+    const localVarAxiosParamCreator = LogsApiAxiosParamCreator(configuration)
+    return {
+        /**
+         * 
+         * @summary Retrieve logs for a given CI and certain project
+         * @param {string} projectName Name of the project to get the logs from
+         * @param {LogsReq} logsReq 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async logs(projectName: string, logsReq: LogsReq, options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<CILogs>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.logs(projectName, logsReq, options);
+            return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
+        },
+    }
+};
+
+/**
+ * LogsApi - factory interface
+ * @export
+ */
+export const LogsApiFactory = function (configuration?: Configuration, basePath?: string, axios?: AxiosInstance) {
+    const localVarFp = LogsApiFp(configuration)
+    return {
+        /**
+         * 
+         * @summary Retrieve logs for a given CI and certain project
+         * @param {string} projectName Name of the project to get the logs from
+         * @param {LogsReq} logsReq 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        logs(projectName: string, logsReq: LogsReq, options?: any): AxiosPromise<CILogs> {
+            return localVarFp.logs(projectName, logsReq, options).then((request) => request(axios, basePath));
+        },
+    };
+};
+
+/**
+ * LogsApi - object-oriented interface
+ * @export
+ * @class LogsApi
+ * @extends {BaseAPI}
+ */
+export class LogsApi extends BaseAPI {
+    /**
+     * 
+     * @summary Retrieve logs for a given CI and certain project
+     * @param {string} projectName Name of the project to get the logs from
+     * @param {LogsReq} logsReq 
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof LogsApi
+     */
+    public logs(projectName: string, logsReq: LogsReq, options?: any) {
+        return LogsApiFp(this.configuration).logs(projectName, logsReq, options).then((request) => request(this.axios, this.basePath));
+    }
+}
+
+
+/**
  * OrganizationApi - axios parameter creator
  * @export
  */
@@ -823,6 +1170,45 @@ export const ProjectApiAxiosParamCreator = function (configuration?: Configurati
                 options: localVarRequestOptions,
             };
         },
+        /**
+         * 
+         * @summary Returns the list of projects for the user\'s organization
+         * @param {boolean} [includeLastBuild] Whether to include data about the last Build executed for each Project.
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getProjects: async (includeLastBuild?: boolean, options: any = {}): Promise<RequestArgs> => {
+            const localVarPath = `/project`;
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            // authentication bearerAuth required
+            // http bearer authentication required
+            await setBearerAuthToObject(localVarHeaderParameter, configuration)
+
+            if (includeLastBuild !== undefined) {
+                localVarQueryParameter['includeLastBuild'] = includeLastBuild;
+            }
+
+
+    
+            setSearchParams(localVarUrlObj, localVarQueryParameter, options.query);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
     }
 };
 
@@ -842,6 +1228,17 @@ export const ProjectApiFp = function(configuration?: Configuration) {
          */
         async createProject(createProjectReq: CreateProjectReq, options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Project>> {
             const localVarAxiosArgs = await localVarAxiosParamCreator.createProject(createProjectReq, options);
+            return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
+        },
+        /**
+         * 
+         * @summary Returns the list of projects for the user\'s organization
+         * @param {boolean} [includeLastBuild] Whether to include data about the last Build executed for each Project.
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async getProjects(includeLastBuild?: boolean, options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Array<ProjectAndLastBuild>>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.getProjects(includeLastBuild, options);
             return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
         },
     }
@@ -864,6 +1261,16 @@ export const ProjectApiFactory = function (configuration?: Configuration, basePa
         createProject(createProjectReq: CreateProjectReq, options?: any): AxiosPromise<Project> {
             return localVarFp.createProject(createProjectReq, options).then((request) => request(axios, basePath));
         },
+        /**
+         * 
+         * @summary Returns the list of projects for the user\'s organization
+         * @param {boolean} [includeLastBuild] Whether to include data about the last Build executed for each Project.
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getProjects(includeLastBuild?: boolean, options?: any): AxiosPromise<Array<ProjectAndLastBuild>> {
+            return localVarFp.getProjects(includeLastBuild, options).then((request) => request(axios, basePath));
+        },
     };
 };
 
@@ -884,6 +1291,18 @@ export class ProjectApi extends BaseAPI {
      */
     public createProject(createProjectReq: CreateProjectReq, options?: any) {
         return ProjectApiFp(this.configuration).createProject(createProjectReq, options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * 
+     * @summary Returns the list of projects for the user\'s organization
+     * @param {boolean} [includeLastBuild] Whether to include data about the last Build executed for each Project.
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof ProjectApi
+     */
+    public getProjects(includeLastBuild?: boolean, options?: any) {
+        return ProjectApiFp(this.configuration).getProjects(includeLastBuild, options).then((request) => request(this.axios, this.basePath));
     }
 }
 

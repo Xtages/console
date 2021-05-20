@@ -5,7 +5,6 @@
 // Table
 //
 
-
 // General styles
 
 .table {
@@ -145,14 +144,13 @@
 //
 
 .tableCards {
-  border-collapse:separate;
+  border-collapse: separate;
   border-spacing: 0 0.5rem;
 
   thead,
   tbody {
     th,
     td {
-      border: 0 !important;
       position: relative;
       background-color: transparent;
     }
@@ -183,20 +181,20 @@
     }
 
     td {
+      border-bottom: 1px solid $card-border-color;
+      &:first-child {
+        border-radius: $card-border-radius 0 0 $card-border-radius;
+        border-left: 1px solid $card-border-color;
+      }
+
       &:last-child {
         border-radius: 0 $card-border-radius $card-border-radius 0;
-
-        &:after {
-          border-radius: 0 $card-border-radius $card-border-radius 0;
-          border-right: 1px solid $card-border-color;
-        }
+        border-right: 1px solid $card-border-color;
       }
     }
 
     th, td {
       background-color: $card-bg;
-
-
     }
   }
 
