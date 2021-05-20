@@ -7,6 +7,7 @@ import {ReactComponent as GoToDetails} from 'assets/img/GoToDetails.svg';
 import {BuildStatusIcon} from 'components/build/Build';
 import tableStyles from '../table/Table.module.scss';
 import styles from './ProjectTable.module.scss';
+import {Build, Project} from '../../gen/api';
 
 export interface ProjectTableProps {
   children: ReactElement<typeof ProjectRow> | ReactElement<typeof ProjectRow>[]
@@ -25,7 +26,7 @@ export function ProjectTable({children}: ProjectTableProps) {
           {/* eslint-disable-next-line jsx-a11y/control-has-associated-label */}
           <th className="border-0 border-bottom pr-0" />
           <th className="border-0 border-bottom pr-0" scope="col">Status</th>
-          <th className="border-0 border-bottom pr-0" scope="col">Initiator</th>
+          <th className="border-0 border-bottom pr-0" scope="col">Started by</th>
           <th className="border-0 border-bottom pr-0" scope="col">Info</th>
           {/* eslint-disable-next-line jsx-a11y/control-has-associated-label */}
           <th className="border-0 border-bottom pr-0" />
@@ -39,66 +40,22 @@ export function ProjectTable({children}: ProjectTableProps) {
 }
 
 export interface ProjectRowProps {
-  /** Project Id */
-  id: number,
-
-  /** Project name */
-  name: string,
-
-  /** GH repo url */
-  repoUrl: string,
-
-  /** Last build id */
-  buildId: number,
-
-  /** Last build status */
-  buildStatus: 'not_provisioned' | 'succeeded' | 'failed' | 'unknown' | 'running',
-
-  /** Last build initiator */
-  buildInitiator: string,
-
-  /** Last build initiator email */
-  buildInitiatorEmail: string,
-
-  /** Last build initiator avatar */
-  buildInitiatorAvatarUrl: string,
-
-  /** Last build commit hash */
-  buildCommitHash: string,
-
-  /** Last build commit hash GH url */
-  buildCommitUrl: string,
-
-  /** Last build start timestamp */
-  buildStartTimestamp: number,
-
-  /** Last build end timestamp */
-  buildEndTimestamp: number,
+  project: Project,
+  build?: Build | undefined,
 }
 
 /** A table row displaying a project and the last build info. */
-export function ProjectRow({
-  id,
-  name,
-  repoUrl,
-  buildId,
-  buildStatus,
-  buildInitiator,
-  buildInitiatorEmail,
-  buildInitiatorAvatarUrl,
-  buildCommitUrl,
-  buildCommitHash,
-  buildStartTimestamp,
-  buildEndTimestamp,
-}: ProjectRowProps) {
+export function ProjectRow({project, build = undefined}: ProjectRowProps) {
   return (
     <tr>
-      <td className="h4 pr-4">
-        <Link to={`/project/${id}`}>{name}</Link>
+      <td className="px-4">
+        <h2 className="h3 mb-0 lh-100">
+          <Link to={`/project/${project.id}`}>{project.name}</Link>
+        </h2>
         <div>
           <a
             className="text-xs text-muted text-underline--dashed"
-            href={repoUrl}
+            href={project.ghRepoUrl}
             target="_blank"
             rel="noreferrer"
           >
@@ -106,78 +63,92 @@ export function ProjectRow({
           </a>
         </div>
       </td>
-      <td>
-        <BuildStatusIcon status={buildStatus} className="pr-2 row justify-content-center" />
+      <td className="pt-4">
+        {build && <BuildStatusIcon showLabel status={build.status} className="pr-2" />}
       </td>
       <td>
+        {build && (
         <div className="media align-items-center pr-2">
           <div>
             <Avatar
               size="sm"
               rounded
-              img={buildInitiatorAvatarUrl}
-              imgAltText={buildInitiator}
+              img={build.initiatorAvatarUrl ?? ''}
+              imgAltText={build.initiatorName}
             />
           </div>
           <div className="media-body ml-4">
             <span className="name h6 mb-0 text-sm">
-              {buildInitiator}
+              {build.initiatorName}
             </span>
             {' '}
             <small className="d-block font-weight-bold">
-              {buildInitiatorEmail}
+              {build.initiatorEmail}
             </small>
           </div>
         </div>
+        )}
       </td>
       <td>
+        {build
+        && (
         <div className="text-sm">
           <div>
-            <span className="font-weight-bold">Commit:</span>
+            <span className="font-weight-bold">Build for commit:</span>
             {' '}
             <a
               data-tip="true"
               data-for="seeCommitInGhTooltip"
-              href={buildCommitUrl}
+              href={build.commitUrl}
+              target="_blank"
+              rel="noreferrer"
             >
-              {buildCommitHash.substr(0, 6)}
+              {build.commitHash.substr(0, 6)}
             </a>
             <ReactTooltip id="seeCommitInGhTooltip" place="top" effect="solid">
               See commit in GitHub
             </ReactTooltip>
           </div>
           <div>
-            <span className="font-weight-bold">Started on</span>
+            <span className="font-weight-bold">started on</span>
             {' '}
-            <Link to={`project/${id}/build/${buildId}`}>
+            <Link to={`project/${project.id}/build/${build.id}`}>
               <span
                 data-tip="true"
                 data-for="seeMoreBuildDetailsTooltip"
               >
-                {format(buildStartTimestamp, 'MMM d, yyyy hh:mm:ss a')}
+                {format(build.startTimestampInMillis, 'MMM d, yyyy hh:mm:ss a')}
               </span>
             </Link>
             <ReactTooltip id="seeMoreBuildDetailsTooltip" place="top" effect="solid">
               See build details
             </ReactTooltip>
           </div>
-          <div>
-            <span className="font-weight-bold">and took</span>
-            {' '}
-            {formatDuration(intervalToDuration({
-              start: buildStartTimestamp,
-              end: buildEndTimestamp,
-            }))}
-          </div>
+            {build.endTimestampInMillis
+              ? (
+                <>
+                  <span className="font-weight-bold">and took</span>
+                  {' '}
+                  {formatDuration(intervalToDuration({
+                    start: build.startTimestampInMillis,
+                    end: build.endTimestampInMillis!!,
+                  }))}
+                  {' '}
+                  to finish
+                </>
+              ) : <span>is still running</span>}
         </div>
+        )}
       </td>
-      <td>
-        <Link to={`project/${id}`} data-tip="true" data-for="seeMoreProjectDetailsTooltip">
+      <td className={`${styles.goToDetails}`}>
+        <Link to={`project/${project.id}`} data-tip="true" data-for="seeMoreProjectDetailsTooltip">
           <GoToDetails height={70} style={{stroke: '#A0AEC0'}} />
           <ReactTooltip id="seeMoreProjectDetailsTooltip" place="top" effect="solid">
-            See more details about
+            See more details about project
             {' '}
-            {name}
+            &quot;
+            {project.name}
+            &quot;
           </ReactTooltip>
         </Link>
       </td>

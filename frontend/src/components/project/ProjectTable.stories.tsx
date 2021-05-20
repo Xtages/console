@@ -2,6 +2,7 @@ import React from 'react';
 import {Meta, Story} from '@storybook/react';
 import {BrowserRouter} from 'react-router-dom';
 import {ProjectRow, ProjectRowProps, ProjectTable, ProjectTableProps} from './ProjectTable';
+import {BuildStatusEnum, BuildTypeEnum, ProjectTypeEnum} from '../../gen/api';
 
 export default {
   title: 'Xtages/Project/ProjectTable',
@@ -11,23 +12,34 @@ export default {
 // eslint-disable-next-line max-len
 const ProjectTableTemplate: Story<ProjectTableProps> = (args) => <BrowserRouter><ProjectTable {...args} /></BrowserRouter>;
 
+const project = {
+  id: 10,
+  name: 'console',
+  ghRepoUrl: 'https://github.com/Xtages/console',
+  organization: 'Xtages',
+  type: ProjectTypeEnum.Node,
+  version: '15',
+  passCheckRuleEnabled: false,
+};
+
+const build = {
+  id: 100,
+  status: BuildStatusEnum.Failed,
+  type: BuildTypeEnum.Ci,
+  initiatorName: 'Bill Murray',
+  initiatorEmail: 'b.murray@xtages.com',
+  initiatorAvatarUrl: 'http://www.fillmurray.com/100/100',
+  commitHash: '81acee7df324793c6409e178798dab5d197ba50f',
+  commitUrl: 'https://github.com/Xtages/console/commit/81acee7df324793c6409e178798dab5d197ba50f',
+  startTimestampInMillis: Date.now(),
+  endTimestampInMillis: Date.now() + (7 * 60 * 1000),
+  phases: [],
+};
+
 export const Primary = ProjectTableTemplate.bind({});
 Primary.args = {
   children: [
-    <ProjectRow
-      id={10}
-      name="Xtages/console"
-      repoUrl="https://github.com/Xtages/console"
-      buildId={100}
-      buildStatus="failed"
-      buildInitiator="Bill Murray"
-      buildInitiatorEmail="b.murray@xtages.com"
-      buildInitiatorAvatarUrl="http://www.fillmurray.com/100/100"
-      buildCommitHash="81acee7df324793c6409e178798dab5d197ba50f"
-      buildCommitUrl="https={//github.com/Xtages/console/commit/81acee7df324793c6409e178798dab5d197ba50f"
-      buildStartTimestamp={Date.now()}
-      buildEndTimestamp={Date.now() + (7 * 60 * 1000)}
-    />,
+    <ProjectRow project={project} build={build} />,
   ],
 };
 Primary.storyName = 'ProjectTable';
@@ -37,17 +49,7 @@ const ProjectRowTemplate: Story<ProjectRowProps> = (args) => <BrowserRouter><Pro
 
 export const ProjectRowStory = ProjectRowTemplate.bind({});
 ProjectRowStory.args = {
-  id: 10,
-  name: 'Xtages/console',
-  repoUrl: 'https://github.com/Xtages/console',
-  buildId: 100,
-  buildStatus: 'failed',
-  buildInitiator: 'Bill Murray',
-  buildInitiatorEmail: 'b.murray@xtages.com',
-  buildInitiatorAvatarUrl: 'http://www.fillmurray.com/100/100',
-  buildCommitHash: '81acee7df324793c6409e178798dab5d197ba50f',
-  buildCommitUrl: 'https={//github.com/Xtages/console/commit/81acee7df324793c6409e178798dab5d197ba50f',
-  buildStartTimestamp: Date.now(),
-  buildEndTimestamp: Date.now() + (7 * 60 * 1000),
+  project,
+  build,
 };
 ProjectRowStory.storyName = 'ProjectRow';

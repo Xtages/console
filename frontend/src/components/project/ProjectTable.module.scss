@@ -5,4 +5,8 @@
     color: $table-subhead-color;
     font-size: $table-subhead-font-size;
   }
+
+  tbody td.goToDetails {
+    max-width: 40px;
+  }
 }

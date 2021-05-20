@@ -41,22 +41,22 @@ val projectPojoTypeToProjectTypeConverter = Converter { source: ProjectType -> P
 /** Converts a [xtages.console.query.tables.pojos.Project] into a [Project]. */
 val projectPojoToProjectConverter = Converter { source: ProjectPojo ->
     Project(
-        id = source.id,
-        name = source.name,
-        version = source.version,
-        type = projectPojoTypeToProjectTypeConverter.convert(source.type!!),
-        passCheckRuleEnabled = source.passCheckRuleEnabled,
+        id = source.id!!,
+        name = source.name!!,
+        version = source.version!!,
+        type = projectPojoTypeToProjectTypeConverter.convert(source.type!!)!!,
+        passCheckRuleEnabled = source.passCheckRuleEnabled!!,
         ghRepoUrl = GitHubUrl(organizationName = source.organization!!, repoName = source.name).toUriString(),
-        organization = source.organization,
+        organization = source.organization!!,
     )
 }
 
 /** Converts a [BuildEvent] into a [BuildPhase]. */
 val buildEventPojoToBuildPhaseConverter = Converter { source: BuildEvent ->
     BuildPhase(
-        id = source.id,
-        name = source.name,
-        status = source.status,
+        id = source.id!!,
+        name = source.name!!,
+        status = source.status!!,
         message = source.message,
         startTimestampInMillis = source.startTime!!.toUtcMillis(),
         endTimestampInMillis = source.endTime!!.toUtcMillis(),
