@@ -5,6 +5,7 @@ import org.springframework.http.HttpStatus.CONFLICT
 import org.springframework.http.HttpStatus.CREATED
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Controller
+import org.springframework.web.bind.annotation.RequestParam
 import xtages.console.controller.GitHubUrl
 import xtages.console.controller.api.model.*
 import xtages.console.controller.api.model.Build.Status
@@ -46,10 +47,13 @@ class ProjectApiController(
     private val buildEventDao: BuildEventDao,
 ) : ProjectApiControllerBase {
 
-    override fun getProjects(listProjectsReq: ListProjectsReq?): ResponseEntity<List<ProjectAndLastBuild>> {
+    override fun getProjects(
+        @RequestParam(value = "includeLastBuild", required = false, defaultValue = "false")
+        includeLastBuild: Boolean
+    ): ResponseEntity<List<ProjectAndLastBuild>> {
         val organization = organizationDao.fetchOneByCognitoUserId(authenticationService.currentCognitoUserId)
         val projects = projectDao.fetchByOrganization(organization.name!!).toMutableList()
-        if (listProjectsReq?.includeLastBuild == true) {
+        if (includeLastBuild) {
             val latestBuildEventsPerProject = buildEventDao.fetchLatestBuildEventsOfProjects(projects)
             val projectsWithBuild = latestBuildEventsPerProject.mapValues {
                 val project = it.key
@@ -62,24 +66,25 @@ class ProjectApiController(
                 // BuildEvents for a given CodeBuild build to determine if the "Build" as a whole was successful or has
                 // some other status. We use the first BuildEvent's start time as the startTimestamp and the last
                 // BuildEvent's end time as the endTimestamp
+                val buildStatus = determineBuildStatus(events)
                 Build(
-                    buildId = initialEvent.id,
-                    buildType = Build.BuildType.valueOf(initialEvent.operation!!),
-                    status = determineBuildStatus(events),
+                    id = initialEvent.id,
+                    type = Build.Type.valueOf(initialEvent.operation!!),
+                    status = buildStatus,
                     initiatorName = "Carlos",
                     initiatorEmail = "czuniga@xtages.com",
-                    commitHash = initialEvent.commit,
+                    commitHash = initialEvent.commit!!,
                     commitUrl = GitHubUrl(
                         organizationName = organization.name!!,
                         repoName = project.name,
                         commitHash = initialEvent.commit
                     ).toUriString(),
                     startTimestampInMillis = initialEvent.startTime!!.toUtcMillis(),
-                    endTimestampInMillis = lastEvent.endTime!!.toUtcMillis(),
+                    endTimestampInMillis = if (isTerminalStatus(buildStatus)) lastEvent.endTime!!.toUtcMillis() else null,
                     phases = events.map { event -> buildEventPojoToBuildPhaseConverter.convert(event)!! }
                 )
             }.mapKeys { entry ->
-                projectPojoToProjectConverter.convert(entry.key)
+                projectPojoToProjectConverter.convert(entry.key)!!
             }.map { entry ->
                 ProjectAndLastBuild(
                     project = entry.key,
@@ -93,9 +98,12 @@ class ProjectApiController(
             return ResponseEntity.ok(projectsWithBuild + projectsWithoutBuild)
         }
         return ResponseEntity.ok(
-            projectDao.findAll().map(projectPojoToProjectConverter::convert).map { ProjectAndLastBuild(project = it) }
+            projectDao.findAll().map(projectPojoToProjectConverter::convert).map { ProjectAndLastBuild(project = it!!) }
         )
     }
+
+    private fun isTerminalStatus(buildStatus: Status) =
+        buildStatus == Status.FAILED || buildStatus == Status.SUCCEEDED || buildStatus == Status.NOT_PROVISIONED
 
     private fun determineBuildStatus(events: List<BuildEvent>) =
         when {
@@ -166,7 +174,7 @@ class ProjectApiController(
      * an operation id ([CodeBuildType])
      */
     override fun logs(projectName: String, logsReq: LogsReq): ResponseEntity<CILogs> {
-        val (user, organization, project) = checkRepoBelongsToOrg(projectName)
+        val (_, organization, project) = checkRepoBelongsToOrg(projectName)
         val buildType = CodeBuildType.valueOf(logsReq.buildType.name)
         val buildEvent = ensure.foundOne(
             operation = { buildEventDao.fetchById(logsReq.buildId).first() },

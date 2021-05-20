@@ -2,46 +2,62 @@ import {AlertTriangle, HelpCircle, Loader, ThumbsDown, ThumbsUp} from "react-fea
 import cx from "classnames";
 import ReactTooltip from "react-tooltip";
 import React from "react";
+import {BuildStatusEnum} from "gen/api";
 
 interface BuildStatusIconProps {
-  status: 'not_provisioned' | 'succeeded' | 'failed' | 'unknown' | 'running',
+  status: BuildStatusEnum,
+
+  showLabel?: boolean,
 
   className?: string,
 }
 
 /** An icon to show the build status */
-export function BuildStatusIcon({status, className}: BuildStatusIconProps) {
+export function BuildStatusIcon({status, showLabel = false, className}: BuildStatusIconProps) {
   let content: JSX.Element;
   let tooltip: string;
-  if (status === 'succeeded') {
+  let colorClass: string | undefined;
+  let label: string;
+  if (status === BuildStatusEnum.Succeeded) {
     content = <ThumbsUp/>;
     tooltip = 'Build succeeded';
-  } else if (status === 'failed') {
+    label = 'Succeeded';
+    colorClass = 'text-success';
+  } else if (status === BuildStatusEnum.Failed) {
     content = <ThumbsDown/>;
     tooltip = 'Build failed';
-  } else if (status === 'not_provisioned') {
+    label = 'Failed';
+    colorClass = 'text-danger';
+  } else if (status === BuildStatusEnum.NotProvisioned) {
     content = <AlertTriangle/>;
     tooltip = 'Build failed to provision';
-  } else if (status === 'unknown') {
+    label = 'Not provisioned';
+    colorClass = 'text-warning';
+  } else if (status === BuildStatusEnum.Unknown) {
     content = <HelpCircle/>;
     tooltip = 'Unknown';
+    label = 'Unknown';
   } else {
     content = <Loader/>;
     tooltip = 'Running';
+    label = 'Running';
+    colorClass = 'text-primary';
   }
   return (
     <>
       <div
         data-tip="true"
         data-for="buildStatusTooltip"
-        className={cx(className, {
-            'text-success': status === 'succeeded',
-            'text-danger': status === 'failed',
-            'text-warning': status === 'not_provisioned',
-            'text-primary': status === 'running',
-        })}
+        className={cx(className, "row", colorClass)}
       >
-        {content}
+        <div className="col px-0">
+          <div className="row justify-content-center">
+            {content}
+          </div>
+          <div className="row justify-content-center text-sm">
+            {showLabel && label}
+          </div>
+        </div>
       </div>
       <ReactTooltip id="buildStatusTooltip" place="top" effect="solid">
         {tooltip}
