@@ -3,7 +3,7 @@ import LogoutButton from 'components/authn/LogoutButton';
 import {useQuery} from 'react-query';
 import {projectApi} from 'service/Services';
 import {Codesandbox, Copy} from 'react-feather';
-import {ProjectRow, ProjectTable} from 'components/project/ProjectTable';
+import {ProjectTable} from 'components/project/ProjectTable';
 import ProjectTemplateCard from 'components/project/ProjectTemplateCard';
 import {Section, SectionTitle} from 'components/layout/Section';
 
@@ -23,15 +23,7 @@ export default function HomePage() {
     projectTable = `An error has occurred: ${error}`;
   } else if (data?.data != null) {
     projectTable = (
-      <ProjectTable>
-        {data.data.map((projectAndBuild) => (
-          <ProjectRow
-            key={projectAndBuild.project!.id}
-            project={projectAndBuild.project!}
-            build={projectAndBuild.lastBuild}
-          />
-        ))}
-      </ProjectTable>
+      <ProjectTable projectsAndBuilds={data.data} />
     );
   }
   return (

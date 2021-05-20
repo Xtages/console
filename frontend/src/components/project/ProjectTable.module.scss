@@ -1,12 +1,25 @@
 @import "../../assets/css/theme";
 
 .projectTable {
-  thead tr.subHead th {
-    color: $table-subhead-color;
-    font-size: $table-subhead-font-size;
+  .head {
+    padding-top: $table-cell-padding-sm;
+    padding-bottom: $table-head-spacer-y;
+    font-size: $table-head-font-size;
+    font-weight: $table-head-font-weight;
+    text-transform: $table-head-text-transform;
+    letter-spacing: $table-head-letter-spacing;
+    background-color: $table-head-bg;
+    border-bottom-width: $table-border-width;
   }
 
-  tbody td.goToDetails {
+  .subHead {
+    color: $table-subhead-color;
+    font-size: $table-subhead-font-size;
+    font-weight: $table-head-font-weight;
+  }
+
+  .goToDetails {
+    padding: 0;
     max-width: 40px;
   }
 }
