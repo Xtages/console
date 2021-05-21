@@ -4,7 +4,8 @@ import {Link} from 'react-router-dom';
 import {Menu, MenuButton, MenuItem} from '@szhsin/react-menu';
 import {ArrowUpCircle,
   Check,
-  ChevronDown, ChevronUp,
+  ChevronDown,
+  ChevronUp,
   GitMerge,
   RotateCcw,
   UploadCloud,
@@ -15,17 +16,15 @@ import {BuildStatusIcon} from './BuildStatusIcon';
 import Avatar from '../avatar/Avatar';
 import '@szhsin/react-menu/dist/index.css';
 import {Button} from '../button/Buttons';
-import {durationString, formatDateTimeRelativeToNow} from '../../helpers/time';
+import {durationString, formatDateTimeMed, formatDateTimeRelativeToNow} from '../../helpers/time';
 
 export interface BuildTableProps {
   project: Project,
-  builds: Build[],
 }
 
 /** Renders a list of [Build]s. */
 export function BuildTable({
   project,
-  builds,
 }: BuildTableProps) {
   return (
     <>
@@ -38,7 +37,8 @@ export function BuildTable({
           <div className="col-2" />
         </div>
       </div>
-      {builds.map((build) => (<BuildRow key={build.id} project={project} build={build} />))}
+      {project.builds.map((build) => (
+        <BuildRow key={build.id} project={project} build={build} />))}
     </>
   );
 }
@@ -221,20 +221,22 @@ function format(name: string) {
 }
 
 function PhaseStatus({status}: {status: string}) {
+  const succeeded = status === 'SUCCEEDED';
+  const failed = status === 'FAILED';
   return (
     <span className={cx({
-      'text-dark-success': status === 'SUCCEEDED',
-      'text-danger': status === 'FAILED',
+      'text-dark-success': succeeded,
+      'text-danger': failed,
     })}
     >
-      {status === 'SUCCEEDED'
-                  && <Check size="1em" className="mr-1" />}
-      {status === 'FAILED' && <X size="1em" className="mr-1" />}
+      {succeeded && <Check size="1em" className="mr-1" />}
+      {failed && <X size="1em" className="mr-1" />}
       {format(status)}
     </span>
   );
 }
 
+/** Renders a table with [BuildPhase]s. */
 function BuildPhaseTable({phases}: {phases: BuildPhase[]}) {
   return (
     <div className="text-sm">
@@ -255,45 +257,50 @@ function BuildPhaseTable({phases}: {phases: BuildPhase[]}) {
         </div>
         <div className="col-3">
           <div className="row">
-            <div className="col-6">
+            <div className="col-8">
               Started
             </div>
-            <div className="col-6">
+            <div className="col-4 text-right">
               Duration
             </div>
           </div>
         </div>
       </div>
-      {phases.map((phase) => (
-        <div className="row mt-3" key={phase.id}>
-          <div className="col-3">
-            <div className="row">
-              <div className="col-5">
-                {format(phase.name)}
+      {phases.map((phase) => {
+        if (phase.name === 'SENT_TO_BUILD' || phase.name === 'COMPLETED') {
+          return <></>;
+        }
+        return (
+          <div className="row mt-3" key={phase.id}>
+            <div className="col-3">
+              <div className="row">
+                <div className="col-5">
+                  {format(phase.name)}
+                </div>
+                <div className="col-6">
+                  <PhaseStatus status={phase.status} />
+                </div>
               </div>
-              <div className="col-6">
-                <PhaseStatus status={phase.status} />
+            </div>
+            <div className="col">
+              {phase.message || <div className="text-center">-</div>}
+            </div>
+            <div className="col-3">
+              <div className="row">
+                <div className="col-8 pr-0">
+                  {formatDateTimeMed(phase.startTimestampInMillis)}
+                </div>
+                <div className="col-4 text-right">
+                  {durationString({
+                    startInMillis: phase.startTimestampInMillis,
+                    endInMillis: phase.endTimestampInMillis,
+                  })}
+                </div>
               </div>
             </div>
           </div>
-          <div className="col">
-            {phase.message || ''}
-          </div>
-          <div className="col-3">
-            <div className="row">
-              <div className="col-6 pr-0">
-                {formatDateTimeRelativeToNow(phase.startTimestampInMillis)}
-              </div>
-              <div className="col-6">
-                {durationString({
-                  startInMillis: phase.startTimestampInMillis,
-                  endInMillis: phase.endTimestampInMillis,
-                })}
-              </div>
-            </div>
-          </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }

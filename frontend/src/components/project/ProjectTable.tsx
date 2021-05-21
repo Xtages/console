@@ -4,16 +4,16 @@ import {Link} from 'react-router-dom';
 import {ReactComponent as GoToDetails} from 'assets/img/GoToDetails.svg';
 import cx from 'classnames';
 import styles from './ProjectTable.module.scss';
-import {Build, Project, ProjectAndLastBuild} from '../../gen/api';
+import {Project} from '../../gen/api';
 import {BuildRowInner} from '../build/BuildTable';
 
 export interface ProjectTableProps {
   /** A list of [Project]s and their last [Build] (if one exists). */
-  projectsAndBuilds: ProjectAndLastBuild[],
+  projects: Project[],
 }
 
 /** A table that displays projects */
-export function ProjectTable({projectsAndBuilds}: ProjectTableProps) {
+export function ProjectTable({projects}: ProjectTableProps) {
   return (
     <div className={styles.projectTable}>
       <div className="container">
@@ -22,11 +22,10 @@ export function ProjectTable({projectsAndBuilds}: ProjectTableProps) {
           <div className={`col ${styles.head}`}>Last build</div>
         </div>
       </div>
-      {projectsAndBuilds.map((projectAndBuild) => (
+      {projects.map((project) => (
         <ProjectRow
-          key={projectAndBuild.project!.id}
-          project={projectAndBuild.project!}
-          build={projectAndBuild.lastBuild}
+          key={project.id}
+          project={project}
         />
       ))}
     </div>
@@ -35,14 +34,13 @@ export function ProjectTable({projectsAndBuilds}: ProjectTableProps) {
 
 export interface ProjectRowProps {
   project: Project,
-  build?: Build | undefined,
 }
 
 /** A table row displaying a project and the last build info. */
 export function ProjectRow({
   project,
-  build = undefined,
 }: ProjectRowProps) {
+  const build = project.builds[0];
   return (
     <div className="container card">
       <div className="card-body p-3">
@@ -70,7 +68,7 @@ export function ProjectRow({
           <div className={`col-1 ${styles.goToDetails}`}>
             <Link
               className="h-100 d-flex"
-              to={`project/${project.id}`}
+              to={`project/${project.name}`}
               data-tip="true"
               data-for="seeMoreProjectDetailsTooltip"
             >
