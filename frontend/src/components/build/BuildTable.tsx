@@ -75,7 +75,7 @@ export function BuildRowInner({
   return (
     <>
       <div className="row">
-        <div className="col text-muted text-sm">
+        <div className="col-12 text-muted text-sm pl-0">
           {build.type === BuildTypeEnum.Ci ? (
             <>
               <GitMerge size=".9em" />
