@@ -1,11 +1,11 @@
 import React, {ReactNode} from 'react';
-import LogoutButton from 'components/authn/LogoutButton';
 import {useQuery} from 'react-query';
 import {projectApi} from 'service/Services';
 import {Codesandbox, Copy} from 'react-feather';
 import {ProjectTable} from 'components/project/ProjectTable';
 import ProjectTemplateCard from 'components/project/ProjectTemplateCard';
 import {Section, SectionTitle} from 'components/layout/Section';
+import Page from 'components/layout/Page';
 
 export default function HomePage() {
   const {
@@ -27,33 +27,24 @@ export default function HomePage() {
     );
   }
   return (
-    <>
-      <div className="slice slice-sm bg-section-secondary">
-        <div className="container">
-          <div className="row justify-content-center">
-            <div className="col-lg-12">
-              <Section>
-                <SectionTitle icon={Copy} title="Project templates" subtitle="Create new projects" />
-                <div className="d-block col-md-3 col-sm-6">
-                  <ProjectTemplateCard
-                    id="nodejs"
-                    title="Simple Node.js server"
-                    description="A simple Node.js server template, using Express.js as well as Jest for running tests"
-                    imageName="nodejs.svg"
-                  />
-                </div>
-              </Section>
-              <Section last>
-                <SectionTitle icon={Codesandbox} title="Projects" subtitle="Manage all your projects" />
-                <div className="col-12">
-                  {projectTable}
-                </div>
-              </Section>
-            </div>
-          </div>
+    <Page>
+      <Section>
+        <SectionTitle icon={Copy} title="Project templates" subtitle="Create new projects" />
+        <div className="d-block col-md-3 col-sm-6">
+          <ProjectTemplateCard
+            id="nodejs"
+            title="Simple Node.js server"
+            description="A simple Node.js server template, using Express.js as well as Jest for running tests"
+            imageName="nodejs.svg"
+          />
         </div>
-      </div>
-      <LogoutButton />
-    </>
+      </Section>
+      <Section last>
+        <SectionTitle icon={Codesandbox} title="Projects" subtitle="Manage all your projects" />
+        <div className="col-12">
+          {projectTable}
+        </div>
+      </Section>
+    </Page>
   );
 }

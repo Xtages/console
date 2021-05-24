@@ -152,7 +152,7 @@ export default function ConfirmSignUpPage({location}: ConfirmSignUpPageProps) {
         <div className="row align-items-center justify-content-center min-vh-100">
           <div className="col-md-6 col-lg-5 col-xl-4">
             <div className="mb-5 text-center">
-              <Logo size="SMALL" />
+              <Logo size="sm" />
               <h1 className="h3 mb-1">Confirm your account</h1>
             </div>
             <span className="clearfix" />

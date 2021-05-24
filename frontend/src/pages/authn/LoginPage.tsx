@@ -73,7 +73,7 @@ export default function LoginPage({location}: LoginPageProps) {
           <div className="col-md-6 col-lg-5 col-xl-4 py-6 py-md-0">
             <div>
               <div className="mb-5 text-center">
-                <Logo size="SMALL" full={false} />
+                <Logo size="sm" full={false} />
                 <h1 className="h3 mb-1">Sign in to Xtages</h1>
               </div>
               <span className="clearfix" />

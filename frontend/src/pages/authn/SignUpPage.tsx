@@ -90,7 +90,7 @@ export default function SignUpPage() {
           <div className="col-md-8 col-lg-5 py-6">
             <div>
               <div className="mb-5 text-center">
-                <Logo size="SMALL" />
+                <Logo size="sm" />
                 <h1 className="h3 mb-1">Create your account</h1>
               </div>
               <span className="clearfix" />
