@@ -1,7 +1,7 @@
 import React from 'react';
 import {Meta, Story} from '@storybook/react';
 import {BrowserRouter} from 'react-router-dom';
-import {ProjectRow, ProjectRowProps, ProjectTable, ProjectTableProps} from './ProjectTable';
+import {ProjectRowProps, ProjectTable, ProjectTableProps} from './ProjectTable';
 import {BuildStatusEnum, BuildTypeEnum, ProjectTypeEnum} from '../../gen/api';
 
 export default {
@@ -9,10 +9,7 @@ export default {
   component: ProjectTable,
 } as Meta;
 
-// eslint-disable-next-line max-len
-const ProjectTableTemplate: Story<ProjectTableProps> = (args) => <BrowserRouter><ProjectTable {...args} /></BrowserRouter>;
-
-const project = {
+const projectData = {
   id: 10,
   name: 'console',
   ghRepoUrl: 'https://github.com/Xtages/console',
@@ -22,7 +19,7 @@ const project = {
   passCheckRuleEnabled: false,
 };
 
-const build = {
+const buildData = {
   id: 100,
   status: BuildStatusEnum.Failed,
   type: BuildTypeEnum.Ci,
@@ -36,20 +33,40 @@ const build = {
   phases: [],
 };
 
+// eslint-disable-next-line max-len
+const ProjectTableTemplate: Story<ProjectTableProps> = (args) => <BrowserRouter><ProjectTable {...args} /></BrowserRouter>;
+
 export const Primary = ProjectTableTemplate.bind({});
 Primary.args = {
-  children: [
-    <ProjectRow project={project} build={build} />,
-  ],
+  projectsAndBuilds: [{
+    project: projectData,
+    lastBuild: buildData,
+  }],
 };
 Primary.storyName = 'ProjectTable';
 
-// eslint-disable-next-line max-len
-const ProjectRowTemplate: Story<ProjectRowProps> = (args) => <BrowserRouter><ProjectTable><ProjectRow {...args} /></ProjectTable></BrowserRouter>;
+export const ProjectTableNoBuild = ProjectTableTemplate.bind({});
+ProjectTableNoBuild.args = {
+  projectsAndBuilds: [{
+    project: projectData,
+  }],
+};
+ProjectTableNoBuild.storyName = 'ProjectTable without build';
+
+const ProjectRowTemplate: Story<ProjectRowProps> = ({project, build}: ProjectRowProps) => (
+  <BrowserRouter>
+    <ProjectTable
+      projectsAndBuilds={[{
+        project,
+        lastBuild: build,
+      }]}
+    />
+  </BrowserRouter>
+);
 
 export const ProjectRowStory = ProjectRowTemplate.bind({});
 ProjectRowStory.args = {
-  project,
-  build,
+  project: projectData,
+  build: buildData,
 };
 ProjectRowStory.storyName = 'ProjectRow';

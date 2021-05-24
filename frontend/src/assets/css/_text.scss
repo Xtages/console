@@ -1,3 +1,4 @@
+@import '~bootstrap/scss/mixins';
 @import "../../assets/css/theme";
 
 // Weight and italics
@@ -143,4 +144,14 @@ a.text-muted {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+// More text colors
+
+@each $color, $value in $theme-colors {
+  @include text-emphasis-variant(".text-dark-#{$color}", darken($value, 10%), true);
+}
+
+@each $color, $value in $theme-colors {
+  @include text-emphasis-variant(".text-light-#{$color}", lighten($value, 10%), true);
 }

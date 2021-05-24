@@ -5,7 +5,7 @@ import styles from './Buttons.module.scss';
 
 export type ButtonProps = {
   /** Kind of button */
-  kind?: 'primary' | 'secondary' | 'success' | 'danger' | 'warning' | 'info' | 'light' | 'dark',
+  kind?: 'primary' | 'secondary' | 'success' | 'danger' | 'warning' | 'info' | 'light' | 'dark' | 'white',
   /** Whether the button is outlined */
   outlined?: boolean,
   size?: 'lg' | 'sm' | 'xs',
@@ -34,7 +34,8 @@ export function Button({
       className={cx(
         'btn',
         {
-          [`btn${outlined ? '-outline' : ''}-${kind}`]: !asLink,
+          [`btn${outlined ? '-outline' : ''}-${kind}`]: !asLink && kind !== 'white',
+          [`${styles.btnWhite}`]: kind === 'white',
           'btn-link': asLink,
           'rounded-0': asLink,
           'p-0': asLink,
