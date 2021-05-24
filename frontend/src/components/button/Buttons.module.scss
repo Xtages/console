@@ -9,6 +9,17 @@
   }
 }
 
+.btnWhite {
+  @include button-variant(white, transparent);
+  box-shadow: none;
+
+  &:focus,
+  &.focus {
+    outline: 0;
+    box-shadow: $btn-focus-box-shadow;
+  }
+}
+
 .btnXs {
   @include button-size($btn-padding-y-xs, $btn-padding-x-xs, $btn-font-size-xs, $btn-line-height-xs, $btn-border-radius-xs);
   font-weight: $font-weight-bolder;
