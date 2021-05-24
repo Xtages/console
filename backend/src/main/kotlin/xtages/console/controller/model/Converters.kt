@@ -48,6 +48,7 @@ val projectPojoToProjectConverter = Converter { source: ProjectPojo ->
         passCheckRuleEnabled = source.passCheckRuleEnabled!!,
         ghRepoUrl = GitHubUrl(organizationName = source.organization!!, repoName = source.name).toUriString(),
         organization = source.organization!!,
+        builds = emptyList(),
     )
 }
 

@@ -30,7 +30,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/ProjectAndLastBuild"
+                  $ref: "#/components/schemas/Project"
         "401":
           $ref: "#/components/responses/UnauthorizedError"
         default:
@@ -49,6 +49,37 @@ paths:
       responses:
         '201':
           description: Project was created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        default:
+          $ref: "#/components/responses/DefaultError"
+  /project/{projectName}:
+    get:
+      summary: Returns the project details
+      operationId: getProject
+      tags:
+        - project
+      parameters:
+        - in: path
+          name: projectName
+          schema:
+            type: string
+            minLength: 1
+          required: true
+          description: Name of the project to fetch
+        - in: query
+          name: includeBuilds
+          schema:
+            type: boolean
+            default: false
+          description: Whether to include data the Builds for the project
+      responses:
+        '200':
+          description: Project and builds
           content:
             application/json:
               schema:
@@ -296,6 +327,10 @@ components:
           minLength: 1
         passCheckRuleEnabled:
           type: boolean
+        builds:
+          type: array
+          items:
+            $ref: "#/components/schemas/Build"
       required:
         - id
         - name
@@ -304,6 +339,7 @@ components:
         - type
         - version
         - passCheckRuleEnabled
+        - builds
     CreateProjectReq:
       description: Request made to POST /project
       required:
@@ -386,15 +422,6 @@ components:
         message:
           type: string
           minLength: 1
-    ProjectAndLastBuild:
-      description: A Project with its last Build data
-      properties:
-        project:
-          $ref: '#/components/schemas/Project'
-        lastBuild:
-          $ref: '#/components/schemas/Build'
-      required:
-        - project
     Build:
       description: A build (CI or CD) that ocurred
       properties:

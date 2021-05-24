@@ -454,6 +454,12 @@ export interface Project {
      * @memberof Project
      */
     passCheckRuleEnabled: boolean;
+    /**
+     * 
+     * @type {Array<Build>}
+     * @memberof Project
+     */
+    builds: Array<Build>;
 }
 
 /**
@@ -464,25 +470,6 @@ export enum ProjectTypeEnum {
     Node = 'NODE'
 }
 
-/**
- * A Project with its last Build data
- * @export
- * @interface ProjectAndLastBuild
- */
-export interface ProjectAndLastBuild {
-    /**
-     * 
-     * @type {Project}
-     * @memberof ProjectAndLastBuild
-     */
-    project: Project;
-    /**
-     * 
-     * @type {Build}
-     * @memberof ProjectAndLastBuild
-     */
-    lastBuild?: Build;
-}
 
 /**
  * CdApi - axios parameter creator
@@ -1172,6 +1159,49 @@ export const ProjectApiAxiosParamCreator = function (configuration?: Configurati
         },
         /**
          * 
+         * @summary Returns the project details
+         * @param {string} projectName Name of the project to fetch
+         * @param {boolean} [includeBuilds] Whether to include data the Builds for the project
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getProject: async (projectName: string, includeBuilds?: boolean, options: any = {}): Promise<RequestArgs> => {
+            // verify required parameter 'projectName' is not null or undefined
+            assertParamExists('getProject', 'projectName', projectName)
+            const localVarPath = `/project/{projectName}`
+                .replace(`{${"projectName"}}`, encodeURIComponent(String(projectName)));
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            // authentication bearerAuth required
+            // http bearer authentication required
+            await setBearerAuthToObject(localVarHeaderParameter, configuration)
+
+            if (includeBuilds !== undefined) {
+                localVarQueryParameter['includeBuilds'] = includeBuilds;
+            }
+
+
+    
+            setSearchParams(localVarUrlObj, localVarQueryParameter, options.query);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
+         * 
          * @summary Returns the list of projects for the user\'s organization
          * @param {boolean} [includeLastBuild] Whether to include data about the last Build executed for each Project.
          * @param {*} [options] Override http request option.
@@ -1232,12 +1262,24 @@ export const ProjectApiFp = function(configuration?: Configuration) {
         },
         /**
          * 
+         * @summary Returns the project details
+         * @param {string} projectName Name of the project to fetch
+         * @param {boolean} [includeBuilds] Whether to include data the Builds for the project
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async getProject(projectName: string, includeBuilds?: boolean, options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Project>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.getProject(projectName, includeBuilds, options);
+            return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
+        },
+        /**
+         * 
          * @summary Returns the list of projects for the user\'s organization
          * @param {boolean} [includeLastBuild] Whether to include data about the last Build executed for each Project.
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async getProjects(includeLastBuild?: boolean, options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Array<ProjectAndLastBuild>>> {
+        async getProjects(includeLastBuild?: boolean, options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Array<Project>>> {
             const localVarAxiosArgs = await localVarAxiosParamCreator.getProjects(includeLastBuild, options);
             return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
         },
@@ -1263,12 +1305,23 @@ export const ProjectApiFactory = function (configuration?: Configuration, basePa
         },
         /**
          * 
+         * @summary Returns the project details
+         * @param {string} projectName Name of the project to fetch
+         * @param {boolean} [includeBuilds] Whether to include data the Builds for the project
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getProject(projectName: string, includeBuilds?: boolean, options?: any): AxiosPromise<Project> {
+            return localVarFp.getProject(projectName, includeBuilds, options).then((request) => request(axios, basePath));
+        },
+        /**
+         * 
          * @summary Returns the list of projects for the user\'s organization
          * @param {boolean} [includeLastBuild] Whether to include data about the last Build executed for each Project.
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        getProjects(includeLastBuild?: boolean, options?: any): AxiosPromise<Array<ProjectAndLastBuild>> {
+        getProjects(includeLastBuild?: boolean, options?: any): AxiosPromise<Array<Project>> {
             return localVarFp.getProjects(includeLastBuild, options).then((request) => request(axios, basePath));
         },
     };
@@ -1291,6 +1344,19 @@ export class ProjectApi extends BaseAPI {
      */
     public createProject(createProjectReq: CreateProjectReq, options?: any) {
         return ProjectApiFp(this.configuration).createProject(createProjectReq, options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * 
+     * @summary Returns the project details
+     * @param {string} projectName Name of the project to fetch
+     * @param {boolean} [includeBuilds] Whether to include data the Builds for the project
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof ProjectApi
+     */
+    public getProject(projectName: string, includeBuilds?: boolean, options?: any) {
+        return ProjectApiFp(this.configuration).getProject(projectName, includeBuilds, options).then((request) => request(this.axios, this.basePath));
     }
 
     /**

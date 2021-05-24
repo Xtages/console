@@ -47,58 +47,74 @@ class ProjectApiController(
     private val buildEventDao: BuildEventDao,
 ) : ProjectApiControllerBase {
 
-    override fun getProjects(
-        @RequestParam(value = "includeLastBuild", required = false, defaultValue = "false")
-        includeLastBuild: Boolean
-    ): ResponseEntity<List<ProjectAndLastBuild>> {
+    override fun getProject(projectName: String, includeBuilds: Boolean): ResponseEntity<Project> {
+        val organization = organizationDao.fetchOneByCognitoUserId(authenticationService.currentCognitoUserId)
+        val project = projectDao.fetchOneByNameAndOrganization(orgName = organization.name!!, projectName = projectName)
+        val projectPojo = projectPojoToProjectConverter.convert(project)!!
+        if (includeBuilds) {
+            val builds = buildEventDao.fetchByProjectId(project.id!!)
+                .groupBy { event -> event.buildArn }
+                .values
+                .map { events ->
+                    buildEventsToBuild(organization = organization, project = project, events = events)
+                }
+            return ResponseEntity.ok(projectPojo.copy(builds = builds))
+        }
+        return ResponseEntity.ok(projectPojo)
+    }
+
+    override fun getProjects(includeLastBuild: Boolean): ResponseEntity<List<Project>> {
         val organization = organizationDao.fetchOneByCognitoUserId(authenticationService.currentCognitoUserId)
         val projects = projectDao.fetchByOrganization(organization.name!!).toMutableList()
         if (includeLastBuild) {
             val latestBuildEventsPerProject = buildEventDao.fetchLatestBuildEventsOfProjects(projects)
             val projectsWithBuild = latestBuildEventsPerProject.mapValues {
-                val project = it.key
-                projects.remove(project)
-                val events = it.value
-                val initialEvent =
-                    events.single { event -> event.name == "SENT_TO_BUILD" && event.status == "STARTED" }
-                val lastEvent = events.last()
-                // We create a "virtual" Build object. This object has the id of the first BuildEvent and we use the
-                // BuildEvents for a given CodeBuild build to determine if the "Build" as a whole was successful or has
-                // some other status. We use the first BuildEvent's start time as the startTimestamp and the last
-                // BuildEvent's end time as the endTimestamp
-                val buildStatus = determineBuildStatus(events)
-                Build(
-                    id = initialEvent.id,
-                    type = Build.Type.valueOf(initialEvent.operation!!),
-                    status = buildStatus,
-                    initiatorName = "Carlos",
-                    initiatorEmail = "czuniga@xtages.com",
-                    commitHash = initialEvent.commit!!,
-                    commitUrl = GitHubUrl(
-                        organizationName = organization.name!!,
-                        repoName = project.name,
-                        commitHash = initialEvent.commit
-                    ).toUriString(),
-                    startTimestampInMillis = initialEvent.startTime!!.toUtcMillis(),
-                    endTimestampInMillis = if (isTerminalStatus(buildStatus)) lastEvent.endTime!!.toUtcMillis() else null,
-                    phases = events.map { event -> buildEventPojoToBuildPhaseConverter.convert(event)!! }
-                )
+                projects.remove(it.key)
+                buildEventsToBuild(organization = organization, project = it.key, events = it.value)
             }.mapKeys { entry ->
                 projectPojoToProjectConverter.convert(entry.key)!!
             }.map { entry ->
-                ProjectAndLastBuild(
-                    project = entry.key,
-                    lastBuild = entry.value
-                )
+                val project = entry.key
+                project.copy(builds = listOf(entry.value))
             }
             val projectsWithoutBuild = projects
                 .sortedBy { it.name }
                 .map { projectPojoToProjectConverter.convert(it)!! }
-                .map { ProjectAndLastBuild(project = it) }
             return ResponseEntity.ok(projectsWithBuild + projectsWithoutBuild)
         }
         return ResponseEntity.ok(
-            projectDao.findAll().map(projectPojoToProjectConverter::convert).map { ProjectAndLastBuild(project = it!!) }
+            projectDao.fetchByOrganization(organization.name!!).mapNotNull(projectPojoToProjectConverter::convert)
+        )
+    }
+
+    private fun buildEventsToBuild(
+        organization: Organization,
+        project: xtages.console.query.tables.pojos.Project,
+        events: List<BuildEvent>
+    ): Build {
+        val initialEvent =
+            events.single { event -> event.name == "SENT_TO_BUILD" && event.status == "STARTED" }
+        val lastEvent = events.last()
+        // We create a "virtual" Build object. This object has the id of the first BuildEvent and we use the
+        // BuildEvents for a given CodeBuild build to determine if the "Build" as a whole was successful or has
+        // some other status. We use the first BuildEvent's start time as the startTimestamp and the last
+        // BuildEvent's end time as the endTimestamp
+        val buildStatus = determineBuildStatus(events)
+        return Build(
+            id = initialEvent.id,
+            type = Build.Type.valueOf(initialEvent.operation!!),
+            status = buildStatus,
+            initiatorName = "Carlos",
+            initiatorEmail = "czuniga@xtages.com",
+            commitHash = initialEvent.commit!!,
+            commitUrl = GitHubUrl(
+                organizationName = organization.name!!,
+                repoName = project.name,
+                commitHash = initialEvent.commit
+            ).toUriString(),
+            startTimestampInMillis = initialEvent.startTime!!.toUtcMillis(),
+            endTimestampInMillis = if (isTerminalStatus(buildStatus)) lastEvent.endTime!!.toUtcMillis() else null,
+            phases = events.map { event -> buildEventPojoToBuildPhaseConverter.convert(event)!! }
         )
     }
 
