@@ -38,35 +38,35 @@ const ProjectTableTemplate: Story<ProjectTableProps> = (args) => <BrowserRouter>
 
 export const Primary = ProjectTableTemplate.bind({});
 Primary.args = {
-  projectsAndBuilds: [{
-    project: projectData,
-    lastBuild: buildData,
+  projects: [{
+    ...projectData,
+    builds: [buildData],
   }],
 };
 Primary.storyName = 'ProjectTable';
 
 export const ProjectTableNoBuild = ProjectTableTemplate.bind({});
 ProjectTableNoBuild.args = {
-  projectsAndBuilds: [{
-    project: projectData,
+  projects: [{
+    ...projectData,
+    builds: [],
   }],
 };
 ProjectTableNoBuild.storyName = 'ProjectTable without build';
 
-const ProjectRowTemplate: Story<ProjectRowProps> = ({project, build}: ProjectRowProps) => (
+const ProjectRowTemplate: Story<ProjectRowProps> = ({project}: ProjectRowProps) => (
   <BrowserRouter>
     <ProjectTable
-      projectsAndBuilds={[{
-        project,
-        lastBuild: build,
-      }]}
+      projects={[project]}
     />
   </BrowserRouter>
 );
 
 export const ProjectRowStory = ProjectRowTemplate.bind({});
 ProjectRowStory.args = {
-  project: projectData,
-  build: buildData,
+  project: {
+    ...projectData,
+    builds: [buildData],
+  },
 };
 ProjectRowStory.storyName = 'ProjectRow';

@@ -23,7 +23,7 @@ export default function HomePage() {
     projectTable = `An error has occurred: ${error}`;
   } else if (data?.data != null) {
     projectTable = (
-      <ProjectTable projectsAndBuilds={data.data} />
+      <ProjectTable projects={data.data} />
     );
   }
   return (
@@ -45,7 +45,7 @@ export default function HomePage() {
               </Section>
               <Section last>
                 <SectionTitle icon={Codesandbox} title="Projects" subtitle="Manage all your projects" />
-                <div className="table-responsive">
+                <div className="col-12">
                   {projectTable}
                 </div>
               </Section>

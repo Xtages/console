@@ -1,4 +1,8 @@
-import {format, formatDuration, formatRelative, intervalToDuration} from 'date-fns';
+import {differenceInMilliseconds,
+  differenceInSeconds,
+  format,
+  formatRelative,
+  intervalToDuration} from 'date-fns';
 
 /**
  * Takes two timestamps in milliseconds and formats them using [formatDuration]. If [endInMillis]
@@ -16,10 +20,39 @@ export function durationString({
   if (!endInMillis) {
     return defaultWhenNoEnd;
   }
-  return formatDuration(intervalToDuration({
+  const start = new Date(startInMillis);
+  const end = new Date(endInMillis);
+  if (differenceInSeconds(end, start) === 0 && differenceInMilliseconds(end, start) >= 0) {
+    return '< 1 sec';
+  }
+
+  const duration = intervalToDuration({
     start: startInMillis,
     end: endInMillis,
-  }));
+  });
+  const result = [];
+  if (duration.years) {
+    result.push(`${duration.years} years`);
+  }
+  if (duration.months) {
+    result.push(`${duration.months} months`);
+  }
+  if (duration.weeks) {
+    result.push(`${duration.weeks} weeks`);
+  }
+  if (duration.days) {
+    result.push(`${duration.weeks} days`);
+  }
+  if (duration.hours) {
+    result.push(`${duration.hours} hrs`);
+  }
+  if (duration.minutes) {
+    result.push(`${duration.minutes} min`);
+  }
+  if (duration.seconds) {
+    result.push(`${duration.seconds} sec`);
+  }
+  return result.join(', ');
 }
 
 /**
@@ -29,6 +62,15 @@ export function durationString({
  */
 export function formatDateTimeFull(timestampInMillis: number) {
   return format(timestampInMillis, 'MMM d, yyyy hh:mm:ss a');
+}
+
+/**
+ * Formats a [timestampInMillis] with format `MM/dd/yy hh:mm:ss a`.
+ *
+ * Output example `01/04/21 06:10:12 AM`.
+ */
+export function formatDateTimeMed(timestampInMillis: number) {
+  return format(timestampInMillis, 'MM/dd/yy hh:mm:ss a');
 }
 
 /**

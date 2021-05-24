@@ -12,16 +12,6 @@ export default {
 // eslint-disable-next-line max-len
 const Template: Story<BuildTableProps> = (args) => <BrowserRouter><BuildTable {...args} /></BrowserRouter>;
 
-const projectData = {
-  id: 10,
-  name: 'console',
-  ghRepoUrl: 'https://github.com/Xtages/console',
-  organization: 'Xtages',
-  type: ProjectTypeEnum.Node,
-  version: '15',
-  passCheckRuleEnabled: false,
-};
-
 const buildData = {
   id: 100,
   status: BuildStatusEnum.Failed,
@@ -53,9 +43,19 @@ const buildData = {
   ],
 };
 
+const projectData = {
+  id: 10,
+  name: 'console',
+  ghRepoUrl: 'https://github.com/Xtages/console',
+  organization: 'Xtages',
+  type: ProjectTypeEnum.Node,
+  version: '15',
+  passCheckRuleEnabled: false,
+  builds: [buildData],
+};
+
 export const Primary = Template.bind({});
 Primary.args = {
   project: projectData,
-  builds: [buildData],
 };
 Primary.storyName = 'BuildTable';

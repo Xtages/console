@@ -9,6 +9,7 @@ import SignUpPage from 'pages/authn/SignUpPage';
 import HomePage from 'pages/home/HomePage';
 import ConfirmSignUpPage from 'pages/authn/ConfirmSignUpPage';
 import AccountPage from 'pages/account/AccountPage';
+import ProjectPage from './pages/ProjectPage';
 
 const queryClient = new QueryClient();
 
@@ -24,6 +25,7 @@ export default function App() {
             </UnauthdRoute>
             <UnauthdRoute path="/confirm" component={ConfirmSignUpPage} />
             <AuthdRoute path="/account" component={AccountPage} />
+            <AuthdRoute path="/project/:name" component={ProjectPage} />
             <AuthdRoute path="/">
               <HomePage />
             </AuthdRoute>
