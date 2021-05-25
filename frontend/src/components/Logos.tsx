@@ -2,21 +2,25 @@ import React, {memo} from 'react';
 
 /**
  * Xtages logo component.
- * @param size - Size to render at. One of 'BIG', 'MED, 'SMALL'.
+ * @param size - Size to render at. One of 'lg', 'md', 'sm'.
  * @param full - If `true` the full logo is rendered otherwise only the `X`.
  */
 function Logo({
-  size = 'BIG',
+  size = 'lg',
   full = true,
 }: {
-  size?: 'BIG' | 'MED' | 'SMALL',
+  size?: 'lg' | 'md' | 'sm' | 'xs',
   full?: boolean,
 } = {}) {
   let height: string;
-  if (size === 'BIG') {
+  if (size === 'lg') {
     height = '122px';
+  } else if (size === 'md') {
+    height = '90px';
+  } else if (size === 'sm') {
+    height = '50px';
   } else {
-    height = size === 'MED' ? '90px' : '50px';
+    height = '35px';
   }
   const letters = (
     <>
