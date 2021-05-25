@@ -2,6 +2,7 @@ import React, {MouseEvent} from 'react';
 import {LogOut} from 'react-feather';
 import {useHistory} from 'react-router-dom';
 import {useAuth} from 'hooks/useAuth';
+import {Button} from '../button/Buttons';
 
 /** A button to log the Principal out. */
 export default function LogoutButton() {
@@ -15,14 +16,17 @@ export default function LogoutButton() {
   }
 
   return (
-    <button
+    <Button
       type="button"
+      kind="white"
+      asLink
+      size="xs"
       onClick={logOut}
-      className="btn btn-block btn-sm btn-neutral btn-icon rounded-pill"
+      className="text-muted"
     >
-      <LogOut />
+      <LogOut size="1.3em" />
       {' '}
-      <span className="btn-inner--text">Sign out</span>
-    </button>
+      Sign out
+    </Button>
   );
 }

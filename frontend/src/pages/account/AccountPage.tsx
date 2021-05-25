@@ -1,6 +1,9 @@
 import React, {ReactNode} from 'react';
 import {useQuery} from 'react-query';
 import {checkoutApi} from 'service/Services';
+import {User} from 'react-feather';
+import Page from '../../components/layout/Page';
+import {Section, SectionTitle} from '../../components/layout/Section';
 
 /**
  * A simple account page where the user can then click to go to their Striper customer portal.
@@ -25,18 +28,13 @@ export default function AccountPage() {
   }
 
   return (
-    <section>
-      <div className="container d-flex flex-column">
-        <div className="row align-items-center justify-content-center min-vh-100">
-          <div className="col-md-6 col-lg-5 col-xl-4">
-            <div className="mb-5 text-center">
-              <h1 className="h3 mb-1">Account settings</h1>
-            </div>
-            <span className="clearfix" />
-            {content}
-          </div>
+    <Page>
+      <Section last>
+        <SectionTitle title="Account settings" icon={User} />
+        <div className="col-12">
+          {content}
         </div>
-      </div>
-    </section>
+      </Section>
+    </Page>
   );
 }

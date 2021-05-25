@@ -4,8 +4,8 @@ import {Codesandbox} from 'react-feather';
 import {useParams} from 'react-router-dom';
 import {projectApi} from '../service/Services';
 import {Section, SectionTitle} from '../components/layout/Section';
-import LogoutButton from '../components/authn/LogoutButton';
 import {BuildTable} from '../components/build/BuildTable';
+import Page from '../components/layout/Page';
 
 export default function ProjectPage() {
   const {name} = useParams<{name: string}>();
@@ -28,22 +28,13 @@ export default function ProjectPage() {
     );
   }
   return (
-    <>
-      <div className="slice slice-sm bg-section-secondary">
-        <div className="container">
-          <div className="row justify-content-center">
-            <div className="col-lg-12">
-              <Section last>
-                <SectionTitle icon={Codesandbox} title={name} />
-                <div className="col-12">
-                  {buildsTable}
-                </div>
-              </Section>
-            </div>
-          </div>
+    <Page>
+      <Section last>
+        <SectionTitle icon={Codesandbox} title={name} />
+        <div className="col-12">
+          {buildsTable}
         </div>
-      </div>
-      <LogoutButton />
-    </>
+      </Section>
+    </Page>
   );
 }
