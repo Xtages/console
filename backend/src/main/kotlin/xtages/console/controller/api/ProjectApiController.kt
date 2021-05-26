@@ -5,24 +5,20 @@ import org.springframework.http.HttpStatus.CONFLICT
 import org.springframework.http.HttpStatus.CREATED
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Controller
-import org.springframework.web.bind.annotation.RequestParam
 import xtages.console.controller.GitHubUrl
 import xtages.console.controller.api.model.*
 import xtages.console.controller.api.model.Build.Status
 import xtages.console.controller.model.CodeBuildType
 import xtages.console.controller.model.buildEventPojoToBuildPhaseConverter
 import xtages.console.controller.model.projectPojoToProjectConverter
-import xtages.console.dao.fetchLatestBuildEventsOfProjects
+import xtages.console.dao.fetchLatestByProject
 import xtages.console.dao.fetchOneByCognitoUserId
 import xtages.console.dao.fetchOneByNameAndOrganization
 import xtages.console.exception.ExceptionCode
 import xtages.console.exception.ExceptionCode.USER_NOT_FOUND
 import xtages.console.exception.ensure
 import xtages.console.query.enums.ProjectType
-import xtages.console.query.tables.daos.BuildEventDao
-import xtages.console.query.tables.daos.OrganizationDao
-import xtages.console.query.tables.daos.ProjectDao
-import xtages.console.query.tables.daos.XtagesUserDao
+import xtages.console.query.tables.daos.*
 import xtages.console.query.tables.pojos.BuildEvent
 import xtages.console.query.tables.pojos.Organization
 import xtages.console.query.tables.pojos.XtagesUser
@@ -31,6 +27,7 @@ import xtages.console.service.GitHubService
 import xtages.console.service.aws.AwsService
 import xtages.console.service.aws.CodeBuildService
 import xtages.console.time.toUtcMillis
+import xtages.console.query.tables.pojos.Build as BuildPojo
 import xtages.console.query.tables.pojos.Project as ProjectPojo
 
 private val logger = KotlinLogging.logger { }
@@ -44,6 +41,7 @@ class ProjectApiController(
     private val gitHubService: GitHubService,
     private val awsService: AwsService,
     private val codeBuildService: CodeBuildService,
+    private val buildDao: BuildDao,
     private val buildEventDao: BuildEventDao,
 ) : ProjectApiControllerBase {
 
@@ -52,11 +50,21 @@ class ProjectApiController(
         val project = projectDao.fetchOneByNameAndOrganization(orgName = organization.name!!, projectName = projectName)
         val projectPojo = projectPojoToProjectConverter.convert(project)!!
         if (includeBuilds) {
-            val builds = buildEventDao.fetchByProjectId(project.id!!)
-                .groupBy { event -> event.buildArn }
-                .values
-                .map { events ->
-                    buildEventsToBuild(organization = organization, project = project, events = events)
+            val buildPojos = buildDao.fetchByProjectId(project.id!!)
+            val buildIdToBuild = buildPojos.associateBy { build -> build.id!! }
+            val builds = buildEventDao
+                .fetchByBuildId(*buildIdToBuild.keys.toLongArray())
+                .groupBy { buildEvent -> buildEvent.buildId!! }
+                .map { entry ->
+                    val buildId = entry.key
+                    val build = buildIdToBuild.getValue(buildId)
+                    val events = entry.value
+                    buildPojoToBuild(
+                        organization = organization,
+                        project = project,
+                        build = build,
+                        events = events
+                    )
                 }
             return ResponseEntity.ok(projectPojo.copy(builds = builds))
         }
@@ -67,67 +75,69 @@ class ProjectApiController(
         val organization = organizationDao.fetchOneByCognitoUserId(authenticationService.currentCognitoUserId)
         val projects = projectDao.fetchByOrganization(organization.name!!).toMutableList()
         if (includeLastBuild) {
-            val latestBuildEventsPerProject = buildEventDao.fetchLatestBuildEventsOfProjects(projects)
-            val projectsWithBuild = latestBuildEventsPerProject.mapValues {
-                projects.remove(it.key)
-                buildEventsToBuild(organization = organization, project = it.key, events = it.value)
-            }.mapKeys { entry ->
-                projectPojoToProjectConverter.convert(entry.key)!!
-            }.map { entry ->
-                val project = entry.key
-                project.copy(builds = listOf(entry.value))
-            }
-            val projectsWithoutBuild = projects
-                .sortedBy { it.name }
-                .map { projectPojoToProjectConverter.convert(it)!! }
-            return ResponseEntity.ok(projectsWithBuild + projectsWithoutBuild)
+            val projectIdToLatestBuild = buildDao
+                .fetchLatestByProject(projects)
+                .associateBy { build -> build.projectId!! }
+            val latestBuildEvents = buildEventDao
+                .fetchByBuildId(*projectIdToLatestBuild.values.mapNotNull { build -> build.id }.toLongArray())
+            val convertedProjects = projects
+                .associateWith { project -> projectIdToLatestBuild[project.id] }
+                .map { entry ->
+                    val buildPojo = entry.value
+                    val project = entry.key
+                    val convertedBuild = buildPojo?.let { build ->
+                        buildPojoToBuild(
+                            organization = organization,
+                            project = project,
+                            build = build,
+                            events = latestBuildEvents
+                        )
+                    }
+                    var convertedProject = projectPojoToProjectConverter.convert(project)!!
+                    if (convertedBuild != null) {
+                        convertedProject = convertedProject.copy(builds = listOf(convertedBuild))
+                    }
+                    convertedProject
+                }.sortedWith { projectA, projectB ->
+                    val startTimestampA = projectA.builds.singleOrNull()?.startTimestampInMillis
+                    val startTimestampB = projectB.builds.singleOrNull()?.startTimestampInMillis
+                    when {
+                        projectA != null && projectB != null -> startTimestampA!!.compareTo(startTimestampB!!)
+                        projectA != null && projectB == null -> 1
+                        projectA == null && projectB != null -> -1
+                        else -> projectA.name.compareTo(projectB.name)
+                    }
+                }
+            return ResponseEntity.ok(convertedProjects)
         }
         return ResponseEntity.ok(
             projectDao.fetchByOrganization(organization.name!!).mapNotNull(projectPojoToProjectConverter::convert)
         )
     }
 
-    private fun buildEventsToBuild(
+    private fun buildPojoToBuild(
         organization: Organization,
-        project: xtages.console.query.tables.pojos.Project,
+        project: ProjectPojo,
+        build: BuildPojo,
         events: List<BuildEvent>
     ): Build {
-        val initialEvent =
-            events.single { event -> event.name == "SENT_TO_BUILD" && event.status == "STARTED" }
-        val lastEvent = events.last()
-        // We create a "virtual" Build object. This object has the id of the first BuildEvent and we use the
-        // BuildEvents for a given CodeBuild build to determine if the "Build" as a whole was successful or has
-        // some other status. We use the first BuildEvent's start time as the startTimestamp and the last
-        // BuildEvent's end time as the endTimestamp
-        val buildStatus = determineBuildStatus(events)
         return Build(
-            id = initialEvent.id,
-            type = Build.Type.valueOf(initialEvent.operation!!),
-            status = buildStatus,
+            id = build.id,
+            type = Build.Type.valueOf(build.type!!.name),
+            status = Status.valueOf(build.status!!.name),
             initiatorName = "Carlos",
             initiatorEmail = "czuniga@xtages.com",
-            commitHash = initialEvent.commit!!,
+            commitHash = build.commitHash!!,
             commitUrl = GitHubUrl(
                 organizationName = organization.name!!,
                 repoName = project.name,
-                commitHash = initialEvent.commit
+                commitHash = build.commitHash
             ).toUriString(),
-            startTimestampInMillis = initialEvent.startTime!!.toUtcMillis(),
-            endTimestampInMillis = if (isTerminalStatus(buildStatus)) lastEvent.endTime!!.toUtcMillis() else null,
-            phases = events.map { event -> buildEventPojoToBuildPhaseConverter.convert(event)!! }
+            startTimestampInMillis = build.startTime!!.toUtcMillis(),
+            endTimestampInMillis = build.endTime?.toUtcMillis(),
+            phases = events.mapNotNull(buildEventPojoToBuildPhaseConverter::convert)
         )
     }
-
-    private fun isTerminalStatus(buildStatus: Status) =
-        buildStatus == Status.FAILED || buildStatus == Status.SUCCEEDED || buildStatus == Status.NOT_PROVISIONED
-
-    private fun determineBuildStatus(events: List<BuildEvent>) =
-        when {
-            events.any { event -> event.status == "FAILED" } -> Status.FAILED
-            events.none { event -> event.name == "COMPLETED" } -> Status.RUNNING
-            events.any { event -> event.name == "COMPLETED" && event.status == "SUCCEEDED" } -> Status.SUCCEEDED
-            else -> Status.UNKNOWN
-        }
 
     override fun createProject(createProjectReq: CreateProjectReq): ResponseEntity<Project> {
         val user = ensure.foundOne(
@@ -162,7 +172,7 @@ class ProjectApiController(
             user = user,
             project = project,
             organization = organization,
-            commit = ciReq.commitId,
+            commitHash = ciReq.commitHash,
             codeBuildType = CodeBuildType.CI
         )
 
@@ -177,7 +187,7 @@ class ProjectApiController(
             user = user,
             project = project,
             organization = organization,
-            commit = cdReq.commitId,
+            commitHash = cdReq.commitHash,
             codeBuildType = CodeBuildType.CD,
             environment = cdReq.env,
         )
@@ -192,13 +202,13 @@ class ProjectApiController(
     override fun logs(projectName: String, logsReq: LogsReq): ResponseEntity<CILogs> {
         val (_, organization, project) = checkRepoBelongsToOrg(projectName)
         val buildType = CodeBuildType.valueOf(logsReq.buildType.name)
-        val buildEvent = ensure.foundOne(
-            operation = { buildEventDao.fetchById(logsReq.buildId).first() },
-            code = ExceptionCode.OPERATION_NOT_FOUND,
-            lazyMessage = { "Operation [$buildType] with id [${logsReq.buildId}] was not found" }
+        val build = ensure.foundOne(
+            operation = { buildDao.fetchById(logsReq.buildId).first() },
+            code = ExceptionCode.BUILD_NOT_FOUND,
+            lazyMessage = { "Build [$buildType] with id [${logsReq.buildId}] was not found" }
         )
 
-        val logs = codeBuildService.getLogsFor(buildType, buildEvent, project, organization)
+        val logs = codeBuildService.getLogsFor(buildType, build, project, organization)
         return ResponseEntity.ok(CILogs(events = logs))
     }
 

@@ -78,7 +78,7 @@ class GitHubService(
                 user = owner,
                 project = project,
                 organization = organization,
-                commit = push.head,
+                commitHash = push.head,
                 codeBuildType = CodeBuildType.CI,
                 fromGitHubApp = true,
             )
