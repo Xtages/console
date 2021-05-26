@@ -20,16 +20,18 @@ import software.amazon.awssdk.services.codebuild.model.*
 import xtages.console.config.ConsoleProperties
 import xtages.console.controller.api.model.LogEvent
 import xtages.console.controller.model.CodeBuildType
-import xtages.console.dao.fetchOneByBuildArnAndNameAndStatus
+import xtages.console.exception.ExceptionCode
 import xtages.console.exception.ensure
 import xtages.console.pojo.*
+import xtages.console.query.enums.BuildStatus
+import xtages.console.query.enums.BuildType
+import xtages.console.query.tables.daos.BuildDao
 import xtages.console.query.tables.daos.BuildEventDao
 import xtages.console.query.tables.daos.ProjectDao
-import xtages.console.query.tables.pojos.BuildEvent
-import xtages.console.query.tables.pojos.Organization
+import xtages.console.query.tables.pojos.*
+import xtages.console.query.tables.pojos.Build
 import xtages.console.query.tables.pojos.Project
-import xtages.console.query.tables.pojos.XtagesUser
-import xtages.console.query.tables.references.BUILD_EVENT
+import xtages.console.query.tables.references.BUILD
 import xtages.console.service.AuthenticationService
 import xtages.console.time.toUtcLocalDateTime
 import java.time.*
@@ -65,6 +67,7 @@ class CodeBuildService(
     private val codeBuildAsyncClient: CodeBuildAsyncClient,
     private val codestarNotificationsService: CodestarNotificationsService,
     private val projectDao: ProjectDao,
+    private val buildDao: BuildDao,
     private val buildEventDao: BuildEventDao,
     private val consoleProperties: ConsoleProperties,
     private val authenticationService: AuthenticationService,
@@ -92,10 +95,10 @@ class CodeBuildService(
                 return
             }
 
-            val sentToBuildEvent = buildEventDao.fetchOneByBuildArnAndNameAndStatus(
-                buildArn = event.detail.buildId,
-                name = "SENT_TO_BUILD",
-                status = "IN_PROGRESS"
+            val build = ensure.foundOne(
+                operation = { buildDao.fetchOneByBuildArn(event.detail.buildId) },
+                code = ExceptionCode.BUILD_NOT_FOUND,
+                message = "Could not find build with ARN [${event.detail.buildId}]"
             )
 
             logger.info { "Processing CodeBuildEvent with event.detail.currentPhase [${event.detail.currentPhase}] for build [${event.detail.buildId}]" }
@@ -109,7 +112,7 @@ class CodeBuildService(
                 )
                 handleCompletedBuildStatusChange(
                     notificationId,
-                    sentToBuildEvent,
+                    build,
                     phases,
                 )
             } else {
@@ -120,12 +123,7 @@ class CodeBuildService(
                         status = event.detail.buildStatus,
                         startTime = event.time.toUtcLocalDateTime(),
                         endTime = event.time.toUtcLocalDateTime(),
-                        operation = sentToBuildEvent.operation,
-                        user = sentToBuildEvent.user,
-                        environment = sentToBuildEvent.environment,
-                        projectId = sentToBuildEvent.projectId,
-                        commit = sentToBuildEvent.commit,
-                        buildArn = sentToBuildEvent.buildArn,
+                        buildId = build.id,
                     )
                 )
             }
@@ -136,20 +134,21 @@ class CodeBuildService(
 
     private fun handleCompletedBuildStatusChange(
         notificationId: String,
-        sentToBuildEvent: BuildEvent,
+        build: Build,
         phases: List<CodeBuildPhase>
     ) {
         // Sort the phases based on their end time, the last phase with `phase-type` == "COMPLETED" has a `null`
         // `end-time` order it last.
-        val sortedPhases = phases.sortedWith { a, b ->
+        val sortedPhases = phases.sortedWith { phaseA, phaseB ->
             when {
-                a.endTime == null -> 1
-                b.endTime == null -> -1
-                else -> a.endTime.compareTo(b.endTime)
+                phaseA.endTime == null -> 1
+                phaseB.endTime == null -> -1
+                else -> phaseA.endTime.compareTo(phaseB.endTime)
             }
         }
+        val lastPhase = sortedPhases.last()
         ensure.isEqual(
-            actual = sortedPhases.last().phaseType,
+            actual = lastPhase.phaseType,
             expected = "COMPLETED",
             valueDesc = "event.detail.additionalInformation.phases.last.phaseType"
         )
@@ -163,16 +162,26 @@ class CodeBuildService(
                 startTime = phase.startTime.toUtcLocalDateTime(),
                 endTime = (phase.endTime ?: phase.startTime).toUtcLocalDateTime(),
                 message = phase.message,
-                operation = sentToBuildEvent.operation,
-                user = sentToBuildEvent.user,
-                environment = sentToBuildEvent.environment,
-                projectId = sentToBuildEvent.projectId,
-                commit = sentToBuildEvent.commit,
-                buildArn = sentToBuildEvent.buildArn,
+                buildId = build.id,
             )
         }
         buildEventDao.insert(buildEvents)
+
+        val updatedBuild =
+            build.copy(
+                status = determineBuildStatus(buildEvents),
+                endTime = (lastPhase.endTime ?: lastPhase.startTime).toUtcLocalDateTime()
+            )
+        buildDao.update(updatedBuild)
     }
+
+    private fun determineBuildStatus(events: List<BuildEvent>) =
+        when {
+            events.any { event -> event.status == "FAILED" } -> BuildStatus.FAILED
+            events.none { event -> event.name == "COMPLETED" } -> BuildStatus.IN_PROGRESS
+            events.any { event -> event.name == "COMPLETED" && event.status == "SUCCEEDED" } -> BuildStatus.SUCCEEDED
+            else -> BuildStatus.UNKNOWN
+        }
 
     /**
      * Starts a CodeBuild project for a specific [Project]
@@ -184,27 +193,25 @@ class CodeBuildService(
         user: XtagesUser,
         project: Project,
         organization: Organization,
-        commit: String,
+        commitHash: String,
         codeBuildType: CodeBuildType,
         environment: String = "dev",
         fromGitHubApp: Boolean = false,
-    ): Pair<StartBuildResponse, BuildEvent> {
-        val sentToBuildStartedEvent = BuildEvent(
+    ): Pair<StartBuildResponse, Build> {
+        val build = Build(
             environment = environment,
-            operation = codeBuildType.name,
-            name = "SENT_TO_BUILD",
-            status = "STARTED",
-            user = user.id,
+            type = BuildType.valueOf(codeBuildType.name),
+            status = BuildStatus.UNKNOWN,
+            userId = user.id,
             projectId = project.id,
-            commit = commit,
+            commitHash = commitHash,
             startTime = LocalDateTime.now(ZoneOffset.UTC),
-            endTime = LocalDateTime.now(ZoneOffset.UTC),
         )
-        val sentToBuildStartedEventRecord = buildEventDao.ctx().newRecord(BUILD_EVENT, sentToBuildStartedEvent)
-        sentToBuildStartedEventRecord.store()
-        logger.debug { "Build Event created with id: ${sentToBuildStartedEventRecord.id}" }
+        val buildRecord = buildDao.ctx().newRecord(BUILD, build)
+        buildRecord.store()
+        logger.debug { "Build created with id: ${buildRecord.id}" }
 
-        logger.info { "running CodeBuild: $codeBuildType for project : ${project.name} commit: $commit organization: ${organization.name}" }
+        logger.info { "running CodeBuild: $codeBuildType for project : ${project.name} commit: $commitHash organization: ${organization.name}" }
         val cbProjectName = if (codeBuildType == CodeBuildType.CI)
             project.codeBuildCiProjectName
         else
@@ -216,7 +223,7 @@ class CodeBuildService(
                 .projectName(cbProjectName)
                 .environmentVariablesOverride(
                     listOf(
-                        buildEnvironmentVariable("XTAGES_COMMIT", commit),
+                        buildEnvironmentVariable("XTAGES_COMMIT", commitHash),
                         buildEnvironmentVariable("XTAGES_REPO", project.ghRepoFullName),
                         buildEnvironmentVariable("XTAGES_GITHUB_TOKEN", gitHubAppToken)
                     )
@@ -224,41 +231,32 @@ class CodeBuildService(
                 .build()
         ).get()
 
-        val build = startBuildResponse.build()
-        logger.debug { "StartBuildResponse Object: ${build.arn()}" }
-        sentToBuildStartedEventRecord.buildArn = build.arn()
-        sentToBuildStartedEventRecord.update()
-
-        val outcomeBuildEvent = sentToBuildStartedEvent
-            .copy(
-                id = null,
-                status = build.buildStatus().toString(),
-                buildArn = build.arn(),
-                startTime = LocalDateTime.now(ZoneOffset.UTC),
-                endTime = LocalDateTime.now(ZoneOffset.UTC),
-            )
-        buildEventDao.insert(outcomeBuildEvent)
+        val buildArn = startBuildResponse.build().arn()
+        logger.debug { "StartBuildResponse Object: $buildArn" }
+        buildRecord.buildArn = buildArn
+        buildRecord.status = BuildStatus.IN_PROGRESS
+        buildRecord.update()
 
         logger.info { "started CodeBuild project: $cbProjectName" }
-        return Pair(startBuildResponse, outcomeBuildEvent)
+        return Pair(startBuildResponse, buildRecord.into(Build::class.java))
     }
 
     /**
      * This function retrieve the logs from CloudWatch.
      * The log group name is build using the name of the [Organization] and the type of run from [CodeBuildType]
-     * The log stream name is build using the [Project], [BuildEvent.buildArn] and [CodeBuildType]
+     * The log stream name is build using the [Project], [Build.buildArn] and [CodeBuildType]
      * This method is currently not paginated and relying in the 10k (1MB) events that returns
      * TODO(mdellamerlina): Fast-follow add pagination for this method
      */
     fun getLogsFor(
         codeBuildType: CodeBuildType,
-        buildEvent: BuildEvent,
+        build: Build,
         project: Project,
         organization: Organization,
     ): List<LogEvent> {
         val logGroupName = organization.codeBuildLogsGroupNameFor(codeBuildType)
         val logStreamName =
-            "${project.codeBuildLogsStreamNameFor(codeBuildType)}/${AmazonResourceName.fromString(buildEvent.buildArn).resourceName}"
+            "${project.codeBuildLogsStreamNameFor(codeBuildType)}/${AmazonResourceName.fromString(build.buildArn).resourceName}"
         return cloudWatchLogsService.getLogs(logGroupName = logGroupName, logStreamName = logStreamName)
     }
 
@@ -269,7 +267,7 @@ class CodeBuildService(
     }
 
     /**
-     * Creates a new `CodeBuild` [CI] project for [organization] and [project].
+     * Creates a new `CodeBuild` [BuildType.CI] project for [organization] and [project].
      */
     fun createCodeBuildCiProject(organization: Organization, project: Project) {
         val response = codeBuildAsyncClient.createProject(
@@ -293,7 +291,7 @@ class CodeBuildService(
     }
 
     /**
-     * Creates a new `CodeBuild` [CD] project for [organization] and [project].
+     * Creates a new `CodeBuild` [BuildType.CD] project for [organization] and [project].
      */
     fun createCodeBuildCdProject(organization: Organization, project: Project) {
         val response = codeBuildAsyncClient.createProject(

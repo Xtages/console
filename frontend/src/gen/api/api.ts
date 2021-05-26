@@ -111,7 +111,7 @@ export enum BuildStatusEnum {
     NotProvisioned = 'NOT_PROVISIONED',
     Succeeded = 'SUCCEEDED',
     Failed = 'FAILED',
-    Running = 'RUNNING',
+    InProgress = 'IN_PROGRESS',
     Unknown = 'UNKNOWN'
 }
 
@@ -182,7 +182,7 @@ export interface CDReq {
      * @type {string}
      * @memberof CDReq
      */
-    commitId: string;
+    commitHash: string;
     /**
      * 
      * @type {string}
@@ -227,7 +227,7 @@ export interface CIReq {
      * @type {string}
      * @memberof CIReq
      */
-    commitId: string;
+    commitHash: string;
 }
 /**
  * Request made to POST /checkout/session
