@@ -369,9 +369,9 @@ components:
     CIReq:
       description: Request made to POST /ci
       required:
-        - commitId
+        - commitHash
       properties:
-        commitId:
+        commitHash:
           type: string
           minLength: 1
     CILogs:
@@ -390,10 +390,10 @@ components:
     CDReq:
       description: Request made to POST /cd
       required:
-        - commitId
+        - commitHash
         - env
       properties:
-        commitId:
+        commitHash:
           type: string
           minLength: 1
         env:
@@ -441,7 +441,7 @@ components:
             - NOT_PROVISIONED
             - SUCCEEDED
             - FAILED
-            - RUNNING
+            - IN_PROGRESS
             - UNKNOWN
         initiatorEmail:
           type: string
