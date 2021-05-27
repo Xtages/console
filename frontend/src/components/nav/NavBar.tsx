@@ -46,7 +46,7 @@ export default function NavBar() {
           </span>
           )}
           <Menu
-            className="dropdown-menu text-body"
+            className="text-body"
             align="end"
             arrow
             menuButton={(
