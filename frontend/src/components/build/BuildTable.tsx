@@ -178,7 +178,6 @@ export function BuildRowInner({
         </div>
         <div className="col-2">
           <Menu
-            className="dropdown-menu"
             menuButton={(
               <MenuButton className="btn btn-outline-primary btn-sm">
                 Actions
