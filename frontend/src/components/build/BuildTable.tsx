@@ -51,7 +51,7 @@ interface BuildRowProps {
 /** Render details of a [Build] in a card. */
 export function BuildRow(args: BuildRowProps) {
   return (
-    <div className="container card">
+    <div className="container card mb-3">
       <div className="card-body p-3">
         <BuildRowInner {...args} collapsible />
       </div>
@@ -127,9 +127,10 @@ export function BuildRowInner({
         <div className="col">
           <div className="text-sm">
             <div>
-              <span className="font-weight-bold">Build for commit:</span>
+              Build for commit
               {' '}
               <a
+                className="font-weight-bold"
                 data-tip="true"
                 data-for="seeCommitInGhTooltip"
                 href={build.commitUrl}
@@ -143,9 +144,9 @@ export function BuildRowInner({
               </ReactTooltip>
             </div>
             <div>
-              <span className="font-weight-bold">started</span>
+              started
               {' '}
-              <Link to={`project/${project.id}/build/${build.id}`}>
+              <Link className="font-weight-bold" to={`project/${project.id}/build/${build.id}`}>
                 <span
                   data-tip="true"
                   data-for="seeMoreBuildDetailsTooltip"
@@ -164,12 +165,14 @@ export function BuildRowInner({
             {build.endTimestampInMillis
               ? (
                 <>
-                  <span className="font-weight-bold">and took</span>
+                  and took
                   {' '}
-                  {durationString({
-                    startInMillis: build.startTimestampInMillis,
-                    endInMillis: build.endTimestampInMillis!!,
-                  })}
+                  <span className="font-weight-bold">
+                    {durationString({
+                      startInMillis: build.startTimestampInMillis,
+                      endInMillis: build.endTimestampInMillis!!,
+                    })}
+                  </span>
                   {' '}
                   to finish
                 </>
@@ -267,7 +270,7 @@ function BuildPhaseTable({phases}: {phases: BuildPhase[]}) {
       </div>
       {phases.map((phase) => {
         if (phase.name === 'SENT_TO_BUILD' || phase.name === 'COMPLETED') {
-          return <></>;
+          return (<div key={phase.id} />);
         }
         return (
           <div className="row mt-3" key={phase.id}>
