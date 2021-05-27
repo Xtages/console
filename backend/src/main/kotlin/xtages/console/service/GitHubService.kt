@@ -25,10 +25,13 @@ import xtages.console.query.tables.daos.ProjectDao
 import xtages.console.query.tables.daos.XtagesUserDao
 import xtages.console.query.tables.pojos.Organization
 import xtages.console.query.tables.pojos.Project
+import xtages.console.query.tables.pojos.Recipe
 import xtages.console.service.GitHubWebhookEventType.*
 import xtages.console.service.aws.CodeBuildService
+import xtages.console.time.toUtcLocalDateTime
 import java.io.IOException
 import java.time.Instant
+import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 import java.util.*
 import kotlin.reflect.KProperty
@@ -182,7 +185,7 @@ class GitHubService(
      * Creates a new GitHub repository for [project]. It will use a template repository as a starting point, the
      * template repository will be selected based on [Project.type] and [Project.version].
      */
-    fun createRepoForProject(project: Project, organization: Organization) {
+    fun createRepoForProject(project: Project, recipe: Recipe, organization: Organization) {
         val githubAppInstallationId = ensure.notNull(
             value = organization.githubAppInstallationId,
             valueDesc = "organization.githubAppInstallationId"
@@ -194,7 +197,7 @@ class GitHubService(
             .createRepository(project.name)
             .owner(organization.name)
             .private_(true)
-            .fromTemplateRepository("Xtages", project.templateRepoName)
+            .fromTemplateRepository("Xtages", recipe.templateRepoName)
             .create()
         project.ghRepoFullName = repository.fullName
         projectDao.merge(project)
@@ -219,6 +222,34 @@ class GitHubService(
 
     private fun buildGitHubAppClient(installationToken: GHAppInstallationToken): GitHub {
         return GitHubBuilder().withAppInstallationToken(installationToken.token).build()!!
+    }
+
+    /**
+     * Tags a [Project] (repository) in the default branch as default
+     * The tag format is the time in UTC yyyyMddHm-(short sha1)
+     *
+     * Note: this method assumes that in a previous method there is a check to make sure that the [Project]
+     * belongs to the [Organization]
+     */
+    fun tagProject(organization: Organization, project: Project, userName: String): String{
+        val datePattern = "yyyyMddHm"
+        val githubAppInstallationId = ensure.notNull(
+            value = organization.githubAppInstallationId,
+            valueDesc = "organization.githubAppInstallationId"
+        )
+        val gitHubAppClient = buildGitHubAppClient(
+            gitHubClient.app.getInstallationById(githubAppInstallationId).createToken().create()
+        )
+
+        val repository = gitHubAppClient.getRepository(project.ghRepoFullName)
+        val defaultBranch = repository.defaultBranch
+        val shA1Short = repository.getBranch(defaultBranch).shA1!!.substring(0,6)
+        val now = Instant.now().toUtcLocalDateTime()
+        val tag = "v${now.format(DateTimeFormatter.ofPattern(datePattern))}-${shA1Short}"
+        val message = "Xtages automated tag for release triggered by CD operation from ${userName}"
+        val tagSha = repository.createTag(tag, message, repository.getBranch(defaultBranch).shA1, "commit").sha
+        repository.createRef("refs/tags/${tag}", tagSha)
+        return tag
     }
 
     private class GitHubClientDelegate(val consoleProperties: ConsoleProperties) {

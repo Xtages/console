@@ -1,5 +1,6 @@
 package xtages.console.dao
 
+import org.springframework.cache.annotation.Cacheable
 import xtages.console.config.CognitoUserId
 import xtages.console.exception.ExceptionCode
 import xtages.console.exception.ensure

@@ -1,6 +1,7 @@
 package xtages.console.controller.api
 
 import mu.KotlinLogging
+import org.springframework.cache.annotation.Cacheable
 import org.springframework.http.HttpStatus.CONFLICT
 import org.springframework.http.HttpStatus.CREATED
 import org.springframework.http.ResponseEntity
@@ -10,7 +11,8 @@ import xtages.console.controller.api.model.*
 import xtages.console.controller.api.model.Build.Status
 import xtages.console.controller.model.CodeBuildType
 import xtages.console.controller.model.buildEventPojoToBuildPhaseConverter
-import xtages.console.controller.model.projectPojoToProjectConverter
+import xtages.console.controller.model.projectPojoTypeToProjectTypeConverter
+import xtages.console.dao.fetchBy
 import xtages.console.dao.fetchLatestByProject
 import xtages.console.dao.fetchOneByCognitoUserId
 import xtages.console.dao.fetchOneByNameAndOrganization
@@ -43,12 +45,13 @@ class ProjectApiController(
     private val codeBuildService: CodeBuildService,
     private val buildDao: BuildDao,
     private val buildEventDao: BuildEventDao,
+    private val recipeDao: RecipeDao,
 ) : ProjectApiControllerBase {
 
     override fun getProject(projectName: String, includeBuilds: Boolean): ResponseEntity<Project> {
         val organization = organizationDao.fetchOneByCognitoUserId(authenticationService.currentCognitoUserId)
         val project = projectDao.fetchOneByNameAndOrganization(orgName = organization.name!!, projectName = projectName)
-        val projectPojo = projectPojoToProjectConverter.convert(project)!!
+        val projectPojo = projectPojoToProjectConverter(project)
         if (includeBuilds) {
             val buildPojos = buildDao.fetchByProjectId(project.id!!)
             val buildIdToBuild = buildPojos.associateBy { build -> build.id!! }
@@ -93,7 +96,7 @@ class ProjectApiController(
                             events = latestBuildEvents
                         )
                     }
-                    var convertedProject = projectPojoToProjectConverter.convert(project)!!
+                    var convertedProject = projectPojoToProjectConverter(project)!!
                     if (convertedBuild != null) {
                         convertedProject = convertedProject.copy(builds = listOf(convertedBuild))
                     }
@@ -111,7 +114,7 @@ class ProjectApiController(
             return ResponseEntity.ok(convertedProjects)
         }
         return ResponseEntity.ok(
-            projectDao.fetchByOrganization(organization.name!!).mapNotNull(projectPojoToProjectConverter::convert)
+            projectDao.fetchByOrganization(organization.name!!).map { projectPojoToProjectConverter(it) }
         )
     }
 
@@ -146,19 +149,20 @@ class ProjectApiController(
             message = "User not found"
         )
         val organization = organizationDao.fetchOneByCognitoUserId(authenticationService.currentCognitoUserId)
+        val recipe = recipeDao.fetchBy(ProjectType.valueOf(createProjectReq.type.name), createProjectReq.version)
+
         val projectPojo = ProjectPojo(
             name = createProjectReq.name,
             organization = organization.name,
-            type = ProjectType.valueOf(createProjectReq.type.name),
-            version = createProjectReq.version,
+            recipe = recipe.id,
             passCheckRuleEnabled = createProjectReq.passCheckRuleEnabled,
             user = user.id,
         )
         if (gitHubService.getRepositoryForProject(project = projectPojo, organization = organization) == null) {
             projectDao.insert(projectPojo)
-            gitHubService.createRepoForProject(project = projectPojo, organization = organization)
-            awsService.registerProject(project = projectPojo, organization = organization)
-            return ResponseEntity.status(CREATED).body(projectPojoToProjectConverter.convert(projectPojo))
+            gitHubService.createRepoForProject(project = projectPojo, recipe = recipe, organization = organization)
+            awsService.registerProject(project = projectPojo, recipe = recipe, organization = organization)
+            return ResponseEntity.status(CREATED).body(projectPojoToProjectConverter(projectPojo))
         }
         logger.error { "Cannot create project [${projectPojo.name}] for organization [${organization.name}]. The repo already exists in GitHub" }
         return ResponseEntity.status(CONFLICT).build()
@@ -180,19 +184,27 @@ class ProjectApiController(
     }
 
     override fun cd(projectName: String, cdReq: CDReq): ResponseEntity<CD> {
-        val (user, organization, project) = checkRepoBelongsToOrg(projectName)
+        val (_, organization, project) = checkRepoBelongsToOrg(projectName)
 
-        val startCodeBuildResponse = codeBuildService.startCodeBuildProject(
-            gitHubAppToken = gitHubService.appToken(organization),
-            user = user,
-            project = project,
-            organization = organization,
-            commitHash = cdReq.commitHash,
-            codeBuildType = CodeBuildType.CD,
-            environment = cdReq.env,
+        val userName = ensure.ofType<String>(
+            authenticationService.jwt.getClaim<String>("name"),
+            "name"
         )
+        val tag = gitHubService.tagProject(organization, project, userName)
 
-        return ResponseEntity.ok(CD(id = startCodeBuildResponse.second.id))
+//        val startCodeBuildResponse = codeBuildService.startCodeBuildProject(
+//            gitHubAppToken = gitHubService.appToken(organization),
+//            user = user,
+//            project = project,
+//            organization = organization,
+//            commit = cdReq.commitHash,
+//            codeBuildType = CodeBuildType.CD,
+//            environment = cdReq.env,
+//            gitHubProjectTag = tag,
+//        )
+
+//        return ResponseEntity.ok(CD(id = startCodeBuildResponse.second.id))
+        return ResponseEntity.ok(CD(id = 1))
     }
 
     /**
@@ -221,5 +233,21 @@ class ProjectApiController(
         val organization = organizationDao.fetchOneByCognitoUserId(authenticationService.currentCognitoUserId)
         val project = projectDao.fetchOneByNameAndOrganization(organization.name!!, projectName)
         return Triple(user, organization, project)
+    }
+
+    /** Converts a [xtages.console.query.tables.pojos.Project] into a [Project]. */
+    @Cacheable
+    private fun projectPojoToProjectConverter(source: xtages.console.query.tables.pojos.Project) : Project {
+        val recipe = recipeDao.fetchOneById(source.recipe!!)
+        return Project(
+            id = source.id!!,
+            name = source.name!!,
+            version = recipe?.version!!,
+            type = projectPojoTypeToProjectTypeConverter.convert(recipe.projectType!!)!!,
+            passCheckRuleEnabled = source.passCheckRuleEnabled!!,
+            ghRepoUrl = GitHubUrl(organizationName = source.organization!!, repoName = source.name).toUriString(),
+            organization = source.organization!!,
+            builds = emptyList(),
+        )
     }
 }

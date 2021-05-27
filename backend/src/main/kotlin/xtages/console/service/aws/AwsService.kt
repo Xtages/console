@@ -3,10 +3,10 @@ package xtages.console.service.aws
 import org.springframework.stereotype.Service
 import xtages.console.query.tables.pojos.Organization
 import xtages.console.query.tables.pojos.Project
+import xtages.console.query.tables.pojos.Recipe
 
 @Service
 class AwsService(
-    private val ecrService: EcrService,
     private val cloudWatchLogsService: CloudWatchLogsService,
     private val codeBuildService: CodeBuildService,
 ) {
@@ -17,14 +17,13 @@ class AwsService(
      *   * a CodeBuild project for CI
      *   * a CodeBuild project for CD
      */
-    fun registerProject(project: Project, organization: Organization) {
+    fun registerProject(project: Project, recipe: Recipe, organization: Organization) {
         registerOrganization(organization)
-        codeBuildService.createCodeBuildCiProject(organization = organization, project = project)
-        codeBuildService.createCodeBuildCdProject(organization = organization, project = project)
+        codeBuildService.createCodeBuildCiProject(organization = organization, project = project, recipe = recipe)
+        codeBuildService.createCodeBuildCdProject(organization = organization, project = project, recipe = recipe)
     }
 
     private fun registerOrganization(organization: Organization) {
-        ecrService.maybeCreateEcrRepositoryForOrganization(organization = organization)
         cloudWatchLogsService.maybeCreateLogGroupForOrganization(organization = organization)
     }
 
@@ -41,8 +40,8 @@ class AwsService(
 
     private fun unregisterOrganization(organization: Organization) {
         TODO("(czuniga): Use the list below to implement this")
-        // Remove ECR repository
-        // Remove CI log group
-        // Remove CD log group
+        // Remove ECR repository - mark them to delete them after a period of time
+        // Remove CI log group - move the logs to S3 in a cheap storage
+        // Remove CD log group - same as above
     }
 }
