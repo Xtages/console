@@ -12,6 +12,7 @@ import xtages.console.query.tables.references.XTAGES_USER
 /**
  * Finds an [Organization] by its owner's [CognitoUserId].
  */
+@Cacheable
 fun OrganizationDao.fetchOneByCognitoUserId(cognitoUserId: CognitoUserId): Organization {
     return ensure.foundOne(
         operation = {

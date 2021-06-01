@@ -1,5 +1,6 @@
 package xtages.console.dao
 
+import org.springframework.cache.annotation.Cacheable
 import xtages.console.exception.ExceptionCode
 import xtages.console.exception.ensure
 import xtages.console.query.tables.daos.ProjectDao
@@ -10,6 +11,7 @@ import xtages.console.query.tables.references.PROJECT
 /**
  * Finds a [Project] given a name and an [Organization].
  */
+@Cacheable
 fun ProjectDao.fetchOneByNameAndOrganization(orgName: String, projectName: String): Project {
     return ensure.foundOne(
         operation = {

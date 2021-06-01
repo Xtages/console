@@ -22,6 +22,7 @@ import xtages.console.query.enums.GithubAppInstallationStatus.ACTIVE
 import xtages.console.query.enums.GithubAppInstallationStatus.SUSPENDED
 import xtages.console.query.tables.daos.OrganizationDao
 import xtages.console.query.tables.daos.ProjectDao
+import xtages.console.query.tables.daos.RecipeDao
 import xtages.console.query.tables.daos.XtagesUserDao
 import xtages.console.query.tables.pojos.Organization
 import xtages.console.query.tables.pojos.Project
@@ -46,6 +47,7 @@ class GitHubService(
     private val projectDao: ProjectDao,
     private val userDao: XtagesUserDao,
     private val codeBuildService: CodeBuildService,
+    private val recipeDao: RecipeDao,
 ) {
     private val gitHubClient by GitHubClientDelegate(consoleProperties)
 
@@ -73,6 +75,10 @@ class GitHubService(
                 orgName = push.organization.login,
                 projectName = push.repository.name
             )
+            val recipe = ensure.foundOne(
+                operation = { recipeDao.fetchOneById(project.recipe!!) },
+                code = RECIPE_NOT_FOUND
+            )
             // TODO(czuniga): This is a stop-gap measure, because we currently don't have a way to associate a GitHub
             // user to an Xtages user. We should be taking the user information from the Push event itself.
             val owner = userDao.fetchOrganizationsOwner(organization)
@@ -80,6 +86,7 @@ class GitHubService(
                 gitHubAppToken = appToken,
                 user = owner,
                 project = project,
+                recipe = recipe,
                 organization = organization,
                 commitHash = push.head,
                 codeBuildType = CodeBuildType.CI,

@@ -192,6 +192,7 @@ class CodeBuildService(
         gitHubAppToken: String,
         user: XtagesUser,
         project: Project,
+        recipe: Recipe,
         organization: Organization,
         commitHash: String,
         codeBuildType: CodeBuildType,
@@ -227,13 +228,13 @@ class CodeBuildService(
                         buildEnvironmentVariable("XTAGES_COMMIT", commitHash),
                         buildEnvironmentVariable("XTAGES_REPO", project.ghRepoFullName),
                         buildEnvironmentVariable("XTAGES_GITHUB_TOKEN", gitHubAppToken),
-                        // relevant for CD only
                         buildEnvironmentVariable("XTAGES_GH_PROJECT_TAG", gitHubProjectTag),
-                        buildEnvironmentVariable("XTAGES_APP_ENV", environment),
-                        buildEnvironmentVariable("XTAGES_ORG", organization.name),
-                        buildEnvironmentVariable("XTAGES_DEPLOY_REPO", ""),
-                        buildEnvironmentVariable("XTAGES_GH_DEPLOY_TAG", ),
-                        buildEnvironmentVariable("XTAGES_NODE_VER", ""),
+                        buildEnvironmentVariable("XTAGES_APP_ENV", environment.toLowerCase()),
+                        buildEnvironmentVariable("XTAGES_PROJECT_TYPE", recipe.projectType?.name!!.toLowerCase()),
+                        buildEnvironmentVariable("XTAGES_ORG", organization.name!!.toLowerCase()),
+                        buildEnvironmentVariable("XTAGES_RECIPE_REPO", recipe.repository),
+                        buildEnvironmentVariable("XTAGES_GH_RECIPE_TAG",recipe.tag),
+                        buildEnvironmentVariable("XTAGES_NODE_VER", recipe.version),
                     )
                 )
                 .build()
@@ -482,7 +483,7 @@ private data class CodeBuildPhase(
  */
 private object TimeZonelessInstantDeserializer : StdDeserializer<Instant>(Instant::class.java) {
 
-    private val dateTimeFormatter = DateTimeFormatter.ofPattern("MMM dd, yyyy h:mm:ss a")
+    private val dateTimeFormatter = DateTimeFormatter.ofPattern("MMM d, yyyy h:mm:ss a")
         .withZone(ZoneId.of("UTC"))
 
     override fun deserialize(parser: JsonParser, context: DeserializationContext): Instant {

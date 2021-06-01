@@ -5,6 +5,21 @@ The following was discovered as part of building this project:
 
 # Getting Started
 
+## Local testing
+
+Assuming that we have a GitHub App for testing purposes add a [`smee`](https://smee.io/) endpoint pointing to it so it can listen to
+calls for the app and direct it to your host. 
+For example: 
+```shell
+smee --url https://smee.io/z98JIvw6K0SQtSSp --target http://localhost:8080/api/v1/github/webhook
+```
+
+After building the app with `gradle bootJar` you can run the following command to start the backend:
+```shell
+java -jar build/libs/console-0.0.1-SNAPSHOT.jar 
+```
+
+
 ### Reference Documentation
 For further reference, please consider the following sections:
 

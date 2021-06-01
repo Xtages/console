@@ -17,6 +17,7 @@ import xtages.console.dao.fetchLatestByProject
 import xtages.console.dao.fetchOneByCognitoUserId
 import xtages.console.dao.fetchOneByNameAndOrganization
 import xtages.console.exception.ExceptionCode
+import xtages.console.exception.ExceptionCode.RECIPE_NOT_FOUND
 import xtages.console.exception.ExceptionCode.USER_NOT_FOUND
 import xtages.console.exception.ensure
 import xtages.console.query.enums.ProjectType
@@ -96,7 +97,7 @@ class ProjectApiController(
                             events = latestBuildEvents
                         )
                     }
-                    var convertedProject = projectPojoToProjectConverter(project)!!
+                    var convertedProject = projectPojoToProjectConverter(project)
                     if (convertedBuild != null) {
                         convertedProject = convertedProject.copy(builds = listOf(convertedBuild))
                     }
@@ -170,11 +171,15 @@ class ProjectApiController(
 
     override fun ci(projectName: String, ciReq: CIReq): ResponseEntity<CI> {
         val (user, organization, project) = checkRepoBelongsToOrg(projectName)
-
+        val recipe = ensure.foundOne(
+            operation = { recipeDao.fetchOneById(project.recipe!!) },
+            code = RECIPE_NOT_FOUND
+        )
         val startCodeBuildResponse = codeBuildService.startCodeBuildProject(
             gitHubAppToken = gitHubService.appToken(organization),
             user = user,
             project = project,
+            recipe = recipe,
             organization = organization,
             commitHash = ciReq.commitHash,
             codeBuildType = CodeBuildType.CI
@@ -184,27 +189,31 @@ class ProjectApiController(
     }
 
     override fun cd(projectName: String, cdReq: CDReq): ResponseEntity<CD> {
-        val (_, organization, project) = checkRepoBelongsToOrg(projectName)
+        val (user, organization, project) = checkRepoBelongsToOrg(projectName)
 
         val userName = ensure.ofType<String>(
             authenticationService.jwt.getClaim<String>("name"),
             "name"
         )
         val tag = gitHubService.tagProject(organization, project, userName)
+        val recipe = ensure.foundOne(
+            operation = { recipeDao.fetchOneById(project.recipe!!) },
+            code = RECIPE_NOT_FOUND
+        )
 
-//        val startCodeBuildResponse = codeBuildService.startCodeBuildProject(
-//            gitHubAppToken = gitHubService.appToken(organization),
-//            user = user,
-//            project = project,
-//            organization = organization,
-//            commit = cdReq.commitHash,
-//            codeBuildType = CodeBuildType.CD,
-//            environment = cdReq.env,
-//            gitHubProjectTag = tag,
-//        )
+        val startCodeBuildResponse = codeBuildService.startCodeBuildProject(
+            gitHubAppToken = gitHubService.appToken(organization),
+            user = user,
+            project = project,
+            recipe = recipe,
+            organization = organization,
+            commitHash = cdReq.commitHash,
+            codeBuildType = CodeBuildType.CD,
+            environment = cdReq.env,
+            gitHubProjectTag = tag,
+        )
 
-//        return ResponseEntity.ok(CD(id = startCodeBuildResponse.second.id))
-        return ResponseEntity.ok(CD(id = 1))
+        return ResponseEntity.ok(CD(id = startCodeBuildResponse.second.id))
     }
 
     /**
