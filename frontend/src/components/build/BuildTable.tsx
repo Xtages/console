@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {ReactNode, useState} from 'react';
 import ReactTooltip from 'react-tooltip';
 import {Link} from 'react-router-dom';
 import {Menu, MenuButton, MenuItem} from '@szhsin/react-menu';
@@ -11,12 +11,16 @@ import {ArrowUpCircle,
   UploadCloud,
   X} from 'react-feather';
 import cx from 'classnames';
-import {Build, BuildPhase, BuildTypeEnum, Project} from '../../gen/api';
+import {useQuery} from 'react-query';
+import {Build, BuildPhase, BuildType, Project} from '../../gen/api';
 import {BuildStatusIcon} from './BuildStatusIcon';
 import Avatar from '../avatar/Avatar';
 import '@szhsin/react-menu/dist/index.css';
 import {Button} from '../button/Buttons';
 import {durationString, formatDateTimeMed, formatDateTimeRelativeToNow} from '../../helpers/time';
+import {Tab, Tabs} from '../tab/Tab';
+import {logsApi} from '../../service/Services';
+import {LogViewer} from '../logviewer/LogViewer';
 
 export interface BuildTableProps {
   project: Project,
@@ -76,7 +80,7 @@ export function BuildRowInner({
     <>
       <div className="row">
         <div className="col-12 text-muted text-sm pl-0">
-          {build.type === BuildTypeEnum.Ci ? (
+          {build.type === BuildType.Ci ? (
             <>
               <GitMerge size=".9em" />
               {' '}
@@ -210,9 +214,48 @@ export function BuildRowInner({
           </Menu>
         </div>
       </div>
-      {collapsible && !collapsed && (<BuildPhaseTable phases={build.phases} />)}
+      {collapsible && <AdditionalInfoPane collapsed={collapsed} project={project} build={build} />}
     </>
   );
+}
+
+/** Renders the [Build] logs and phases */
+function AdditionalInfoPane({
+  project,
+  build,
+  collapsed,
+}: {project: Project, build: Build, collapsed: boolean}) {
+  if (!collapsed) {
+    const {
+      isLoading,
+      error,
+      data,
+    } = useQuery(
+      `project/${project.name}/${build.type}/${build.id}/logs`,
+      () => logsApi.logs(project.name, build.id),
+    );
+    let logs: string | ReactNode;
+    if (isLoading) {
+      logs = 'Loading...';
+    } else if (error) {
+      logs = `An error has occurred: ${error}`;
+    } else if (data?.data != null) {
+      logs = (
+        <LogViewer logLines={data.data.events} maxHeight={500} />
+      );
+    }
+    return (
+      <Tabs>
+        <Tab id="logs" title="Logs">
+          {logs}
+        </Tab>
+        <Tab id="phases" title="Phases">
+          <BuildPhaseTable phases={build.phases} />
+        </Tab>
+      </Tabs>
+    );
+  }
+  return <></>;
 }
 
 function format(name: string) {
@@ -242,7 +285,6 @@ function PhaseStatus({status}: {status: string}) {
 function BuildPhaseTable({phases}: {phases: BuildPhase[]}) {
   return (
     <div className="text-sm">
-      <hr />
       <div className="row text-muted font-weight-bolder">
         <div className="col-3">
           <div className="row">
