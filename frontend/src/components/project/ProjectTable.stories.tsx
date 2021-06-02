@@ -2,7 +2,7 @@ import React from 'react';
 import {Meta, Story} from '@storybook/react';
 import {BrowserRouter} from 'react-router-dom';
 import {ProjectRowProps, ProjectTable, ProjectTableProps} from './ProjectTable';
-import {BuildStatusEnum, BuildTypeEnum, ProjectTypeEnum} from '../../gen/api';
+import {BuildStatusEnum, BuildType, ProjectTypeEnum} from '../../gen/api';
 
 export default {
   title: 'Xtages/Project/ProjectTable',
@@ -22,7 +22,7 @@ const projectData = {
 const buildData = {
   id: 100,
   status: BuildStatusEnum.Failed,
-  type: BuildTypeEnum.Ci,
+  type: BuildType.Ci,
   initiatorName: 'Bill Murray',
   initiatorEmail: 'b.murray@xtages.com',
   initiatorAvatarUrl: 'http://www.fillmurray.com/100/100',

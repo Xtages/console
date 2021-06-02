@@ -32,13 +32,13 @@ export interface Build {
      * @type {number}
      * @memberof Build
      */
-    id?: number;
+    id: number;
     /**
      * 
-     * @type {string}
+     * @type {BuildType}
      * @memberof Build
      */
-    type: BuildTypeEnum;
+    type: BuildType;
     /**
      * 
      * @type {string}
@@ -99,14 +99,6 @@ export interface Build {
     * @export
     * @enum {string}
     */
-export enum BuildTypeEnum {
-    Ci = 'CI',
-    Cd = 'CD'
-}
-/**
-    * @export
-    * @enum {string}
-    */
 export enum BuildStatusEnum {
     NotProvisioned = 'NOT_PROVISIONED',
     Succeeded = 'SUCCEEDED',
@@ -158,6 +150,16 @@ export interface BuildPhase {
      */
     endTimestampInMillis?: number;
 }
+/**
+ * Enum of kinds of builds
+ * @export
+ * @enum {string}
+ */
+export enum BuildType {
+    Ci = 'CI',
+    Cd = 'CD'
+}
+
 /**
  * A reference to the run CD
  * @export
@@ -214,7 +216,7 @@ export interface CILogs {
      * @type {Array<LogEvent>}
      * @memberof CILogs
      */
-    events?: Array<LogEvent>;
+    events: Array<LogEvent>;
 }
 /**
  * Request made to POST /ci
@@ -337,43 +339,14 @@ export interface LogEvent {
      * @type {number}
      * @memberof LogEvent
      */
-    timestamp?: number;
+    timestamp: number;
     /**
      * 
      * @type {string}
      * @memberof LogEvent
      */
-    message?: string;
+    message: string;
 }
-/**
- * Request made to get logs
- * @export
- * @interface LogsReq
- */
-export interface LogsReq {
-    /**
-     * 
-     * @type {number}
-     * @memberof LogsReq
-     */
-    buildId: number;
-    /**
-     * 
-     * @type {string}
-     * @memberof LogsReq
-     */
-    buildType: LogsReqBuildTypeEnum;
-}
-
-/**
-    * @export
-    * @enum {string}
-    */
-export enum LogsReqBuildTypeEnum {
-    Ci = 'CI',
-    Cd = 'CD'
-}
-
 /**
  * An Organization
  * @export
@@ -892,15 +865,15 @@ export const LogsApiAxiosParamCreator = function (configuration?: Configuration)
          * 
          * @summary Retrieve logs for a given CI and certain project
          * @param {string} projectName Name of the project to get the logs from
-         * @param {LogsReq} logsReq 
+         * @param {number} buildId The id of the build
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        logs: async (projectName: string, logsReq: LogsReq, options: any = {}): Promise<RequestArgs> => {
+        logs: async (projectName: string, buildId: number, options: any = {}): Promise<RequestArgs> => {
             // verify required parameter 'projectName' is not null or undefined
             assertParamExists('logs', 'projectName', projectName)
-            // verify required parameter 'logsReq' is not null or undefined
-            assertParamExists('logs', 'logsReq', logsReq)
+            // verify required parameter 'buildId' is not null or undefined
+            assertParamExists('logs', 'buildId', buildId)
             const localVarPath = `/project/{projectName}/logs`
                 .replace(`{${"projectName"}}`, encodeURIComponent(String(projectName)));
             // use dummy base URL string because the URL constructor only accepts absolute URLs.
@@ -918,14 +891,15 @@ export const LogsApiAxiosParamCreator = function (configuration?: Configuration)
             // http bearer authentication required
             await setBearerAuthToObject(localVarHeaderParameter, configuration)
 
+            if (buildId !== undefined) {
+                localVarQueryParameter['buildId'] = buildId;
+            }
+
 
     
-            localVarHeaderParameter['Content-Type'] = 'application/json';
-
             setSearchParams(localVarUrlObj, localVarQueryParameter, options.query);
             let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
             localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
-            localVarRequestOptions.data = serializeDataIfNeeded(logsReq, localVarRequestOptions, configuration)
 
             return {
                 url: toPathString(localVarUrlObj),
@@ -946,12 +920,12 @@ export const LogsApiFp = function(configuration?: Configuration) {
          * 
          * @summary Retrieve logs for a given CI and certain project
          * @param {string} projectName Name of the project to get the logs from
-         * @param {LogsReq} logsReq 
+         * @param {number} buildId The id of the build
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async logs(projectName: string, logsReq: LogsReq, options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<CILogs>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.logs(projectName, logsReq, options);
+        async logs(projectName: string, buildId: number, options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<CILogs>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.logs(projectName, buildId, options);
             return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
         },
     }
@@ -968,12 +942,12 @@ export const LogsApiFactory = function (configuration?: Configuration, basePath?
          * 
          * @summary Retrieve logs for a given CI and certain project
          * @param {string} projectName Name of the project to get the logs from
-         * @param {LogsReq} logsReq 
+         * @param {number} buildId The id of the build
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        logs(projectName: string, logsReq: LogsReq, options?: any): AxiosPromise<CILogs> {
-            return localVarFp.logs(projectName, logsReq, options).then((request) => request(axios, basePath));
+        logs(projectName: string, buildId: number, options?: any): AxiosPromise<CILogs> {
+            return localVarFp.logs(projectName, buildId, options).then((request) => request(axios, basePath));
         },
     };
 };
@@ -989,13 +963,13 @@ export class LogsApi extends BaseAPI {
      * 
      * @summary Retrieve logs for a given CI and certain project
      * @param {string} projectName Name of the project to get the logs from
-     * @param {LogsReq} logsReq 
+     * @param {number} buildId The id of the build
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      * @memberof LogsApi
      */
-    public logs(projectName: string, logsReq: LogsReq, options?: any) {
-        return LogsApiFp(this.configuration).logs(projectName, logsReq, options).then((request) => request(this.axios, this.basePath));
+    public logs(projectName: string, buildId: number, options?: any) {
+        return LogsApiFp(this.configuration).logs(projectName, buildId, options).then((request) => request(this.axios, this.basePath));
     }
 }
 
