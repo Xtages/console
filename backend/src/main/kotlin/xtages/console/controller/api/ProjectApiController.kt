@@ -12,7 +12,7 @@ import xtages.console.controller.api.model.Build.Status
 import xtages.console.controller.model.CodeBuildType
 import xtages.console.controller.model.buildEventPojoToBuildPhaseConverter
 import xtages.console.controller.model.projectPojoTypeToProjectTypeConverter
-import xtages.console.dao.fetchBy
+import xtages.console.dao.fetchByProjectTypeAndVersion
 import xtages.console.dao.fetchLatestByProject
 import xtages.console.dao.fetchOneByCognitoUserId
 import xtages.console.dao.fetchOneByNameAndOrganization
@@ -150,7 +150,7 @@ class ProjectApiController(
             message = "User not found"
         )
         val organization = organizationDao.fetchOneByCognitoUserId(authenticationService.currentCognitoUserId)
-        val recipe = recipeDao.fetchBy(ProjectType.valueOf(createProjectReq.type.name), createProjectReq.version)
+        val recipe = recipeDao.fetchByProjectTypeAndVersion(ProjectType.valueOf(createProjectReq.type.name), createProjectReq.version)
 
         val projectPojo = ProjectPojo(
             name = createProjectReq.name,
@@ -191,7 +191,7 @@ class ProjectApiController(
     override fun cd(projectName: String, cdReq: CDReq): ResponseEntity<CD> {
         val (user, organization, project) = checkRepoBelongsToOrg(projectName)
 
-        val userName = ensure.ofType<String>(
+        val userName = ensure.notNull(
             authenticationService.jwt.getClaim<String>("name"),
             "name"
         )

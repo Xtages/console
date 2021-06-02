@@ -127,7 +127,7 @@ class CodeBuildService(
                     )
                 )
             }
-        } else {
+        } else if (event.detailType == CodeBuildEventDetailType.CODE_BUILD_PHASE_CHANGE) {
             logger.debug { "Dropping CodeBuildEvent of detailType [${event.detailType}] for build [${event.detail.buildId}]" }
         }
     }
