@@ -38,20 +38,6 @@ val organizationPojoToOrganizationConverter =
 /** Converts a [ProjectType] into a [Project.Type]. */
 val projectPojoTypeToProjectTypeConverter = Converter { source: ProjectType -> Project.Type.valueOf(source.name) }
 
-/** Converts a [xtages.console.query.tables.pojos.Project] into a [Project]. */
-val projectPojoToProjectConverter = Converter { source: ProjectPojo ->
-    Project(
-        id = source.id!!,
-        name = source.name!!,
-        version = source.version!!,
-        type = projectPojoTypeToProjectTypeConverter.convert(source.type!!)!!,
-        passCheckRuleEnabled = source.passCheckRuleEnabled!!,
-        ghRepoUrl = GitHubUrl(organizationName = source.organization!!, repoName = source.name).toUriString(),
-        organization = source.organization!!,
-        builds = emptyList(),
-    )
-}
-
 /** Converts a [BuildEvent] into a [BuildPhase]. */
 val buildEventPojoToBuildPhaseConverter = Converter { source: BuildEvent ->
     BuildPhase(

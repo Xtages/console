@@ -13,6 +13,7 @@ enum class ExceptionCode {
     BUILD_NOT_FOUND,
     BUILD_EVENT_NOT_FOUND,
     OPERATION_NOT_FOUND,
+    RECIPE_NOT_FOUND,
 }
 
 /**

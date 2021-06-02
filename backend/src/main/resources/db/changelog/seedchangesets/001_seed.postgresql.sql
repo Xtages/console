@@ -19,14 +19,6 @@ VALUES (1, '5b2a09e0-ddd5-4450-bab1-f924725f247a', 'Xtages', true, 'us-east-1:68
 
 SELECT pg_catalog.setval('public.xtages_user_id_seq', 1, true);
 
-INSERT INTO "project"
-    (id, name, type, version, organization, "user", pass_check_rule_enabled,
-    codebuild_ci_project_arn, codebuild_cd_project_arn, gh_repo_full_name)
-	VALUES
-	(1, 'test', 'NODE', '15.13.0', 'Xtages', 1, false,
-	'arn:aws:codebuild:us-east-1:606626603369:project/xtages_test_ci',
-    'arn:aws:codebuild:us-east-1:606626603369:project/xtages_test_cd', 'Xtages/test');
-
 SELECT pg_catalog.setval('public.project_id_seq', 1, true);
 
 INSERT INTO "stripe_checkout_session"

@@ -1,5 +1,6 @@
 package xtages.console.dao
 
+import org.springframework.cache.annotation.Cacheable
 import xtages.console.config.CognitoUserId
 import xtages.console.exception.ExceptionCode
 import xtages.console.exception.ensure
@@ -11,6 +12,7 @@ import xtages.console.query.tables.references.XTAGES_USER
 /**
  * Finds an [Organization] by its owner's [CognitoUserId].
  */
+@Cacheable
 fun OrganizationDao.fetchOneByCognitoUserId(cognitoUserId: CognitoUserId): Organization {
     return ensure.foundOne(
         operation = {

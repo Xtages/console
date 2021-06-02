@@ -5,16 +5,6 @@ import xtages.console.exception.ensure
 import xtages.console.query.tables.pojos.Project
 
 /**
- * Returns the template repository name based on the [Project.type] and [Project.version] of the [Project].
- */
-val Project.templateRepoName: String
-    get() {
-        val type = ensure.notNull(value = type, valueDesc = "project.type")
-        val version = ensure.notNull(value = version, valueDesc = "project.version")
-        return "${type.name}_${version}_template".toLowerCase()
-    }
-
-/**
  * Returns the CodeBuild CI project name.
  */
 val Project.codeBuildCiProjectName: String
@@ -53,47 +43,6 @@ val Project.codeBuildCdProjectDescription: String
         val name = ensure.notNull(value = name, valueDesc = "project.name")
         val organization = ensure.notNull(value = organization, valueDesc = "project.organization")
         return "CD for $organization/$name"
-    }
-
-/**
- * Returns the name of the image to use in the CodeBuild CI project.
- */
-val Project.codeBuildCiImageName: String
-    get() {
-        val type = ensure.notNull(value = type, valueDesc = "project.type")
-        val version = ensure.notNull(value = version, valueDesc = "project.version")
-        return "${type}_ci:$version".toLowerCase()
-    }
-
-/**
- * Returns the name of the image to use in the CodeBuild CD project.
- */
-val Project.codeBuildCdImageName: String
-    get() {
-        val type = ensure.notNull(value = type, valueDesc = "project.type")
-        val version = ensure.notNull(value = version, valueDesc = "project.version")
-        return "${type}_cd:$version".toLowerCase()
-    }
-
-
-/**
- * Returns the name of the buildspec file to use in the CodeBuild CD project.
- */
-val Project.codeBuildCiBuildSpecName: String
-    get() {
-        val type = ensure.notNull(value = type, valueDesc = "project.type")
-        val version = ensure.notNull(value = version, valueDesc = "project.version")
-        return "ci/$type/$version-buildspec.yml".toLowerCase()
-    }
-
-/**
- * Returns the name of the buildspec file to use in the CodeBuild CD project.
- */
-val Project.codeBuildCdBuildSpecName: String
-    get() {
-        val type = ensure.notNull(value = type, valueDesc = "project.type")
-        val version = ensure.notNull(value = version, valueDesc = "project.version")
-        return "cd/$type/$version-buildspec.yml".toLowerCase()
     }
 
 /**

@@ -127,7 +127,7 @@ class CodeBuildService(
                     )
                 )
             }
-        } else {
+        } else if (event.detailType == CodeBuildEventDetailType.CODE_BUILD_PHASE_CHANGE) {
             logger.debug { "Dropping CodeBuildEvent of detailType [${event.detailType}] for build [${event.detail.buildId}]" }
         }
     }
@@ -192,11 +192,13 @@ class CodeBuildService(
         gitHubAppToken: String,
         user: XtagesUser,
         project: Project,
+        recipe: Recipe,
         organization: Organization,
         commitHash: String,
         codeBuildType: CodeBuildType,
         environment: String = "dev",
         fromGitHubApp: Boolean = false,
+        gitHubProjectTag: String? = null,
     ): Pair<StartBuildResponse, Build> {
         val build = Build(
             environment = environment,
@@ -215,7 +217,7 @@ class CodeBuildService(
         val cbProjectName = if (codeBuildType == CodeBuildType.CI)
             project.codeBuildCiProjectName
         else
-            project.codeBuildCdBuildSpecName
+            project.codeBuildCdProjectName
 
         val codeBuildClient = if (fromGitHubApp) codeBuildAsyncClient else userSessionCodeBuildClient()
         val startBuildResponse = codeBuildClient.startBuild(
@@ -225,7 +227,14 @@ class CodeBuildService(
                     listOf(
                         buildEnvironmentVariable("XTAGES_COMMIT", commitHash),
                         buildEnvironmentVariable("XTAGES_REPO", project.ghRepoFullName),
-                        buildEnvironmentVariable("XTAGES_GITHUB_TOKEN", gitHubAppToken)
+                        buildEnvironmentVariable("XTAGES_GITHUB_TOKEN", gitHubAppToken),
+                        buildEnvironmentVariable("XTAGES_GH_PROJECT_TAG", gitHubProjectTag),
+                        buildEnvironmentVariable("XTAGES_APP_ENV", environment.toLowerCase()),
+                        buildEnvironmentVariable("XTAGES_PROJECT_TYPE", recipe.projectType?.name!!.toLowerCase()),
+                        buildEnvironmentVariable("XTAGES_ORG", organization.name!!.toLowerCase()),
+                        buildEnvironmentVariable("XTAGES_RECIPE_REPO", recipe.repository),
+                        buildEnvironmentVariable("XTAGES_GH_RECIPE_TAG",recipe.tag),
+                        buildEnvironmentVariable("XTAGES_NODE_VER", recipe.version),
                     )
                 )
                 .build()
@@ -269,11 +278,12 @@ class CodeBuildService(
     /**
      * Creates a new `CodeBuild` [BuildType.CI] project for [organization] and [project].
      */
-    fun createCodeBuildCiProject(organization: Organization, project: Project) {
+    fun createCodeBuildCiProject(organization: Organization, project: Project, recipe: Recipe) {
         val response = codeBuildAsyncClient.createProject(
             buildCreateProjectRequest(
                 organization = organization,
                 project = project,
+                recipe = recipe,
                 codeBuildType = CodeBuildType.CI,
                 serviceRoleName = "xtages-codebuild-ci-role",
             )
@@ -293,11 +303,12 @@ class CodeBuildService(
     /**
      * Creates a new `CodeBuild` [BuildType.CD] project for [organization] and [project].
      */
-    fun createCodeBuildCdProject(organization: Organization, project: Project) {
+    fun createCodeBuildCdProject(organization: Organization, project: Project, recipe: Recipe) {
         val response = codeBuildAsyncClient.createProject(
             buildCreateProjectRequest(
                 organization = organization,
                 project = project,
+                recipe = recipe,
                 codeBuildType = CodeBuildType.CD,
                 privilegedMode = true,
                 serviceRoleName = "xtages-codebuild-cd-role",
@@ -319,18 +330,19 @@ class CodeBuildService(
     private fun buildCreateProjectRequest(
         organization: Organization,
         project: Project,
+        recipe: Recipe,
         codeBuildType: CodeBuildType,
         privilegedMode: Boolean = false,
         serviceRoleName: String,
         concurrentBuildLimit: Int? = null,
     ): CreateProjectRequest {
         fun <T> buildTypeVar(ciVar: T, cdVar: T) = if (codeBuildType == CodeBuildType.CI) ciVar else cdVar
-        val imageName = buildTypeVar(project.codeBuildCiImageName, project.codeBuildCdImageName)
+        val imageName = buildTypeVar(recipe.codeBuildCiImageName, recipe.codeBuildCdImageName)
         val projectName = buildTypeVar(project.codeBuildCiProjectName, project.codeBuildCdProjectName)
         val projectDesc = buildTypeVar(project.codeBuildCiProjectDescription, project.codeBuildCdProjectDescription)
         val logsGroupName = organization.codeBuildLogsGroupNameFor(codeBuildType)
         val logsStreamName = project.codeBuildLogsStreamNameFor(codeBuildType)
-        val buildSpecLocation = buildTypeVar(project.codeBuildCiBuildSpecName, project.codeBuildCdBuildSpecName)
+        val buildSpecLocation = buildTypeVar(recipe.codeBuildCiBuildSpecName, recipe.codeBuildCdBuildSpecName)
         val builder = CreateProjectRequest.builder()
             .name(projectName)
             .description(projectDesc)
@@ -471,7 +483,7 @@ private data class CodeBuildPhase(
  */
 private object TimeZonelessInstantDeserializer : StdDeserializer<Instant>(Instant::class.java) {
 
-    private val dateTimeFormatter = DateTimeFormatter.ofPattern("MMM dd, yyyy h:mm:ss a")
+    private val dateTimeFormatter = DateTimeFormatter.ofPattern("MMM d, yyyy h:mm:ss a")
         .withZone(ZoneId.of("UTC"))
 
     override fun deserialize(parser: JsonParser, context: DeserializationContext): Instant {
