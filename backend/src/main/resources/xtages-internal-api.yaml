@@ -133,12 +133,13 @@ paths:
             minLength: 1
           required: true
           description: Name of the project to get the logs from
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/LogsReq"
+        - in: query
+          name: buildId
+          schema:
+            type: integer
+            format: int64
+          required: true
+          description: The id of the build
       responses:
         "200":
           description: Logs successfully returned
@@ -289,21 +290,6 @@ components:
         ownerCognitoUserId:
           type: string
           minLength: 1
-    LogsReq:
-      description: Request made to get logs
-      required:
-        - buildId
-        - buildType
-      properties:
-        buildId:
-          type: integer
-          format: int64
-        buildType:
-          type: string
-          minLength: 2
-          enum:
-            - CI
-            - CD
     Project:
       description: An Xtages project
       properties:
@@ -381,6 +367,8 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/LogEvent'
+      required:
+        - events
     CD:
       description: A reference to the run CD
       properties:
@@ -422,6 +410,16 @@ components:
         message:
           type: string
           minLength: 1
+      required:
+        - timestamp
+        - message
+    BuildType:
+      description: Enum of kinds of builds
+      type: string
+      minLength: 2
+      enum:
+        - CI
+        - CD
     Build:
       description: A build (CI or CD) that ocurred
       properties:
@@ -430,11 +428,7 @@ components:
           format: int64
           description: This is actually the id of the first build_event for this build.
         type:
-          type: string
-          minLength: 2
-          enum:
-            - CI
-            - CD
+          $ref: "#/components/schemas/BuildType"
         status:
           type: string
           enum:
@@ -468,7 +462,7 @@ components:
           items:
             $ref: "#/components/schemas/BuildPhase"
       required:
-        - buildId
+        - id
         - type
         - status
         - initiatorEmail

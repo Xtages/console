@@ -2,7 +2,7 @@ import React from 'react';
 import {Meta, Story} from '@storybook/react';
 import {BrowserRouter} from 'react-router-dom';
 import {BuildTable, BuildTableProps} from './BuildTable';
-import {BuildStatusEnum, BuildTypeEnum, ProjectTypeEnum} from '../../gen/api';
+import {BuildStatusEnum, BuildType, ProjectTypeEnum} from '../../gen/api';
 
 export default {
   title: 'Xtages/Build/BuildTable',
@@ -15,7 +15,7 @@ const Template: Story<BuildTableProps> = (args) => <BrowserRouter><BuildTable {.
 const buildData = {
   id: 100,
   status: BuildStatusEnum.Failed,
-  type: BuildTypeEnum.Ci,
+  type: BuildType.Ci,
   initiatorName: 'Bill Murray',
   initiatorEmail: 'b.murray@xtages.com',
   initiatorAvatarUrl: 'http://www.fillmurray.com/100/100',

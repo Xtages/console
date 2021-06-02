@@ -1,0 +1,35 @@
+@import '~bootstrap/scss/mixins';
+@import "../../assets/css/theme";
+@import url("https://fonts.googleapis.com/css2?family=Source+Code+Pro&display=swap");
+
+.logViewer {
+    background-color: $dark;
+    color: $gray-400;
+    display: block;
+    font-family: 'Source Code Pro', monospace;
+    font-size: $font-size-sm;
+    max-width: fit-content;
+    overflow-x: scroll;
+    white-space: nowrap;
+    width: max-content;
+
+  td {
+    user-select: text;
+    padding-right: 0.3em;
+    padding-left: 0.3em;
+  }
+
+  tr:hover {
+    background-color: lighten($dark, 10%);
+  }
+
+  .lineNumber {
+    color: $gray-600;
+    text-align: right;
+    user-select: none;
+  }
+
+  .timestamp {
+    color: $gray-500;
+  }
+}

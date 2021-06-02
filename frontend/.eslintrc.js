@@ -28,6 +28,7 @@ module.exports = {
     '@typescript-eslint/no-use-before-define': 'off',
     'react/jsx-props-no-spreading': 'off',
     'react/require-default-props': 'off',
+    'no-plusplus': 'off',
     'import/no-extraneous-dependencies': [
       'error', {
         devDependencies: ['**/*.stories.tsx'],
