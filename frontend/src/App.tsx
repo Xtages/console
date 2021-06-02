@@ -6,9 +6,9 @@ import UnauthdRoute from 'components/authn/UnauthdRoute';
 import {ProvideAuth} from 'hooks/useAuth';
 import LoginPage from 'pages/authn/LoginPage';
 import SignUpPage from 'pages/authn/SignUpPage';
-import HomePage from 'pages/home/HomePage';
+import HomePage from 'pages/HomePage';
 import ConfirmSignUpPage from 'pages/authn/ConfirmSignUpPage';
-import AccountPage from 'pages/account/AccountPage';
+import AccountPage from 'pages/AccountPage';
 import ProjectPage from './pages/ProjectPage';
 
 const queryClient = new QueryClient();
