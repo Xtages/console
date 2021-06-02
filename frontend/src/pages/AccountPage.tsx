@@ -2,8 +2,8 @@ import React, {ReactNode} from 'react';
 import {useQuery} from 'react-query';
 import {checkoutApi} from 'service/Services';
 import {User} from 'react-feather';
-import Page from '../../components/layout/Page';
-import {Section, SectionTitle} from '../../components/layout/Section';
+import Page from '../components/layout/Page';
+import {Section, SectionTitle} from '../components/layout/Section';
 
 /**
  * A simple account page where the user can then click to go to their Striper customer portal.
