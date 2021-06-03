@@ -208,6 +208,7 @@ class CodeBuildService(
             projectId = project.id,
             commitHash = commitHash,
             startTime = LocalDateTime.now(ZoneOffset.UTC),
+            tag = gitHubProjectTag
         )
         val buildRecord = buildDao.ctx().newRecord(BUILD, build)
         buildRecord.store()
