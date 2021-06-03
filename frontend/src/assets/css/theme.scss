@@ -2,13 +2,10 @@
 @import 'fonts';
 
 @import '~bootstrap/scss/variables';
-@import '~bootstrap/scss/mixins';
 
-@import 'quick/scss/core/mixins';
+@import 'mixins';
 
 @import 'bootstrap';
 
-@import 'quick/scss/core/mixins';
-@import 'quick/scss/core/utilities';
 @import 'quick';
 
