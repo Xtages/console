@@ -17,7 +17,7 @@ export interface ProjectTemplateCardProps {
   imageName: string;
 
   /** Callback that will be run when the "Create new project" button is clicked. */
-  onClick?(id: string): void,
+  onClick?(id: string): void;
 }
 
 /** A Project template card with a button to create a new project from the template. */
@@ -32,18 +32,20 @@ export default function ProjectTemplateCard({
     <div className={`card ${styles.card}`}>
       <div className={`card-body ${styles.cardBody} text-center`}>
         <Avatar
-          img={`img/project/template/${imageName}`}
+          img={`/img/project/template/${imageName}`}
           imgAltText={`Create new ${title} project`}
           rounded
           size="xl"
         />
         <span className="d-block h6 mt-2 mb-2">{title}</span>
         <span className="d-block text-sm text-muted mb-3">{description}</span>
-        <div className="actions d-flex justify-content-center">
-          <Button type="button" size="xs" onClick={() => onClick && onClick(id)}>
-            Create new project
-          </Button>
-        </div>
+        {onClick && (
+          <div className="actions d-flex justify-content-center">
+            <Button type="button" size="xs" onClick={() => onClick && onClick(id)}>
+              Create new project
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );

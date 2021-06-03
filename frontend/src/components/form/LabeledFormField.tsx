@@ -5,7 +5,7 @@ import styles from './InputGroup.module.scss';
 
 export type LabeledFormFieldProps = GenericFieldHTMLAttributes & {
   name: string;
-  icon: ReactNode | undefined | null
+  addOn: ReactNode | undefined | null
   label: string | ReactNode;
   invalid?: boolean;
   validationFeedback?: string | undefined | null;
@@ -14,7 +14,7 @@ export type LabeledFormFieldProps = GenericFieldHTMLAttributes & {
 /**
  * A combination of label and input field.
  * @param name - Name of the field.
- * @param icon - Optional icon to prepend to the input field.
+ * @param addOn - Optional add-on to prepend to the input field.
  * @param label - Label for the field, can either be a `string` or a {@link ReactNode}.
  * @param invalid - Whether the field has valid data.
  * @param validationFeedback - Feedback message rendered when `invalid` is `true`.
@@ -22,7 +22,7 @@ export type LabeledFormFieldProps = GenericFieldHTMLAttributes & {
  */
 export default function LabeledFormField({
   name,
-  icon,
+  addOn,
   label,
   invalid = false,
   validationFeedback,
@@ -40,15 +40,15 @@ export default function LabeledFormField({
     <div className={cx('form-group', {[`${styles.focused}`]: focused})}>
       {labelEl}
       <div className={cx('input-group', {
-        'input-group-merge': icon,
+        'input-group-merge': addOn,
         'has-validation': validationFeedback,
       })}
       >
-        {icon
+        {addOn
                 && (
                 <div className="input-group-prepend">
                   <span className={cx('input-group-text', {'is-invalid': invalid})}>
-                    {icon}
+                    {addOn}
                   </span>
                 </div>
                 )}
@@ -56,7 +56,7 @@ export default function LabeledFormField({
           {...props}
           name={name}
           className={cx('form-control', {
-            'form-control-prepend': icon,
+            'form-control-prepend': addOn,
             'is-invalid': invalid,
           })}
           onFocus={toggleFocused}

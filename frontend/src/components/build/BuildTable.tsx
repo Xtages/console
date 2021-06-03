@@ -136,14 +136,14 @@ export function BuildRowInner({
               <a
                 className="font-weight-bold"
                 data-tip="true"
-                data-for="seeCommitInGhTooltip"
+                data-for={`seeCommitInGhTooltip-${build.id}`}
                 href={build.commitUrl}
                 target="_blank"
                 rel="noreferrer"
               >
                 {build.commitHash.substr(0, 6)}
               </a>
-              <ReactTooltip id="seeCommitInGhTooltip" place="top" effect="solid">
+              <ReactTooltip id={`seeCommitInGhTooltip-${build.id}`} place="top" effect="solid">
                 See commit in GitHub
               </ReactTooltip>
             </div>
@@ -153,13 +153,13 @@ export function BuildRowInner({
               <Link className="font-weight-bold" to={`project/${project.id}/build/${build.id}`}>
                 <span
                   data-tip="true"
-                  data-for="seeMoreBuildDetailsTooltip"
+                  data-for={`seeMoreBuildDetailsTooltip-${build.id}`}
                 >
                   {formatDateTimeRelativeToNow(build.startTimestampInMillis)}
                 </span>
               </Link>
               <ReactTooltip
-                id="seeMoreBuildDetailsTooltip"
+                id={`seeMoreBuildDetailsTooltip-${build.id}`}
                 place="top"
                 effect="solid"
               >

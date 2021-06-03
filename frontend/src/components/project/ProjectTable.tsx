@@ -42,7 +42,7 @@ export function ProjectRow({
 }: ProjectRowProps) {
   const build = project.builds[0];
   return (
-    <div className="container card">
+    <div className="container card mb-3">
       <div className="card-body p-3">
         <div className="row">
           <div className={cx({'col-2': build, 'col-11': !build})}>
@@ -67,13 +67,13 @@ export function ProjectRow({
           )}
           <div className={`col-1 ${styles.goToDetails}`}>
             <Link
-              className="h-100 d-flex"
+              className="h-100 d-flex justify-content-end"
               to={`project/${project.name}`}
               data-tip="true"
-              data-for="seeMoreProjectDetailsTooltip"
+              data-for={`seeMoreProjectDetailsTooltip-${project.id}`}
             >
               <GoToDetails className="align-self-center" height={70} style={{stroke: '#A0AEC0'}} />
-              <ReactTooltip id="seeMoreProjectDetailsTooltip" place="top" effect="solid">
+              <ReactTooltip id={`seeMoreProjectDetailsTooltip-${project.id}`} place="top" effect="solid">
                 See more details about project
                 {' '}
                 &quot;
