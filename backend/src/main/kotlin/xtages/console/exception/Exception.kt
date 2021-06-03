@@ -11,8 +11,6 @@ enum class ExceptionCode {
     USER_NOT_FOUND,
     PROJECT_NOT_FOUND,
     BUILD_NOT_FOUND,
-    BUILD_EVENT_NOT_FOUND,
-    OPERATION_NOT_FOUND,
     RECIPE_NOT_FOUND,
 }
 

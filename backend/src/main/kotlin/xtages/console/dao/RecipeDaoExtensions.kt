@@ -18,7 +18,7 @@ fun RecipeDao.fetchByProjectTypeAndVersion(projectType: ProjectType, version: St
             ctx().select(RECIPE.asterisk())
                 .from(RECIPE)
                 .where(RECIPE.VERSION.eq(version).and(RECIPE.PROJECT_TYPE.eq(projectType)))
-                .orderBy(RECIPE.ID.desc())
+                .orderBy(RECIPE.ID.desc()).limit(1)
                 .fetchOneInto(Recipe::class.java)
         },
         code = ExceptionCode.RECIPE_NOT_FOUND,
