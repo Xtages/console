@@ -1,0 +1,53 @@
+package xtages.console.service.aws
+
+import mu.KotlinLogging
+import org.springframework.stereotype.Service
+import software.amazon.awssdk.services.ecr.EcrAsyncClient
+import software.amazon.awssdk.services.ecr.model.*
+import xtages.console.exception.ensure
+import xtages.console.query.tables.daos.ProjectDao
+import xtages.console.query.tables.pojos.Organization
+import xtages.console.query.tables.pojos.Project
+
+private val logger = KotlinLogging.logger { }
+private val xtagesEcrTag: Tag = buildEcrTag(key = "XTAGES_CONSOLE_CREATED", value = "true")
+
+/**
+ * A [Service] to handle the logic to communicate to the AWS ECR service.
+ */
+@Service
+class EcrService(
+    private val ecrAsyncClient: EcrAsyncClient,
+    private val projectDao: ProjectDao,
+    ) {
+
+    /**
+     * Creates an `ECR` repository for the [organization] if one hasn't already been created. The repository's name is
+     * the [Organization.name] in lower case.
+     */
+    fun maybeCreateEcrRepositoryForOrganization(organization: Organization, project: Project) {
+        if (project.ecrRepositoryArn == null) {
+            logger.debug { "Creating ECR repository for project: ${project.name}" }
+            val orgName = ensure.notNull(value = organization.name, valueDesc = "organization.name")
+            val projectName = ensure.notNull(value = project.name, valueDesc = "project.name")
+            val repoName = "${orgName}/${projectName}"
+            val createRepositoryResponse = ecrAsyncClient.createRepository(
+                CreateRepositoryRequest.builder()
+                    .repositoryName(repoName.toLowerCase())
+                    .imageTagMutability(ImageTagMutability.IMMUTABLE)
+                    .encryptionConfiguration(
+                        EncryptionConfiguration.builder().encryptionType(EncryptionType.KMS).build()
+                    )
+                    .imageScanningConfiguration(ImageScanningConfiguration.builder()
+                        .scanOnPush(true).build()
+                    )
+                    .tags(xtagesEcrTag, buildEcrTag("organization", orgName))
+                    .build()
+            ).get()
+            project.ecrRepositoryArn = createRepositoryResponse.repository().repositoryArn()
+            projectDao.merge(project)
+        }
+    }
+}
+
+private fun buildEcrTag(key: String, value: String) = Tag.builder().key(key).value(value).build()

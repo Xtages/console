@@ -173,6 +173,7 @@ class GitHubService(
     /**
      * Returns a [GHRepository] for the [project] in [organization].
      */
+    @Suppress("DEPRECATION")
     fun getRepositoryForProject(project: Project, organization: Organization): GHRepository? {
         val githubAppInstallationId = ensure.notNull(
             value = organization.githubAppInstallationId,
@@ -190,8 +191,9 @@ class GitHubService(
 
     /**
      * Creates a new GitHub repository for [project]. It will use a template repository as a starting point, the
-     * template repository will be selected based on [Project.type] and [Project.version].
+     * template repository will be selected based on the [Recipe] associated to the [Project].
      */
+    @Suppress("DEPRECATION")
     fun createRepoForProject(project: Project, recipe: Recipe, organization: Organization, description: String?) {
         val githubAppInstallationId = ensure.notNull(
             value = organization.githubAppInstallationId,
@@ -215,6 +217,7 @@ class GitHubService(
      * Returns the app token assigned to the GH app for that [Organization]
      * Note: this is not a JWT, however allows the app to use the token to authenticate itself against GH
      */
+    @Suppress("DEPRECATION")
     fun appToken(organization: Organization): String {
         val githubAppInstallationId = ensure.notNull(
             value = organization.githubAppInstallationId,
@@ -239,6 +242,7 @@ class GitHubService(
      * Note: this method assumes that in a previous method there is a check to make sure that the [Project]
      * belongs to the [Organization]
      */
+    @Suppress("DEPRECATION")
     fun tagProject(organization: Organization, project: Project, userName: String): String{
         val datePattern = "yyyyMddHm"
         val githubAppInstallationId = ensure.notNull(
@@ -254,7 +258,7 @@ class GitHubService(
         val shA1Short = repository.getBranch(defaultBranch).shA1!!.substring(0,6)
         val now = Instant.now().toUtcLocalDateTime()
         val tag = "v${now.format(DateTimeFormatter.ofPattern(datePattern))}-${shA1Short}"
-        val message = "Xtages automated tag for release triggered by CD operation from ${userName}"
+        val message = "Xtages automated tag for release triggered by CD operation from $userName"
         val tagSha = repository.createTag(tag, message, repository.getBranch(defaultBranch).shA1, "commit").sha
         repository.createRef("refs/tags/${tag}", tagSha)
         return tag
