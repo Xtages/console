@@ -192,7 +192,7 @@ class GitHubService(
      * Creates a new GitHub repository for [project]. It will use a template repository as a starting point, the
      * template repository will be selected based on [Project.type] and [Project.version].
      */
-    fun createRepoForProject(project: Project, recipe: Recipe, organization: Organization) {
+    fun createRepoForProject(project: Project, recipe: Recipe, organization: Organization, description: String?) {
         val githubAppInstallationId = ensure.notNull(
             value = organization.githubAppInstallationId,
             valueDesc = "organization.githubAppInstallationId"
@@ -204,6 +204,7 @@ class GitHubService(
             .createRepository(project.name)
             .owner(organization.name)
             .private_(true)
+            .description(description ?: "")
             .fromTemplateRepository("Xtages", recipe.templateRepoName)
             .create()
         project.ghRepoFullName = repository.fullName

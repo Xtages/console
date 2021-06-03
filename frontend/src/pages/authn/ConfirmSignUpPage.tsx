@@ -199,7 +199,7 @@ export default function ConfirmSignUpPage({location}: ConfirmSignUpPageProps) {
                       label="Confirmation code"
                       invalid={touched.code && errors.code != null}
                       validationFeedback="Invalid confirmation code."
-                      icon={<Zap size="1em" />}
+                      addOn={<Zap size="1em" />}
                       autoComplete="off"
                     />
                     <div className="mt-4">

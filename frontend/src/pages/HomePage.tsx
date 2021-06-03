@@ -6,6 +6,7 @@ import {ProjectTable} from 'components/project/ProjectTable';
 import ProjectTemplateCard from 'components/project/ProjectTemplateCard';
 import {Section, SectionTitle} from 'components/layout/Section';
 import Page from 'components/layout/Page';
+import {useHistory} from 'react-router-dom';
 
 export default function HomePage() {
   const {
@@ -26,6 +27,7 @@ export default function HomePage() {
       <ProjectTable projects={data.data} />
     );
   }
+  const history = useHistory();
   return (
     <Page>
       <Section>
@@ -36,6 +38,7 @@ export default function HomePage() {
             title="Simple Node.js server"
             description="A simple Node.js server template, using Express.js as well as Jest for running tests"
             imageName="nodejs.svg"
+            onClick={() => history.push('/new/project')}
           />
         </div>
       </Section>

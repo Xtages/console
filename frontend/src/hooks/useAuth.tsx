@@ -58,7 +58,7 @@ export class Principal {
       id: user.getUsername(),
       name: attrs.name,
       email: attrs.email,
-      org: attrs['custom:org'],
+      org: attrs['custom:organization'],
     });
   }
 }

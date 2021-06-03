@@ -106,9 +106,9 @@ class ProjectApiController(
                     val startTimestampA = projectA.builds.singleOrNull()?.startTimestampInMillis
                     val startTimestampB = projectB.builds.singleOrNull()?.startTimestampInMillis
                     when {
-                        projectA != null && projectB != null -> startTimestampA!!.compareTo(startTimestampB!!)
-                        projectA != null && projectB == null -> 1
-                        projectA == null && projectB != null -> -1
+                        startTimestampA != null && startTimestampB != null -> startTimestampA!!.compareTo(startTimestampB!!)
+                        startTimestampA != null && startTimestampB == null -> 1
+                        startTimestampA == null && startTimestampB != null -> -1
                         else -> projectA.name.compareTo(projectB.name)
                     }
                 }
@@ -150,7 +150,10 @@ class ProjectApiController(
             message = "User not found"
         )
         val organization = organizationDao.fetchOneByCognitoUserId(authenticationService.currentCognitoUserId)
-        val recipe = recipeDao.fetchByProjectTypeAndVersion(ProjectType.valueOf(createProjectReq.type.name), createProjectReq.version)
+        val recipe = recipeDao.fetchByProjectTypeAndVersion(
+            ProjectType.valueOf(createProjectReq.type.name),
+            createProjectReq.version
+        )
 
         val projectPojo = ProjectPojo(
             name = createProjectReq.name,
@@ -161,7 +164,12 @@ class ProjectApiController(
         )
         if (gitHubService.getRepositoryForProject(project = projectPojo, organization = organization) == null) {
             projectDao.insert(projectPojo)
-            gitHubService.createRepoForProject(project = projectPojo, recipe = recipe, organization = organization)
+            gitHubService.createRepoForProject(
+                project = projectPojo,
+                recipe = recipe,
+                organization = organization,
+                description = createProjectReq.description
+            )
             awsService.registerProject(project = projectPojo, recipe = recipe, organization = organization)
             return ResponseEntity.status(CREATED).body(projectPojoToProjectConverter(projectPojo))
         }
@@ -245,7 +253,7 @@ class ProjectApiController(
 
     /** Converts a [xtages.console.query.tables.pojos.Project] into a [Project]. */
     @Cacheable
-    private fun projectPojoToProjectConverter(source: xtages.console.query.tables.pojos.Project) : Project {
+    private fun projectPojoToProjectConverter(source: ProjectPojo): Project {
         val recipe = recipeDao.fetchOneById(source.recipe!!)
         return Project(
             id = source.id!!,
