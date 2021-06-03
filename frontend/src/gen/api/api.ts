@@ -174,7 +174,7 @@ export interface CD {
     id?: number;
 }
 /**
- * Request made to POST /cd
+ * Request made to POST /deploy or /promote
  * @export
  * @interface CDReq
  */
@@ -185,12 +185,6 @@ export interface CDReq {
      * @memberof CDReq
      */
     commitHash: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof CDReq
-     */
-    env: string;
 }
 /**
  * A reference to the run CI
@@ -531,18 +525,18 @@ export const CdApiAxiosParamCreator = function (configuration?: Configuration) {
     return {
         /**
          * 
-         * @summary Run continuous delivery for the project specified
-         * @param {string} projectName Name of the project to run the CD operation
+         * @summary Deploy the project to staging
+         * @param {string} projectName Name of the project to run the CD operation on
          * @param {CDReq} cDReq 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        cd: async (projectName: string, cDReq: CDReq, options: any = {}): Promise<RequestArgs> => {
+        deploy: async (projectName: string, cDReq: CDReq, options: any = {}): Promise<RequestArgs> => {
             // verify required parameter 'projectName' is not null or undefined
-            assertParamExists('cd', 'projectName', projectName)
+            assertParamExists('deploy', 'projectName', projectName)
             // verify required parameter 'cDReq' is not null or undefined
-            assertParamExists('cd', 'cDReq', cDReq)
-            const localVarPath = `/project/{projectName}/cd`
+            assertParamExists('deploy', 'cDReq', cDReq)
+            const localVarPath = `/project/{projectName}/deploy`
                 .replace(`{${"projectName"}}`, encodeURIComponent(String(projectName)));
             // use dummy base URL string because the URL constructor only accepts absolute URLs.
             const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
@@ -573,6 +567,82 @@ export const CdApiAxiosParamCreator = function (configuration?: Configuration) {
                 options: localVarRequestOptions,
             };
         },
+        /**
+         * 
+         * @summary Promote the project from staging to production
+         * @param {string} projectName Name of the project to run the CD operation on
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        promote: async (projectName: string, options: any = {}): Promise<RequestArgs> => {
+            // verify required parameter 'projectName' is not null or undefined
+            assertParamExists('promote', 'projectName', projectName)
+            const localVarPath = `/project/{projectName}/promote`
+                .replace(`{${"projectName"}}`, encodeURIComponent(String(projectName)));
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'POST', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            // authentication bearerAuth required
+            // http bearer authentication required
+            await setBearerAuthToObject(localVarHeaderParameter, configuration)
+
+
+    
+            setSearchParams(localVarUrlObj, localVarQueryParameter, options.query);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
+         * 
+         * @summary Rollback the project from the currently deployed version, in production, to the previous one.
+         * @param {string} projectName Name of the project to run the CD operation on
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        rollback: async (projectName: string, options: any = {}): Promise<RequestArgs> => {
+            // verify required parameter 'projectName' is not null or undefined
+            assertParamExists('rollback', 'projectName', projectName)
+            const localVarPath = `/project/{projectName}/rollback`
+                .replace(`{${"projectName"}}`, encodeURIComponent(String(projectName)));
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'POST', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            // authentication bearerAuth required
+            // http bearer authentication required
+            await setBearerAuthToObject(localVarHeaderParameter, configuration)
+
+
+    
+            setSearchParams(localVarUrlObj, localVarQueryParameter, options.query);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
     }
 };
 
@@ -585,14 +655,36 @@ export const CdApiFp = function(configuration?: Configuration) {
     return {
         /**
          * 
-         * @summary Run continuous delivery for the project specified
-         * @param {string} projectName Name of the project to run the CD operation
+         * @summary Deploy the project to staging
+         * @param {string} projectName Name of the project to run the CD operation on
          * @param {CDReq} cDReq 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async cd(projectName: string, cDReq: CDReq, options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<CD>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.cd(projectName, cDReq, options);
+        async deploy(projectName: string, cDReq: CDReq, options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<CD>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.deploy(projectName, cDReq, options);
+            return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
+        },
+        /**
+         * 
+         * @summary Promote the project from staging to production
+         * @param {string} projectName Name of the project to run the CD operation on
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async promote(projectName: string, options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<CD>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.promote(projectName, options);
+            return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
+        },
+        /**
+         * 
+         * @summary Rollback the project from the currently deployed version, in production, to the previous one.
+         * @param {string} projectName Name of the project to run the CD operation on
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async rollback(projectName: string, options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<CD>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.rollback(projectName, options);
             return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
         },
     }
@@ -607,14 +699,34 @@ export const CdApiFactory = function (configuration?: Configuration, basePath?: 
     return {
         /**
          * 
-         * @summary Run continuous delivery for the project specified
-         * @param {string} projectName Name of the project to run the CD operation
+         * @summary Deploy the project to staging
+         * @param {string} projectName Name of the project to run the CD operation on
          * @param {CDReq} cDReq 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        cd(projectName: string, cDReq: CDReq, options?: any): AxiosPromise<CD> {
-            return localVarFp.cd(projectName, cDReq, options).then((request) => request(axios, basePath));
+        deploy(projectName: string, cDReq: CDReq, options?: any): AxiosPromise<CD> {
+            return localVarFp.deploy(projectName, cDReq, options).then((request) => request(axios, basePath));
+        },
+        /**
+         * 
+         * @summary Promote the project from staging to production
+         * @param {string} projectName Name of the project to run the CD operation on
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        promote(projectName: string, options?: any): AxiosPromise<CD> {
+            return localVarFp.promote(projectName, options).then((request) => request(axios, basePath));
+        },
+        /**
+         * 
+         * @summary Rollback the project from the currently deployed version, in production, to the previous one.
+         * @param {string} projectName Name of the project to run the CD operation on
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        rollback(projectName: string, options?: any): AxiosPromise<CD> {
+            return localVarFp.rollback(projectName, options).then((request) => request(axios, basePath));
         },
     };
 };
@@ -628,15 +740,39 @@ export const CdApiFactory = function (configuration?: Configuration, basePath?: 
 export class CdApi extends BaseAPI {
     /**
      * 
-     * @summary Run continuous delivery for the project specified
-     * @param {string} projectName Name of the project to run the CD operation
+     * @summary Deploy the project to staging
+     * @param {string} projectName Name of the project to run the CD operation on
      * @param {CDReq} cDReq 
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      * @memberof CdApi
      */
-    public cd(projectName: string, cDReq: CDReq, options?: any) {
-        return CdApiFp(this.configuration).cd(projectName, cDReq, options).then((request) => request(this.axios, this.basePath));
+    public deploy(projectName: string, cDReq: CDReq, options?: any) {
+        return CdApiFp(this.configuration).deploy(projectName, cDReq, options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * 
+     * @summary Promote the project from staging to production
+     * @param {string} projectName Name of the project to run the CD operation on
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof CdApi
+     */
+    public promote(projectName: string, options?: any) {
+        return CdApiFp(this.configuration).promote(projectName, options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * 
+     * @summary Rollback the project from the currently deployed version, in production, to the previous one.
+     * @param {string} projectName Name of the project to run the CD operation on
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof CdApi
+     */
+    public rollback(projectName: string, options?: any) {
+        return CdApiFp(this.configuration).rollback(projectName, options).then((request) => request(this.axios, this.basePath));
     }
 }
 
