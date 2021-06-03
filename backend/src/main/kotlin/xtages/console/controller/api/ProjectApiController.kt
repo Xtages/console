@@ -253,7 +253,7 @@ class ProjectApiController(
 
     /** Converts a [xtages.console.query.tables.pojos.Project] into a [Project]. */
     @Cacheable
-    private fun projectPojoToProjectConverter(source: xtages.console.query.tables.pojos.Project): Project {
+    private fun projectPojoToProjectConverter(source: ProjectPojo): Project {
         val recipe = recipeDao.fetchOneById(source.recipe!!)
         return Project(
             id = source.id!!,
