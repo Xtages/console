@@ -1,0 +1,130 @@
+//
+// Global vendor/quick/scss/core/components
+// core vendor/quick/scss/core/components used in all the our UI Kits
+//
+
+//@import 'vendor/quick/scss/core/components/root/root';
+//@import 'vendor/quick/scss/core/components/root/reboot';
+//@import 'vendor/quick/scss/core/components/actions/actions';
+//@import 'vendor/quick/scss/core/components/alerts/alert';
+//@import 'vendor/quick/scss/core/components/alerts/alert-messages';
+//@import 'vendor/quick/scss/core/components/alerts/alert-notify';
+//@import 'vendor/quick/scss/core/components/alerts/alert-group';
+//@import 'vendor/quick/scss/core/components/alerts/alert-dismissible';
+//@import 'vendor/quick/scss/core/components/avatars/avatar';
+//@import 'vendor/quick/scss/core/components/avatars/avatar-group';
+//@import 'vendor/quick/scss/core/components/avatars/avatar-parent-child';
+//@import 'vendor/quick/scss/core/components/avatars/avatar-connect';
+//@import 'vendor/quick/scss/core/components/badges/badge';
+//@import 'vendor/quick/scss/core/components/badges/badge-dot';
+//@import 'vendor/quick/scss/core/components/badges/badge-circle';
+//@import 'vendor/quick/scss/core/components/badges/badge-floating';
+//@import 'vendor/quick/scss/core/components/breadcrumbs/breadcrumb';
+//@import 'vendor/quick/scss/core/components/buttons/button';
+//@import 'vendor/quick/scss/core/components/buttons/button-icon';
+//@import 'vendor/quick/scss/core/components/buttons/button-square';
+//@import 'vendor/quick/scss/core/components/buttons/button-animated';
+//@import 'vendor/quick/scss/core/components/buttons/button-labeled';
+//@import 'vendor/quick/scss/core/components/buttons/button-app';
+//@import 'vendor/quick/scss/core/components/buttons/button-group';
+//@import 'vendor/quick/scss/core/components/cards/card';
+//@import 'vendor/quick/scss/core/components/cards/card-accordion';
+//@import 'vendor/quick/scss/core/components/cards/card-overlay';
+//@import 'vendor/quick/scss/core/components/cards/card-group';
+//@import 'vendor/quick/scss/core/components/cards/card-columns';
+//@import 'vendor/quick/scss/core/components/cards/card-pricing';
+//@import 'vendor/quick/scss/core/components/closes/close';
+//@import 'vendor/quick/scss/core/components/custom-forms/custom-forms';
+//@import 'vendor/quick/scss/core/components/custom-forms/custom-checkbox';
+//@import 'vendor/quick/scss/core/components/custom-forms/custom-radio';
+//@import 'vendor/quick/scss/core/components/custom-forms/custom-color';
+//@import 'vendor/quick/scss/core/components/custom-forms/custom-alphanumeric';
+//@import 'vendor/quick/scss/core/components/custom-forms/custom-file';
+//@import 'vendor/quick/scss/core/components/custom-forms/custom-switch';
+//@import 'vendor/quick/scss/core/components/custom-forms/custom-rating';
+//@import 'vendor/quick/scss/core/components/dropdowns/dropdown';
+//@import 'vendor/quick/scss/core/components/dropdowns/dropdown-submenu';
+//@import 'vendor/quick/scss/core/components/footers/footer';
+//@import 'vendor/quick/scss/core/components/forms/form';
+//@import 'vendor/quick/scss/core/components/forms/form-label';
+//@import 'vendor/quick/scss/core/components/forms/form-stacked';
+//@import 'vendor/quick/scss/core/components/headers/header';
+//@import 'vendor/quick/scss/core/components/icons/icon';
+//@import 'vendor/quick/scss/core/components/icons/icon-shape';
+//@import 'vendor/quick/scss/core/components/icons/icon-actions';
+//@import 'vendor/quick/scss/core/components/icons/icon-floating';
+//@import 'vendor/quick/scss/core/components/input-groups/input-group';
+//@import 'vendor/quick/scss/core/components/input-groups/input-group-merge';
+//@import 'vendor/quick/scss/core/components/jumbotrons/jumbotron';
+//@import 'vendor/quick/scss/core/components/layout/docs';
+//@import 'vendor/quick/scss/core/components/layout/content';
+//@import 'vendor/quick/scss/core/components/layout/sidenav-toggler';
+//@import 'vendor/quick/scss/core/components/list-groups/list-group';
+//@import 'vendor/quick/scss/core/components/lists/list';
+//@import 'vendor/quick/scss/core/components/maps/map';
+//@import 'vendor/quick/scss/core/components/masks/mask';
+//@import 'vendor/quick/scss/core/components/masks/mask-body';
+//@import 'vendor/quick/scss/core/components/masks/mask-fade';
+//@import 'vendor/quick/scss/core/components/media-objects/media';
+//@import 'vendor/quick/scss/core/components/modals/modal';
+//@import 'vendor/quick/scss/core/components/navs/nav';
+//@import 'vendor/quick/scss/core/components/navs/nav-pills';
+//@import 'vendor/quick/scss/core/components/navs/nav-tabs';
+//@import 'vendor/quick/scss/core/components/navs/nav-menu';
+//@import 'vendor/quick/scss/core/components/navbars/navbar';
+//@import 'vendor/quick/scss/core/components/paginations/pagination';
+//@import 'vendor/quick/scss/core/components/paginations/pagination-circle';
+//@import 'vendor/quick/scss/core/components/popovers/popover';
+//@import 'vendor/quick/scss/core/components/progresses/progress';
+//@import 'vendor/quick/scss/core/components/progresses/progress-tooltip';
+//@import 'vendor/quick/scss/core/components/progresses/progress-label';
+//@import 'vendor/quick/scss/core/components/ratings/rating';
+//@import 'vendor/quick/scss/core/components/ribbons/ribbon';
+//@import 'vendor/quick/scss/core/components/sidebars/sidebar-sticky';
+//@import 'vendor/quick/scss/core/components/tables/table';
+//@import 'vendor/quick/scss/core/components/tables/table-flush';
+//@import 'vendor/quick/scss/core/components/type/type';
+//@import 'vendor/quick/scss/core/components/type/icons';
+//@import 'vendor/quick/scss/core/components/other/customizer';
+
+
+//
+// Quick Website UI Kit vendor/quick/scss/core/components (only)
+// vendor/quick/scss/core/components used in this UI Kit only
+//
+
+//@import 'vendor/quick/scss/core/components/cards/card-translucent';
+//@import 'vendor/quick/scss/core/components/cards/card-comment';
+//@import 'vendor/quick/scss/core/components/cards/card-money';
+//@import 'vendor/quick/scss/core/components/cards/card-profile';
+//@import 'vendor/quick/scss/core/components/cards/card-product';
+//@import 'vendor/quick/scss/core/components/cards/card-browser';
+//@import 'vendor/quick/scss/core/components/cards/card-accordion';
+//@import 'vendor/quick/scss/core/components/clients/client';
+//@import 'vendor/quick/scss/core/components/collages/collage';
+//@import 'vendor/quick/scss/core/components/dividers/divider';
+//@import 'vendor/quick/scss/core/components/dividers/divider-icon';
+//@import 'vendor/quick/scss/core/components/dividers/divider-fade';
+//@import 'vendor/quick/scss/core/components/dividers/divider-vertical';
+//@import 'vendor/quick/scss/core/components/frames/frame-laptop';
+//@import 'vendor/quick/scss/core/components/frames/frame-phone';
+//@import 'vendor/quick/scss/core/components/frames/frame-stack';
+//@import 'vendor/quick/scss/core/components/list-groups/list-group-emphasized';
+//@import 'vendor/quick/scss/core/components/media-objects/media-comment';
+//@import 'vendor/quick/scss/core/components/modals/modal-vertical';
+//@import 'vendor/quick/scss/core/components/navs/nav-dots';
+//@import 'vendor/quick/scss/core/components/navbars/navbar';
+//@import 'vendor/quick/scss/core/components/navbars/navbar-vertical';
+//@import 'vendor/quick/scss/core/components/navbars/navbar-dropdown';
+//@import 'vendor/quick/scss/core/components/navbars/navbar-search';
+//@import 'vendor/quick/scss/core/components/omnisearches/omnisearch';
+//@import 'vendor/quick/scss/core/components/progresses/progress-circle';
+//@import 'vendor/quick/scss/core/components/sections/section';
+//@import 'vendor/quick/scss/core/components/sections/section-half-rounded';
+//@import 'vendor/quick/scss/core/components/sections/section-process';
+//@import 'vendor/quick/scss/core/components/shapes/shape';
+//@import 'vendor/quick/scss/core/components/spotlights/spotlight';
+//@import 'vendor/quick/scss/core/components/tables/table-cards';
+//@import 'vendor/quick/scss/core/components/timelines/timeline';
+//@import 'vendor/quick/scss/core/components/tongues/tongue';
+

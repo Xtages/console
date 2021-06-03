@@ -1,0 +1,21 @@
+@import '~bootstrap/scss/functions';
+@import 'quick/scss/core/functions';
+@import '~bootstrap/scss/variables';
+@import 'quick/scss/core/variables';
+
+
+$body-bg:       $gray-100;
+
+$enable-validation-icons:                     true !default;
+
+$table-head-font-size:        1.2rem !default;
+$table-subhead-font-size:     0.9rem !default;
+$table-subhead-color:         $gray-600 !default;
+
+$table-body-font-size:        1.1rem !default;
+
+$btn-font-size-xs:            $input-btn-font-size-xs !default;
+
+$input-group-addon-invalid-color:               $danger !default;
+$input-group-addon-invalid-bg:                  $gray-200 !default;
+$input-group-addon-invalid-border-color:        $danger !default;
