@@ -1,16 +1,20 @@
 import React, {Children, FC, ReactNode} from 'react';
 import * as ReactIs from 'react-is';
 import {IconProps} from 'react-feather';
+import cx from 'classnames';
 
 interface SectionTitleProps {
   /** Optional Icon for the section */
-  icon?: FC<IconProps>,
+  icon?: FC<IconProps>;
 
   /** Title of the section */
-  title: string,
+  title: string;
 
   /** Optional subtible for the section */
-  subtitle?: string,
+  subtitle?: string;
+
+  /** Whether to user a smaller font */
+  small?: boolean;
 }
 
 /** A [Section] title. Only one may appear per section. */
@@ -18,6 +22,7 @@ export function SectionTitle({
   icon,
   title,
   subtitle,
+  small = false,
 }: SectionTitleProps) {
   const iconEl = icon && React.createElement(icon);
   return (
@@ -26,12 +31,13 @@ export function SectionTitle({
         <div className="d-flex">
           {iconEl
                 && (
-                <div className="h5 mb-0">
+                <div className={cx({h4: !small, h5: small}, 'mb-0')}>
                   {iconEl}
                 </div>
                 )}
           <div className="col">
-            <h1 className="h5 mb-0">{title}</h1>
+            {small && <h2 className="h5 mb-0">{title}</h2>}
+            {!small && <h1 className="h4 mb-0">{title}</h1>}
             {subtitle
                     && (
                     <p className="text-muted mb-0">

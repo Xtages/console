@@ -111,7 +111,7 @@ export default function SignUpPage() {
                       placeholder="Santa Claus"
                       invalid={touched.name && errors.name != null}
                       validationFeedback="Please provide your name."
-                      icon={<User size="1em" />}
+                      addOn={<User size="1em" />}
                     />
                     <LabeledFormField
                       type="text"
@@ -120,7 +120,7 @@ export default function SignUpPage() {
                       placeholder="North Pole"
                       invalid={touched.organizationName && errors.organizationName != null}
                       validationFeedback="Please provide your GitHub organization name."
-                      icon={<Briefcase size="1em" />}
+                      addOn={<Briefcase size="1em" />}
                     />
                     <EmailField
                       invalid={touched.email && errors.email != null}

@@ -295,6 +295,12 @@ export interface CreateProjectReq {
     version: string;
     /**
      * 
+     * @type {string}
+     * @memberof CreateProjectReq
+     */
+    description?: string;
+    /**
+     * 
      * @type {boolean}
      * @memberof CreateProjectReq
      */

@@ -20,7 +20,7 @@ export default function Alert({
   const alertType = `alert${outline ? '-outline' : ''}-${color}`;
   return (
     <div
-      className={cx(styles.alert, styles[alertType])}
+      className={cx('alert', styles.alert, styles[alertType])}
       role="alert"
     >
       {children}

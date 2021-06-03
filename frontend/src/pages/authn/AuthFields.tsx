@@ -15,7 +15,7 @@ export function EmailField(props : Partial<LabeledFormFieldProps>) {
       name="email"
       label="Email address"
       placeholder="santa@northpole.com"
-      icon={<AtSign size="1em" />}
+      addOn={<AtSign size="1em" />}
     />
   );
 }
@@ -57,7 +57,7 @@ export function PasswordField({
       type={showPassword ? 'text' : 'password'}
       name="password"
       placeholder={placeholder}
-      icon={<Key size="1em" />}
+      addOn={<Key size="1em" />}
       label={(
         <div className="d-flex align-items-center justify-content-between">
           <div>
