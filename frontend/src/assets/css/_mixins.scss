@@ -1,2 +1,14 @@
-@import 'node_modules/bootstrap/scss/mixins';
-@import 'vendor/quick/scss/core/mixins';
+@import "node_modules/bootstrap/scss/mixins";
+
+@import "vendor/quick/scss/core/mixins/gradients";
+@import "vendor/quick/scss/core/mixins/alert";
+@import "vendor/quick/scss/core/mixins/badge";
+@import "vendor/quick/scss/core/mixins/background-variant";
+@import "vendor/quick/scss/core/mixins/buttons";
+//@import "vendor/quick/scss/core/mixins/caret";
+@import "vendor/quick/scss/core/mixins/icon";
+@import "vendor/quick/scss/core/mixins/link";
+@import "vendor/quick/scss/core/mixins/modals";
+@import "vendor/quick/scss/core/mixins/popover";
+@import "vendor/quick/scss/core/mixins/ribbon";
+@import "vendor/quick/scss/core/mixins/tongue";

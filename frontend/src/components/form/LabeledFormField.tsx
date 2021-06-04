@@ -1,7 +1,6 @@
 import {Field, GenericFieldHTMLAttributes} from 'formik';
 import React, {ReactNode, useState} from 'react';
 import cx from 'classnames';
-import styles from './InputGroup.module.scss';
 
 export type LabeledFormFieldProps = GenericFieldHTMLAttributes & {
   name: string;
@@ -37,21 +36,13 @@ export default function LabeledFormField({
     : label;
 
   return (
-    <div className={cx('form-group', {[`${styles.focused}`]: focused})}>
+    <div className="form-group">
       {labelEl}
       <div className={cx('input-group', {
         'input-group-merge': addOn,
         'has-validation': validationFeedback,
       })}
       >
-        {addOn
-                && (
-                <div className="input-group-prepend">
-                  <span className={cx('input-group-text', {'is-invalid': invalid})}>
-                    {addOn}
-                  </span>
-                </div>
-                )}
         <Field
           {...props}
           name={name}
@@ -63,6 +54,14 @@ export default function LabeledFormField({
           onBlur={toggleFocused}
           aria-describedby={validationFeedbackElId}
         />
+        {addOn
+          && (
+          <div className="input-group-prepend">
+            <span className={cx('input-group-text', {'is-invalid': invalid})}>
+              {addOn}
+            </span>
+          </div>
+          )}
         {validationFeedback
                 && (
                 <div id={validationFeedbackElId} className="invalid-feedback">

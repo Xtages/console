@@ -1,0 +1,25 @@
+@import "../variables";
+@import "../mixins";
+
+.btn-xs {
+  font-weight: $font-weight-bolder;
+}
+
+.btn-grayish {
+  @include button-variant($gray-200, transparent);
+}
+
+.btn-transparent {
+  @include button-variant(transparent, transparent, $gray-200);
+}
+
+.btn-link {
+  border-radius: 0;
+  font-size: 80%;
+  font-weight: $font-weight-normal;
+  padding: 0;
+
+  &:hover {
+    color: $text-muted-hover !important;
+  }
+}
