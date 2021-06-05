@@ -60,26 +60,38 @@ class ProjectApiController(
         val project = projectDao.fetchOneByNameAndOrganization(orgName = organization.name!!, projectName = projectName)
         val projectPojo = projectPojoToProjectConverter(project)
         if (includeBuilds) {
-            val buildPojos = buildDao.fetchByProjectId(project.id!!)
+            val comparator = Comparator<BuildPojo> { buildA, buildB ->
+                val startTimeA = buildA.startTime!!
+                val startTimeB = buildB.startTime!!
+                val endTimeA = buildA.endTime
+                val endTimeB = buildB.endTime
+                when {
+                    endTimeA == null && endTimeB == null -> startTimeA.compareTo(startTimeB)
+                    endTimeA != null && endTimeB == null -> -1
+                    endTimeA == null && endTimeB != null -> 1
+                    endTimeA != null && endTimeB != null -> endTimeA.compareTo(endTimeB)
+                    else -> 0
+                }
+            }.reversed()
+            val buildPojos = buildDao.fetchByProjectId(project.id!!).sortedWith(comparator)
             val buildIdToBuild = buildPojos.associateBy { build -> build.id!! }
             val usernameToGithubUser = getUsernameToGithubUserMap(*buildPojos.toTypedArray())
             val idToXtagesUser = getUserIdToXtagesUserMap(*buildPojos.toTypedArray())
-            val builds = buildEventDao
+            val buildIdToBuildEvents = buildEventDao
                 .fetchByBuildId(*buildIdToBuild.keys.toLongArray())
                 .groupBy { buildEvent -> buildEvent.buildId!! }
-                .map { entry ->
-                    val buildId = entry.key
-                    val build = buildIdToBuild.getValue(buildId)
-                    val events = entry.value
-                    buildPojoToBuild(
-                        organization = organization,
-                        project = project,
-                        build = build,
-                        events = events,
-                        usernameToGithubUser = usernameToGithubUser,
-                        idToXtagesUser = idToXtagesUser
-                    )
-                }
+
+            val builds = buildPojos.map { build ->
+                val events = buildIdToBuildEvents[build.id]!!
+                buildPojoToBuild(
+                    organization = organization,
+                    project = project,
+                    build = build,
+                    events = events,
+                    usernameToGithubUser = usernameToGithubUser,
+                    idToXtagesUser = idToXtagesUser
+                )
+            }
             return ResponseEntity.ok(projectPojo.copy(builds = builds))
         }
         return ResponseEntity.ok(projectPojo)
