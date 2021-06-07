@@ -11,19 +11,20 @@ import mu.KotlinLogging
 import org.kohsuke.github.*
 import org.springframework.stereotype.Service
 import xtages.console.config.ConsoleProperties
+import xtages.console.controller.GitHubAvatarUrl
 import xtages.console.controller.model.CodeBuildType
 import xtages.console.dao.fetchOneByNameAndOrganization
-import xtages.console.dao.fetchOrganizationsOwner
 import xtages.console.exception.ExceptionCode.*
 import xtages.console.exception.IllegalArgumentException
 import xtages.console.exception.ensure
 import xtages.console.pojo.templateRepoName
 import xtages.console.query.enums.GithubAppInstallationStatus.ACTIVE
 import xtages.console.query.enums.GithubAppInstallationStatus.SUSPENDED
+import xtages.console.query.tables.daos.GithubUserDao
 import xtages.console.query.tables.daos.OrganizationDao
 import xtages.console.query.tables.daos.ProjectDao
 import xtages.console.query.tables.daos.RecipeDao
-import xtages.console.query.tables.daos.XtagesUserDao
+import xtages.console.query.tables.pojos.GithubUser
 import xtages.console.query.tables.pojos.Organization
 import xtages.console.query.tables.pojos.Project
 import xtages.console.query.tables.pojos.Recipe
@@ -45,53 +46,67 @@ class GitHubService(
     private val objectMapper: ObjectMapper,
     private val organizationDao: OrganizationDao,
     private val projectDao: ProjectDao,
-    private val userDao: XtagesUserDao,
+    private val githubUserDao: GithubUserDao,
+    private val userService: UserService,
     private val codeBuildService: CodeBuildService,
     private val recipeDao: RecipeDao,
 ) {
     private val gitHubClient by GitHubClientDelegate(consoleProperties)
 
-    fun handleWebhookRequest(eventType: GitHubWebhookEventType?, eventJson: String) {
+    fun handleWebhookRequest(eventType: GitHubWebhookEventType?, eventId: String, eventJson: String) {
         when (eventType) {
             INSTALLATION -> onInstallation(eventJson)
             INSTALLATION_REPOSITORIES -> throw IllegalArgumentException(
                 code = GH_APP_INSTALLATION_INVALID,
                 innerMessage = "GitHub app must be installed at the organization level."
             )
-            PUSH -> onPush(eventJson)
+            PUSH -> onPush(eventId = eventId, eventJson = eventJson)
         }
     }
 
-    private fun onPush(eventJson: String) {
+    private fun onPush(eventId: String, eventJson: String) {
         val push = gitHubClient.parseEventPayload(eventJson.reader(), GHEventPayload.Push::class.java)
         logger.debug { "Handling GitHub Push event for commit [${push.head}]" }
         if (push.ref.endsWith("/main") || push.ref.endsWith("/master")) {
-            val organization = ensure.foundOne(
-                operation = { organizationDao.fetchOneByName(push.organization.login) },
-                code = ORG_NOT_FOUND
-            )
-            val appToken = appToken(organization)
-            val project = projectDao.fetchOneByNameAndOrganization(
-                orgName = push.organization.login,
-                projectName = push.repository.name
-            )
-            val recipe = ensure.foundOne(
-                operation = { recipeDao.fetchOneById(project.recipe!!) },
-                code = RECIPE_NOT_FOUND
-            )
-            // TODO(czuniga): This is a stop-gap measure, because we currently don't have a way to associate a GitHub
-            // user to an Xtages user. We should be taking the user information from the Push event itself.
-            val owner = userDao.fetchOrganizationsOwner(organization)
-            codeBuildService.startCodeBuildProject(
-                gitHubAppToken = appToken,
-                user = owner,
-                project = project,
-                recipe = recipe,
-                organization = organization,
-                commitHash = push.head,
-                codeBuildType = CodeBuildType.CI,
-                fromGitHubApp = true,
-            )
+            if (push.commits.isNotEmpty()) {
+                val organization = ensure.foundOne(
+                    operation = { organizationDao.fetchOneByName(push.organization.login) },
+                    code = ORG_NOT_FOUND
+                )
+                val appToken = appToken(organization)
+                val project = projectDao.fetchOneByNameAndOrganization(
+                    orgName = push.organization.login,
+                    projectName = push.repository.name
+                )
+                val recipe = ensure.foundOne(
+                    operation = { recipeDao.fetchOneById(project.recipe!!) },
+                    code = RECIPE_NOT_FOUND
+                )
+
+                val committer = push.commits.single { commit -> commit.sha == push.head }.author
+                val pusherXtagesUser = userService.findUserByEmail(committer.email)
+                val githubUser = GithubUser(
+                    email = committer.email,
+                    name = committer.name,
+                    username = committer.username,
+                    avatarUrl = GitHubAvatarUrl(username = committer.username).toUriString(),
+                )
+                githubUserDao.merge(githubUser)
+
+                codeBuildService.startCodeBuildProject(
+                    gitHubAppToken = appToken,
+                    user = pusherXtagesUser?.user,
+                    githubUser = githubUser,
+                    project = project,
+                    recipe = recipe,
+                    organization = organization,
+                    commitHash = push.head,
+                    codeBuildType = CodeBuildType.CI,
+                    fromGitHubApp = true,
+                )
+            } else {
+                logger.debug { "Push with id [$eventId] not handled because it doesn't contain commit" }
+            }
         } else {
             logger.debug { "Commit happened on branch [${push.ref}] and therefore we are ignoring it" }
         }
@@ -243,7 +258,7 @@ class GitHubService(
      * belongs to the [Organization]
      */
     @Suppress("DEPRECATION")
-    fun tagProject(organization: Organization, project: Project, userName: String): String{
+    fun tagProject(organization: Organization, project: Project, userName: String): String {
         val datePattern = "yyyyMddHm"
         val githubAppInstallationId = ensure.notNull(
             value = organization.githubAppInstallationId,
@@ -255,12 +270,12 @@ class GitHubService(
 
         val repository = gitHubAppClient.getRepository(project.ghRepoFullName)
         val defaultBranch = repository.defaultBranch
-        val shA1Short = repository.getBranch(defaultBranch).shA1!!.substring(0,6)
+        val shA1Short = repository.getBranch(defaultBranch).shA1!!.substring(0, 6)
         val now = Instant.now().toUtcLocalDateTime()
-        val tag = "v${now.format(DateTimeFormatter.ofPattern(datePattern))}-${shA1Short}"
+        val tag = "v${now.format(DateTimeFormatter.ofPattern(datePattern))}-$shA1Short"
         val message = "Xtages automated tag for release triggered by CD operation from $userName"
         val tagSha = repository.createTag(tag, message, repository.getBranch(defaultBranch).shA1, "commit").sha
-        repository.createRef("refs/tags/${tag}", tagSha)
+        repository.createRef("refs/tags/$tag", tagSha)
         return tag
     }
 

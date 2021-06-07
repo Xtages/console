@@ -6,6 +6,7 @@ import org.springframework.http.HttpStatus.CONFLICT
 import org.springframework.http.HttpStatus.CREATED
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Controller
+import xtages.console.controller.GitHubAvatarUrl
 import xtages.console.controller.GitHubUrl
 import xtages.console.controller.api.model.*
 import xtages.console.controller.api.model.Build.Status
@@ -23,10 +24,13 @@ import xtages.console.exception.ensure
 import xtages.console.query.enums.ProjectType
 import xtages.console.query.tables.daos.*
 import xtages.console.query.tables.pojos.BuildEvent
+import xtages.console.query.tables.pojos.GithubUser
 import xtages.console.query.tables.pojos.Organization
 import xtages.console.query.tables.pojos.XtagesUser
 import xtages.console.service.AuthenticationService
 import xtages.console.service.GitHubService
+import xtages.console.service.UserService
+import xtages.console.service.XtagesUserWithCognitoAttributes
 import xtages.console.service.aws.AwsService
 import xtages.console.service.aws.CodeBuildService
 import xtages.console.time.toUtcMillis
@@ -38,9 +42,11 @@ private val logger = KotlinLogging.logger { }
 @Controller
 class ProjectApiController(
     private val userDao: XtagesUserDao,
+    private val githubUserDao: GithubUserDao,
     private val organizationDao: OrganizationDao,
     private val projectDao: ProjectDao,
     private val authenticationService: AuthenticationService,
+    private val userService: UserService,
     private val gitHubService: GitHubService,
     private val awsService: AwsService,
     private val codeBuildService: CodeBuildService,
@@ -56,6 +62,8 @@ class ProjectApiController(
         if (includeBuilds) {
             val buildPojos = buildDao.fetchByProjectId(project.id!!)
             val buildIdToBuild = buildPojos.associateBy { build -> build.id!! }
+            val usernameToGithubUser = getUsernameToGithubUserMap(*buildPojos.toTypedArray())
+            val idToXtagesUser = getUserIdToXtagesUserMap(*buildPojos.toTypedArray())
             val builds = buildEventDao
                 .fetchByBuildId(*buildIdToBuild.keys.toLongArray())
                 .groupBy { buildEvent -> buildEvent.buildId!! }
@@ -67,7 +75,9 @@ class ProjectApiController(
                         organization = organization,
                         project = project,
                         build = build,
-                        events = events
+                        events = events,
+                        usernameToGithubUser = usernameToGithubUser,
+                        idToXtagesUser = idToXtagesUser
                     )
                 }
             return ResponseEntity.ok(projectPojo.copy(builds = builds))
@@ -82,6 +92,9 @@ class ProjectApiController(
             val projectIdToLatestBuild = buildDao
                 .fetchLatestByProject(projects)
                 .associateBy { build -> build.projectId!! }
+            val usernameToGithubUser = getUsernameToGithubUserMap(*projectIdToLatestBuild.values.toTypedArray())
+            val idToXtagesUser = getUserIdToXtagesUserMap(*projectIdToLatestBuild.values.toTypedArray())
+
             val latestBuildEvents = buildEventDao
                 .fetchByBuildId(*projectIdToLatestBuild.values.mapNotNull { build -> build.id }.toLongArray())
             val convertedProjects = projects
@@ -94,7 +107,9 @@ class ProjectApiController(
                             organization = organization,
                             project = project,
                             build = build,
-                            events = latestBuildEvents
+                            events = latestBuildEvents,
+                            usernameToGithubUser = usernameToGithubUser,
+                            idToXtagesUser = idToXtagesUser,
                         )
                     }
                     var convertedProject = projectPojoToProjectConverter(project)
@@ -106,7 +121,7 @@ class ProjectApiController(
                     val startTimestampA = projectA.builds.singleOrNull()?.startTimestampInMillis
                     val startTimestampB = projectB.builds.singleOrNull()?.startTimestampInMillis
                     when {
-                        startTimestampA != null && startTimestampB != null -> startTimestampA!!.compareTo(startTimestampB!!)
+                        startTimestampA != null && startTimestampB != null -> startTimestampA.compareTo(startTimestampB)
                         startTimestampA != null && startTimestampB == null -> 1
                         startTimestampA == null && startTimestampB != null -> -1
                         else -> projectA.name.compareTo(projectB.name)
@@ -119,18 +134,52 @@ class ProjectApiController(
         )
     }
 
+    private fun getUserIdToXtagesUserMap(vararg builds: BuildPojo): Map<Int, XtagesUserWithCognitoAttributes> {
+        val xtagesUserIds = builds.mapNotNull { build -> build.userId }
+        return when {
+            xtagesUserIds.isNotEmpty() -> userService.findCognitoUsersByXtagesUserId(*xtagesUserIds.toIntArray())
+                .associateBy { user -> user.user.id!! }
+            else -> emptyMap()
+        }
+    }
+
+    private fun getUsernameToGithubUserMap(vararg builds: BuildPojo): Map<String, GithubUser> {
+        val githubUserNames = builds.mapNotNull { build -> build.githubUserUsername }
+        return when {
+            githubUserNames.isNotEmpty() -> githubUserDao.fetchByEmail(*githubUserNames.toTypedArray())
+                .associateBy { githubUser -> githubUser.username!! }
+            else -> emptyMap()
+        }
+    }
+
     private fun buildPojoToBuild(
         organization: Organization,
         project: ProjectPojo,
         build: BuildPojo,
-        events: List<BuildEvent>
+        events: List<BuildEvent>,
+        usernameToGithubUser: Map<String, GithubUser>,
+        idToXtagesUser: Map<Int, XtagesUserWithCognitoAttributes>
     ): Build {
+        val initiatorName = when (build.userId) {
+            null -> usernameToGithubUser[build.githubUserUsername!!]?.name
+            else -> idToXtagesUser[build.userId]?.attrs?.get("name")
+        } ?: "Unknown"
+        val initiatorEmail = when (build.userId) {
+            null -> usernameToGithubUser[build.githubUserUsername!!]?.email
+            else -> idToXtagesUser[build.userId]?.attrs?.get("email")
+        } ?: ""
+        val initiatorAvatarUrl = when (build.userId) {
+            null -> GitHubAvatarUrl(usernameToGithubUser[build.githubUserUsername!!]?.username)
+            else -> GitHubAvatarUrl.fromUriString(idToXtagesUser[build.userId]?.githubUser?.avatarUrl)
+        }
+
         return Build(
             id = build.id!!,
             type = BuildType.valueOf(build.type!!.name),
             status = Status.valueOf(build.status!!.name),
-            initiatorName = "Carlos",
-            initiatorEmail = "czuniga@xtages.com",
+            initiatorName = initiatorName,
+            initiatorEmail = initiatorEmail,
+            initiatorAvatarUrl = initiatorAvatarUrl.toUriString(),
             commitHash = build.commitHash!!,
             commitUrl = GitHubUrl(
                 organizationName = organization.name!!,
@@ -253,7 +302,7 @@ class ProjectApiController(
 
     /** Converts a [xtages.console.query.tables.pojos.Project] into a [Project]. */
     @Cacheable
-    private fun projectPojoToProjectConverter(source: ProjectPojo): Project {
+    fun projectPojoToProjectConverter(source: ProjectPojo): Project {
         val recipe = recipeDao.fetchOneById(source.recipe!!)
         return Project(
             id = source.id!!,
