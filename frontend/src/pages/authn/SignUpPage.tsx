@@ -9,7 +9,7 @@ import {NullablePrincipal, useAuth} from 'hooks/useAuth';
 import redirectToStripeCheckoutSession from 'service/CheckoutService';
 import Logo from 'components/Logos';
 import LabeledFormField from 'components/form/LabeledFormField';
-import Alert from 'components/alert/Alerts';
+import {Alert} from 'react-bootstrap';
 import {EmailField, PasswordField} from './AuthFields';
 
 const signUpFormValuesSchema = z.object({
@@ -98,7 +98,7 @@ export default function SignUpPage() {
                 {({isSubmitting, touched, errors}) => (
                   <Form noValidate>
                     {errorOccurred && (
-                    <Alert color="danger" outline>
+                    <Alert className="alert-outline-danger">
                       <div className="d-flex justify-content-center">
                         <strong>An unexpected error occurred</strong>
                       </div>

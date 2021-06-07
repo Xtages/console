@@ -1,6 +1,5 @@
 import React from 'react';
-import styles from 'components/card/Card.module.scss';
-import {Button} from '../button/Buttons';
+import {Button} from 'react-bootstrap';
 import Avatar from '../avatar/Avatar';
 
 export interface ProjectTemplateCardProps {
@@ -29,8 +28,8 @@ export default function ProjectTemplateCard({
   onClick,
 }: ProjectTemplateCardProps) {
   return (
-    <div className={`card ${styles.card}`}>
-      <div className={`card-body ${styles.cardBody} text-center`}>
+    <div className="card">
+      <div className="card-body text-center">
         <Avatar
           img={`/img/project/template/${imageName}`}
           imgAltText={`Create new ${title} project`}
@@ -41,7 +40,7 @@ export default function ProjectTemplateCard({
         <span className="d-block text-sm text-muted mb-3">{description}</span>
         {onClick && (
           <div className="actions d-flex justify-content-center">
-            <Button type="button" size="xs" onClick={() => onClick && onClick(id)}>
+            <Button className="btn-xs" onClick={() => onClick && onClick(id)}>
               Create new project
             </Button>
           </div>

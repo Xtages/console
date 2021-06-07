@@ -1,14 +1,44 @@
 import React from 'react';
-import {Link, NavLink} from 'react-router-dom';
-import {Menu, MenuButton, MenuDivider, MenuItem} from '@szhsin/react-menu';
+import {Link, NavLink, useHistory} from 'react-router-dom';
 import {useAuth} from 'hooks/useAuth';
+import {Dropdown} from 'react-bootstrap';
 import Logo from '../Logos';
 import Avatar from '../avatar/Avatar';
-import '@szhsin/react-menu/dist/index.css';
-import LogoutButton from '../authn/LogoutButton';
+
+const AvatarDropdownToggle = React.forwardRef<HTMLButtonElement, React.ComponentPropsWithoutRef<'button'>>(({
+  // eslint-disable-next-line react/prop-types
+  children,
+  // eslint-disable-next-line react/prop-types
+  onClick,
+}, ref) => (
+  <button
+    type="button"
+    className="btn-transparent rounded-circle p-1"
+    ref={ref}
+    onClick={(e) => {
+      e.preventDefault();
+      if (onClick) {
+        onClick(e);
+      }
+    }}
+  >
+    {children}
+  </button>
+));
 
 export default function NavBar() {
   const auth = useAuth();
+  const history = useHistory();
+
+  function goToMyAccount() {
+    history.push('/account');
+  }
+
+  async function signOut() {
+    await auth.logOut();
+    history.push('/login');
+  }
+
   return (
     <nav className="navbar navbar-expand-lg shadow navbar-light bg-white">
       <div className="container">
@@ -37,30 +67,24 @@ export default function NavBar() {
         </div>
         <div className="ml-3">
           {auth?.principal?.name
-          && (
-          <span className="mr-2">
-            Hello,
-            {' '}
-            {auth?.principal?.name}
-            !
-          </span>
-          )}
-          <Menu
-            className="text-body"
-            align="end"
-            arrow
-            menuButton={(
-              <MenuButton className="border-0 bg-transparent">
-                <Avatar
-                  rounded
-                />
-              </MenuButton>
-                        )}
-          >
-            <MenuItem className="dropdown-item"><Link to="/account" className="text-body">My account</Link></MenuItem>
-            <MenuDivider />
-            <MenuItem className="dropdown-item"><LogoutButton /></MenuItem>
-          </Menu>
+                    && (
+                    <span className="mr-2">
+                      Hello,
+                      {' '}
+                      {auth?.principal?.name}
+                      !
+                    </span>
+                    )}
+          <Dropdown>
+            <Dropdown.Toggle as={AvatarDropdownToggle}>
+              <Avatar rounded />
+            </Dropdown.Toggle>
+            <Dropdown.Menu>
+              <Dropdown.Item onClick={goToMyAccount}>My account</Dropdown.Item>
+              <Dropdown.Divider />
+              <Dropdown.Item onClick={signOut}>Sign out</Dropdown.Item>
+            </Dropdown.Menu>
+          </Dropdown>
         </div>
       </div>
     </nav>

@@ -1,6 +1,5 @@
 import React, {ReactNode} from 'react';
 import cx from 'classnames';
-import styles from './Avatar.module.scss';
 
 export interface AvatarProps {
   children?: ReactNode | string,
@@ -35,12 +34,7 @@ export default function Avatar({
 }: AvatarProps) {
   const hasImg = img !== undefined && img.trim().length > 0;
   const content = hasImg ? <img alt={imgAltText} src={img} /> : children;
-  const classes = cx(styles.avatar, {
-    [`${styles.avatar2xl}`]: size === '2xl',
-    [`${styles.avatarXl}`]: size === 'xl',
-    [`${styles.avatarLg}`]: size === 'lg',
-    [`${styles.avatarSm}`]: size === 'sm',
-    [`${styles.avatarXs}`]: size === 'xs',
+  const classes = cx('avatar', `avatar-${size}`, {
     'rounded-circle': rounded,
     [`bg-${background}`]: !hasImg,
   });
