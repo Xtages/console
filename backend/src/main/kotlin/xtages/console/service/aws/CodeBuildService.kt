@@ -190,7 +190,8 @@ class CodeBuildService(
      */
     fun startCodeBuildProject(
         gitHubAppToken: String,
-        user: XtagesUser,
+        user: XtagesUser? = null,
+        githubUser: GithubUser? = null,
         project: Project,
         recipe: Recipe,
         organization: Organization,
@@ -204,7 +205,8 @@ class CodeBuildService(
             environment = environment,
             type = BuildType.valueOf(codeBuildType.name),
             status = BuildStatus.UNKNOWN,
-            userId = user.id,
+            userId = user?.id,
+            githubUserUsername = githubUser?.username,
             projectId = project.id,
             commitHash = commitHash,
             startTime = LocalDateTime.now(ZoneOffset.UTC),

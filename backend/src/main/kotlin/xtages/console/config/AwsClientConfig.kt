@@ -14,6 +14,7 @@ import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsAsyncClient
 import software.amazon.awssdk.services.codebuild.CodeBuildAsyncClient
 import software.amazon.awssdk.services.codestarnotifications.CodestarNotificationsAsyncClient
 import software.amazon.awssdk.services.cognitoidentity.CognitoIdentityAsyncClient
+import software.amazon.awssdk.services.cognitoidentityprovider.CognitoIdentityProviderAsyncClient
 import software.amazon.awssdk.services.ecr.EcrAsyncClient
 
 @Configuration
@@ -25,6 +26,9 @@ class AwsClientConfig {
             .credentialsProvider(AnonymousCredentialsProvider.create())
             .build()
     }
+
+    @Bean
+    fun cognitoIdpClient(): CognitoIdentityProviderAsyncClient = CognitoIdentityProviderAsyncClient.create();
 
     @Bean
     fun ecrAsyncClient(): EcrAsyncClient = EcrAsyncClient.create()

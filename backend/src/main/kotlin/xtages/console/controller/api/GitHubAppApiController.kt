@@ -9,14 +9,15 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RequestMapping
 import xtages.console.config.ConsoleProperties
-import xtages.console.service.GitHubWebhookEventType
 import xtages.console.service.GitHubService
+import xtages.console.service.GitHubWebhookEventType
 import java.security.MessageDigest
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
 
 private const val GIT_HUB_WEBHOOK_EVENT_HEADER = "X-GitHub-Event"
 private const val GIT_HUB_SIGNATURE_HEADER = "X-HUB-Signature"
+private const val GIT_HUB_DELIVERY_HEADER = "X-GitHub-Delivery"
 private const val HMAC_SHA1_ALGORITHM = "HmacSHA1"
 
 private val logger = KotlinLogging.logger { }
@@ -33,6 +34,7 @@ class GitHubAppApiController(
         @RequestBody body: String,
         @RequestHeader(GIT_HUB_WEBHOOK_EVENT_HEADER) eventTypeHeader: String,
         @RequestHeader(GIT_HUB_SIGNATURE_HEADER) gitHubSignatureHeader: String,
+        @RequestHeader(GIT_HUB_DELIVERY_HEADER) gitHubDeliveryHeader: String,
     ): ResponseEntity<String> {
         logger.trace { "Received GitHub webhook request." }
         if (!verifyRequest(body = body, gitHubSignatureHeader = gitHubSignatureHeader)) {
@@ -40,7 +42,11 @@ class GitHubAppApiController(
             return ResponseEntity.badRequest().body("Failed to validate webhook request.")
         }
 
-        gitHubService.handleWebhookRequest(GitHubWebhookEventType.fromGitHubWebhookEventName(eventTypeHeader), body)
+        gitHubService.handleWebhookRequest(
+            eventType = GitHubWebhookEventType.fromGitHubWebhookEventName(eventTypeHeader),
+            eventId = gitHubDeliveryHeader,
+            eventJson = body
+        )
         return ResponseEntity.ok().build()
     }
 
