@@ -1,8 +1,8 @@
 import {AlertTriangle, HelpCircle, Loader, ThumbsDown, ThumbsUp} from 'react-feather';
 import cx from 'classnames';
-import ReactTooltip from 'react-tooltip';
 import React from 'react';
 import {BuildStatusEnum} from 'gen/api';
+import {OverlayTrigger, Tooltip} from 'react-bootstrap';
 
 export type BuildStatusIconProps = {
   /** The status to render */
@@ -49,23 +49,18 @@ export function BuildStatusIcon({
   }
   return (
     <>
-      <div
-        data-tip="true"
-        data-for="buildStatusTooltip"
-        className={cx(className, 'row', colorClass)}
-      >
-        <div className="col px-0">
-          <div className="row justify-content-center">
-            {content}
-          </div>
-          <div className="row justify-content-center text-sm">
-            {showLabel && label}
+      <OverlayTrigger overlay={<Tooltip id="status">{tooltip}</Tooltip>} placement="top">
+        <div className={cx(className, 'row', colorClass)}>
+          <div className="col px-0">
+            <div className="row justify-content-center">
+              {content}
+            </div>
+            <div className="row justify-content-center text-sm">
+              {showLabel && label}
+            </div>
           </div>
         </div>
-      </div>
-      <ReactTooltip id="buildStatusTooltip" place="top" effect="solid">
-        {tooltip}
-      </ReactTooltip>
+      </OverlayTrigger>
     </>
   );
 }

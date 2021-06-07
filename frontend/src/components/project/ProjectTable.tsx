@@ -1,8 +1,8 @@
 import React from 'react';
-import ReactTooltip from 'react-tooltip';
 import {Link} from 'react-router-dom';
 import {ReactComponent as GoToDetails} from 'assets/img/GoToDetails.svg';
 import cx from 'classnames';
+import {OverlayTrigger, Tooltip} from 'react-bootstrap';
 import styles from './ProjectTable.module.scss';
 import {Project} from '../../gen/api';
 import {BuildRowInner} from '../build/BuildTable';
@@ -69,17 +69,21 @@ export function ProjectRow({
             <Link
               className="h-100 d-flex justify-content-end"
               to={`project/${project.name}`}
-              data-tip="true"
-              data-for={`seeMoreProjectDetailsTooltip-${project.id}`}
             >
-              <GoToDetails className="align-self-center" height={70} style={{stroke: '#A0AEC0'}} />
-              <ReactTooltip id={`seeMoreProjectDetailsTooltip-${project.id}`} place="top" effect="solid">
-                See more details about project
-                {' '}
-                &quot;
-                {project.name}
-                &quot;
-              </ReactTooltip>
+              <OverlayTrigger
+                overlay={(
+                  <Tooltip id="seeMoreProjectDetailsTooltip">
+                    See more details about project
+                    {' '}
+                    &quot;
+                    {project.name}
+                    &quot;
+                  </Tooltip>
+                      )}
+                placement="top"
+              >
+                <GoToDetails className="align-self-center" height={70} style={{stroke: '#A0AEC0'}} />
+              </OverlayTrigger>
             </Link>
           </div>
         </div>

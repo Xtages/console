@@ -4,9 +4,9 @@ import {Form, Formik, FormikErrors} from 'formik';
 import {FormikHelpers} from 'formik/dist/types';
 import * as z from 'zod';
 import {useAuth} from 'hooks/useAuth';
-import CreateAccountLink from 'components/CreateAccountLink';
+import CreateAccountLink from 'pages/authn/CreateAccountLink';
 import Logo from 'components/Logos';
-import Alert from 'components/alert/Alerts';
+import {Alert} from 'react-bootstrap';
 import {EmailField, PasswordField} from './AuthFields';
 
 /** The properties that are available to the {@link LoginPage} component. */
@@ -87,7 +87,7 @@ export default function LoginPage({location}: LoginPageProps) {
                 {({isSubmitting}) => (
                   <Form>
                     {errorOccurred && (
-                    <Alert color="danger" outline>
+                    <Alert className="alert-outline-danger">
                       <div className="d-flex justify-content-center">
                         <strong>Incorrect username or password</strong>
                       </div>

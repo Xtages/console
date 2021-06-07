@@ -4,14 +4,13 @@ import {Zap} from 'react-feather';
 import {Form, Formik, FormikErrors, useFormikContext} from 'formik';
 import {FormikHelpers} from 'formik/dist/types';
 import * as z from 'zod';
-import CreateAccountLink from 'components/CreateAccountLink';
+import CreateAccountLink from 'pages/authn/CreateAccountLink';
 import {useAuth} from 'hooks/useAuth';
 import redirectToStripeCheckoutSession from 'service/CheckoutService';
 import {organizationApi} from 'service/Services';
 import Logo from 'components/Logos';
 import LabeledFormField from 'components/form/LabeledFormField';
-import Alert from 'components/alert/Alerts';
-import {Button} from 'components/button/Buttons';
+import {Alert, Button} from 'react-bootstrap';
 import {EmailField, PasswordField} from './AuthFields';
 import {SignUpFormValues} from './SignUpPage';
 
@@ -63,7 +62,7 @@ function ResendCodeButton({state}: {state: SignUpFormValues | null | undefined})
                     && (
                     <div className="pb-2 d-flex justify-content-center row row-cols-1">
                       <div className="col-12">
-                        <Alert color="success" outline>
+                        <Alert className="alert-outline-success">
                           <div className="text-center">
                             Your confirmation code was sent.
                             Please check your email.
@@ -74,7 +73,7 @@ function ResendCodeButton({state}: {state: SignUpFormValues | null | undefined})
                     )}
               <div className="row row-cols-1">
                 <div className="col-12 d-flex justify-content-center">
-                  <Button onClick={resendVerificationCode} size="xs" asLink>
+                  <Button variant="link" onClick={resendVerificationCode} className="btn-xs">
                     Re-send verification code
                   </Button>
                 </div>
@@ -170,15 +169,15 @@ export default function ConfirmSignUpPage({location}: ConfirmSignUpPageProps) {
                 return (
                   <Form noValidate>
                     {errorOccurred && (
-                      <Alert color="danger" outline>
-                        <div className="d-flex justify-content-center">
-                          <strong>
-                            {haveUserAndPass
-                              ? 'Incorrect username or password or code'
-                              : 'Incorrect code'}
-                          </strong>
-                        </div>
-                      </Alert>
+                    <Alert className="alert-outline-danger">
+                      <div className="d-flex justify-content-center">
+                        <strong>
+                          {haveUserAndPass
+                            ? 'Incorrect username or password or code'
+                            : 'Incorrect code'}
+                        </strong>
+                      </div>
+                    </Alert>
                     )}
                     {haveUserAndPass
                       && (
