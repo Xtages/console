@@ -23,4 +23,5 @@
     <include file="changesets/add-build-table.postgres.sql" relativeToChangelogFile="true" />
     <include file="changesets/add-build-recipe-table.postgresql.sql" relativeToChangelogFile="true" />
     <include file="changesets/tag-build-container-repo-project.postgresql.sql" relativeToChangelogFile="true" />
+    <include file="changesets/relax-build-table-user-constraint.postgresql.sql" relativeToChangelogFile="true" />
 </databaseChangeLog>

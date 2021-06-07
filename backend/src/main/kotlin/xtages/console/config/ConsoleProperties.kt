@@ -13,7 +13,7 @@ data class ConsoleProperties(val stripe: Stripe, val server: Server, val gitHubA
 
     data class GitHubApp(val privateKey: String, val identifier: String, val webhookSecret: String)
 
-    data class Cognito(val identityProviderName: String, val identityPoolId: String)
+    data class Cognito(val identityProviderName: String, val identityPoolId: String, val userPoolId: String)
 
     data class CodeBuild(
         val ecrRepository: String,
