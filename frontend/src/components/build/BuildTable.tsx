@@ -1,7 +1,5 @@
 import React, {ReactNode, useState} from 'react';
-import ReactTooltip from 'react-tooltip';
 import {Link} from 'react-router-dom';
-import {Menu, MenuButton, MenuItem} from '@szhsin/react-menu';
 import {ArrowUpCircle,
   Check,
   ChevronDown,
@@ -12,13 +10,17 @@ import {ArrowUpCircle,
   X} from 'react-feather';
 import cx from 'classnames';
 import {useQuery} from 'react-query';
+import {Button,
+  Dropdown,
+  DropdownButton,
+  OverlayTrigger,
+  Tab,
+  Tabs,
+  Tooltip} from 'react-bootstrap';
 import {Build, BuildPhase, BuildType, Project} from '../../gen/api';
 import {BuildStatusIcon} from './BuildStatusIcon';
 import Avatar from '../avatar/Avatar';
-import '@szhsin/react-menu/dist/index.css';
-import {Button} from '../button/Buttons';
 import {durationString, formatDateTimeMed, formatDateTimeRelativeToNow} from '../../helpers/time';
-import {Tab, Tabs} from '../tab/Tab';
 import {logsApi} from '../../service/Services';
 import {LogViewer} from '../logviewer/LogViewer';
 
@@ -99,7 +101,7 @@ export function BuildRowInner({
       <div className="row">
         {collapsible && (
         <div className="col-1 text-muted px-0 text-center">
-          <Button kind="white" className="p-0 text-muted" onClick={toggleCollapsed}>
+          <Button variant="grayish" className="p-0 text-muted" onClick={toggleCollapsed}>
             {collapsed ? <ChevronDown size="2em" /> : <ChevronUp size="2em" />}
           </Button>
         </div>
@@ -133,38 +135,25 @@ export function BuildRowInner({
             <div>
               Build for commit
               {' '}
-              <a
-                className="font-weight-bold"
-                data-tip="true"
-                data-for={`seeCommitInGhTooltip-${build.id}`}
-                href={build.commitUrl}
-                target="_blank"
-                rel="noreferrer"
-              >
-                {build.commitHash.substr(0, 6)}
-              </a>
-              <ReactTooltip id={`seeCommitInGhTooltip-${build.id}`} place="top" effect="solid">
-                See commit in GitHub
-              </ReactTooltip>
+              <OverlayTrigger overlay={<Tooltip id="seeCommitInGhTooltip">See commit in GitHub</Tooltip>} placement="top">
+                <a
+                  className="font-weight-bold"
+                  href={build.commitUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  {build.commitHash.substr(0, 6)}
+                </a>
+              </OverlayTrigger>
             </div>
             <div>
               started
               {' '}
-              <Link className="font-weight-bold" to={`project/${project.id}/build/${build.id}`}>
-                <span
-                  data-tip="true"
-                  data-for={`seeMoreBuildDetailsTooltip-${build.id}`}
-                >
+              <OverlayTrigger overlay={<Tooltip id="seeMoreBuildDetailsTooltip">See build details</Tooltip>}>
+                <Link className="font-weight-bold" to={`/project/${project.id}/build/${build.id}`}>
                   {formatDateTimeRelativeToNow(build.startTimestampInMillis)}
-                </span>
-              </Link>
-              <ReactTooltip
-                id={`seeMoreBuildDetailsTooltip-${build.id}`}
-                place="top"
-                effect="solid"
-              >
-                See build details
-              </ReactTooltip>
+                </Link>
+              </OverlayTrigger>
             </div>
             {build.endTimestampInMillis
               ? (
@@ -184,34 +173,20 @@ export function BuildRowInner({
           </div>
         </div>
         <div className="col-2">
-          <Menu
-            menuButton={(
-              <MenuButton className="btn btn-outline-primary btn-sm">
-                Actions
-              </MenuButton>
-                        )}
-          >
-            <MenuItem className="dropdown-item font-weight-bold">
-              <span className="pr-2 text-dark-success">
-                <UploadCloud
-                  size="1.3em"
-                />
-              </span>
+          <DropdownButton title="Actions" id={`actions-${build.id}`} menuRole="menu" size="sm">
+            <Dropdown.Item>
+              <span className="pr-2 text-dark-success"><UploadCloud size="1.3em" /></span>
               Deploy to Prod
-            </MenuItem>
-            <MenuItem className="dropdown-item font-weight-bold">
-              <span className="pr-2 text-primary">
-                <ArrowUpCircle
-                  size="1.3em"
-                />
-              </span>
+            </Dropdown.Item>
+            <Dropdown.Item>
+              <span className="pr-2 text-primary"><ArrowUpCircle size="1.3em" /></span>
               Deploy to Staging
-            </MenuItem>
-            <MenuItem className="dropdown-item font-weight-bold">
+            </Dropdown.Item>
+            <Dropdown.Item>
               <span className="pr-2 text-danger"><RotateCcw size="1.3em" /></span>
               Rollback
-            </MenuItem>
-          </Menu>
+            </Dropdown.Item>
+          </DropdownButton>
         </div>
       </div>
       {collapsible && <AdditionalInfoPane collapsed={collapsed} project={project} build={build} />}
@@ -245,11 +220,11 @@ function AdditionalInfoPane({
       );
     }
     return (
-      <Tabs>
-        <Tab id="logs" title="Logs">
+      <Tabs defaultActiveKey="logs">
+        <Tab eventKey="logs" title="Logs">
           {logs}
         </Tab>
-        <Tab id="phases" title="Phases">
+        <Tab eventKey="phases" title="Phases">
           <BuildPhaseTable phases={build.phases} />
         </Tab>
       </Tabs>
