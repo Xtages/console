@@ -1,15 +1,14 @@
 import {Codesandbox} from 'react-feather';
 import React, {useState} from 'react';
 import * as z from 'zod';
-import {Field, FieldArray, Form, Formik, FormikErrors} from 'formik';
+import {Field, Form, Formik, FormikErrors} from 'formik';
 import Page from 'components/layout/Page';
 import {Section, SectionTitle} from 'components/layout/Section';
 import ProjectTemplateCard from 'components/project/ProjectTemplateCard';
-import {Button} from 'components/button/Buttons';
 import {FormikHelpers} from 'formik/dist/types';
 import {useHistory} from 'react-router-dom';
+import {Alert, Button} from 'react-bootstrap';
 import LabeledFormField from '../components/form/LabeledFormField';
-import Alert from '../components/alert/Alerts';
 import {projectApi} from '../service/Services';
 import {CreateProjectReqTypeEnum} from '../gen/api';
 import {useAuth} from '../hooks/useAuth';
@@ -107,7 +106,7 @@ export default function CreateProjectPage() {
                 }) => (
                   <Form noValidate>
                     {errorMsg && (
-                      <Alert color="danger" outline>
+                      <Alert className="alert-outline-danger">
                         <div className="d-flex justify-content-center">
                           <strong>{errorMsg}</strong>
                         </div>
