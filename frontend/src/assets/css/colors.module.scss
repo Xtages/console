@@ -1,0 +1,38 @@
+@import "variables";
+
+:export {
+  primary: $primary;
+  secondary: $secondary;
+  neutral: $neutral;
+  success: $success;
+  info: $teal;
+  warning: $warning;
+  danger: $danger;
+  white: $white;
+  light: $light;
+  dark: $dark;
+
+  primaryDark: #{darken($primary, 10%)};
+  secondaryDark: #{darken($secondary, 10%)};
+  neutralDark: #{darken($neutral, 10%)};
+  successDark: #{darken($success, 10%)};
+  infoDark: #{darken($teal, 10%)};
+  warningDark: #{darken($warning, 10%)};
+  dangerDark: #{darken($danger, 10%)};
+
+  primaryLight: #{lighten($primary, 10%)};
+  secondaryLight: #{lighten($secondary, 10%)};
+  neutralLight: #{lighten($neutral, 10%)};
+  successLight: #{lighten($success, 10%)};
+  infoLight: #{lighten($teal, 10%)};
+  warningLight: #{lighten($warning, 10%)};
+  dangerLight: #{lighten($danger, 10%)};
+
+  // Original Bootstrap colors
+  primaryBootstrap: #007bff;
+  secondaryBootstrap: #6c757d;
+  successBootstrap: #28a745;
+  infoBootstrap: #17a2b8;
+  warningBootstrap: #ffc107;
+  dangerBootstrap: #dc3545;
+}
