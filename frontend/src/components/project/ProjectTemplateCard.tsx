@@ -1,5 +1,5 @@
 import React from 'react';
-import {Button} from 'react-bootstrap';
+import {Button, Card} from 'react-bootstrap';
 import Avatar from '../avatar/Avatar';
 
 export interface ProjectTemplateCardProps {
@@ -28,8 +28,8 @@ export default function ProjectTemplateCard({
   onClick,
 }: ProjectTemplateCardProps) {
   return (
-    <div className="card">
-      <div className="card-body text-center">
+    <Card>
+      <Card.Body className="text-center">
         <Avatar
           img={`/img/project/template/${imageName}`}
           imgAltText={`Create new ${title} project`}
@@ -45,7 +45,7 @@ export default function ProjectTemplateCard({
             </Button>
           </div>
         )}
-      </div>
-    </div>
+      </Card.Body>
+    </Card>
   );
 }

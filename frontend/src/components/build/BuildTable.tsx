@@ -23,6 +23,7 @@ import Avatar from '../avatar/Avatar';
 import {durationString, formatDateTimeMed, formatDateTimeRelativeToNow} from '../../helpers/time';
 import {logsApi} from '../../service/Services';
 import {LogViewer} from '../logviewer/LogViewer';
+import {GitHubCommitLink} from '../link/XtagesLink';
 
 export interface BuildTableProps {
   project: Project,
@@ -135,16 +136,11 @@ export function BuildRowInner({
             <div>
               Build for commit
               {' '}
-              <OverlayTrigger overlay={<Tooltip id="seeCommitInGhTooltip">See commit in GitHub</Tooltip>} placement="top">
-                <a
-                  className="font-weight-bold"
-                  href={build.commitUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  {build.commitHash.substr(0, 6)}
-                </a>
-              </OverlayTrigger>
+              <GitHubCommitLink
+                id="seeCommitInGhTooltip"
+                commitHash={build.commitHash}
+                gitHubCommitUrl={build.commitUrl}
+              />
             </div>
             <div>
               started
