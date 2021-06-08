@@ -6,6 +6,7 @@ import {OverlayTrigger, Tooltip} from 'react-bootstrap';
 import styles from './ProjectTable.module.scss';
 import {Project} from '../../gen/api';
 import {BuildRowInner} from '../build/BuildTable';
+import {GitHubLink} from '../link/XtagesLink';
 
 export interface ProjectTableProps {
   /** A list of [Project]s and their last [Build] (if one exists). */
@@ -46,18 +47,11 @@ export function ProjectRow({
       <div className="card-body p-3">
         <div className="row">
           <div className={cx({'col-2': build, 'col-11': !build})}>
-            <h2 className="h3 mb-0 lh-100">
-              <Link to={`/project/${project.id}`}>{project.name}</Link>
+            <h2 className="mb-0 lh-100">
+              <Link to={`/project/${project.name}`}>{project.name}</Link>
             </h2>
             <div>
-              <a
-                className="text-xs text-muted text-underline--dashed"
-                href={project.ghRepoUrl}
-                target="_blank"
-                rel="noreferrer"
-              >
-                See in GitHub
-              </a>
+              <GitHubLink href={project.ghRepoUrl}>See in GitHub</GitHubLink>
             </div>
           </div>
           {build && (
