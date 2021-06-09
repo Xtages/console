@@ -43,6 +43,30 @@ const buildData = {
   ],
 };
 
+const prodDeploymentData = {
+  id: 100,
+  env: 'production',
+  initiatorName: 'Bill Murray',
+  initiatorEmail: 'b.murray@xtages.com',
+  initiatorAvatarUrl: 'http://www.fillmurray.com/100/100',
+  commitHash: '81acee7df324793c6409e178798dab5d197ba50f',
+  commitUrl: 'https://github.com/Xtages/console/commit/81acee7df324793c6409e178798dab5d197ba50f',
+  timestampInMillis: Date.now(),
+  serviceUrl: 'https://FIXME',
+};
+
+const stagingDeploymentData = {
+  id: 100,
+  env: 'staging',
+  initiatorName: 'Bill Murray',
+  initiatorEmail: 'b.murray@xtages.com',
+  initiatorAvatarUrl: 'http://www.fillmurray.com/100/100',
+  commitHash: '81acee7df324793c6409e178798dab5d197ba50f',
+  commitUrl: 'https://github.com/Xtages/console/commit/81acee7df324793c6409e178798dab5d197ba50f',
+  timestampInMillis: Date.now() - (24 * 60 * 60 * 1000),
+  serviceUrl: 'https://FIXME',
+};
+
 const projectData = {
   id: 10,
   name: 'console',
@@ -52,6 +76,7 @@ const projectData = {
   version: '15',
   passCheckRuleEnabled: false,
   builds: [buildData],
+  deployments: [prodDeploymentData, stagingDeploymentData],
 };
 
 export const Primary = Template.bind({});

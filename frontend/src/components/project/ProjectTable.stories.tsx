@@ -41,6 +41,7 @@ Primary.args = {
   projects: [{
     ...projectData,
     builds: [buildData],
+    deployments: [],
   }],
 };
 Primary.storyName = 'ProjectTable';
@@ -50,6 +51,7 @@ ProjectTableNoBuild.args = {
   projects: [{
     ...projectData,
     builds: [],
+    deployments: [],
   }],
 };
 ProjectTableNoBuild.storyName = 'ProjectTable without build';
@@ -67,6 +69,7 @@ ProjectRowStory.args = {
   project: {
     ...projectData,
     builds: [buildData],
+    deployments: [],
   },
 };
 ProjectRowStory.storyName = 'ProjectRow';

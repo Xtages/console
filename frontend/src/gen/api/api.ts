@@ -316,6 +316,67 @@ export enum CreateProjectReqTypeEnum {
 }
 
 /**
+ * A record of a deployment that has ocurred to an environment
+ * @export
+ * @interface Deployment
+ */
+export interface Deployment {
+    /**
+     * 
+     * @type {number}
+     * @memberof Deployment
+     */
+    id: number;
+    /**
+     * 
+     * @type {string}
+     * @memberof Deployment
+     */
+    initiatorEmail: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof Deployment
+     */
+    initiatorName: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof Deployment
+     */
+    initiatorAvatarUrl: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof Deployment
+     */
+    commitHash: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof Deployment
+     */
+    commitUrl: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof Deployment
+     */
+    env: string;
+    /**
+     * 
+     * @type {number}
+     * @memberof Deployment
+     */
+    timestampInMillis: number;
+    /**
+     * 
+     * @type {string}
+     * @memberof Deployment
+     */
+    serviceUrl: string;
+}
+/**
  * General API error
  * @export
  * @interface ErrorDesc
@@ -435,10 +496,22 @@ export interface Project {
     passCheckRuleEnabled: boolean;
     /**
      * 
+     * @type {number}
+     * @memberof Project
+     */
+    percentageOfSuccessfulBuildsInTheLastMonth?: number;
+    /**
+     * 
      * @type {Array<Build>}
      * @memberof Project
      */
     builds: Array<Build>;
+    /**
+     * 
+     * @type {Array<Deployment>}
+     * @memberof Project
+     */
+    deployments: Array<Deployment>;
 }
 
 /**
@@ -1142,10 +1215,12 @@ export const ProjectApiAxiosParamCreator = function (configuration?: Configurati
          * @summary Returns the project details
          * @param {string} projectName Name of the project to fetch
          * @param {boolean} [includeBuilds] Whether to include data the Builds for the project
+         * @param {boolean} [includeDeployments] Whether to include data the last Deployments for the project
+         * @param {boolean} [includeSuccessfulBuildPercentage] Whether to include the percentage of successful Builds in the last month
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        getProject: async (projectName: string, includeBuilds?: boolean, options: any = {}): Promise<RequestArgs> => {
+        getProject: async (projectName: string, includeBuilds?: boolean, includeDeployments?: boolean, includeSuccessfulBuildPercentage?: boolean, options: any = {}): Promise<RequestArgs> => {
             // verify required parameter 'projectName' is not null or undefined
             assertParamExists('getProject', 'projectName', projectName)
             const localVarPath = `/project/{projectName}`
@@ -1167,6 +1242,14 @@ export const ProjectApiAxiosParamCreator = function (configuration?: Configurati
 
             if (includeBuilds !== undefined) {
                 localVarQueryParameter['includeBuilds'] = includeBuilds;
+            }
+
+            if (includeDeployments !== undefined) {
+                localVarQueryParameter['includeDeployments'] = includeDeployments;
+            }
+
+            if (includeSuccessfulBuildPercentage !== undefined) {
+                localVarQueryParameter['includeSuccessfulBuildPercentage'] = includeSuccessfulBuildPercentage;
             }
 
 
@@ -1245,11 +1328,13 @@ export const ProjectApiFp = function(configuration?: Configuration) {
          * @summary Returns the project details
          * @param {string} projectName Name of the project to fetch
          * @param {boolean} [includeBuilds] Whether to include data the Builds for the project
+         * @param {boolean} [includeDeployments] Whether to include data the last Deployments for the project
+         * @param {boolean} [includeSuccessfulBuildPercentage] Whether to include the percentage of successful Builds in the last month
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async getProject(projectName: string, includeBuilds?: boolean, options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Project>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.getProject(projectName, includeBuilds, options);
+        async getProject(projectName: string, includeBuilds?: boolean, includeDeployments?: boolean, includeSuccessfulBuildPercentage?: boolean, options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Project>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.getProject(projectName, includeBuilds, includeDeployments, includeSuccessfulBuildPercentage, options);
             return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
         },
         /**
@@ -1288,11 +1373,13 @@ export const ProjectApiFactory = function (configuration?: Configuration, basePa
          * @summary Returns the project details
          * @param {string} projectName Name of the project to fetch
          * @param {boolean} [includeBuilds] Whether to include data the Builds for the project
+         * @param {boolean} [includeDeployments] Whether to include data the last Deployments for the project
+         * @param {boolean} [includeSuccessfulBuildPercentage] Whether to include the percentage of successful Builds in the last month
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        getProject(projectName: string, includeBuilds?: boolean, options?: any): AxiosPromise<Project> {
-            return localVarFp.getProject(projectName, includeBuilds, options).then((request) => request(axios, basePath));
+        getProject(projectName: string, includeBuilds?: boolean, includeDeployments?: boolean, includeSuccessfulBuildPercentage?: boolean, options?: any): AxiosPromise<Project> {
+            return localVarFp.getProject(projectName, includeBuilds, includeDeployments, includeSuccessfulBuildPercentage, options).then((request) => request(axios, basePath));
         },
         /**
          * 
@@ -1331,12 +1418,14 @@ export class ProjectApi extends BaseAPI {
      * @summary Returns the project details
      * @param {string} projectName Name of the project to fetch
      * @param {boolean} [includeBuilds] Whether to include data the Builds for the project
+     * @param {boolean} [includeDeployments] Whether to include data the last Deployments for the project
+     * @param {boolean} [includeSuccessfulBuildPercentage] Whether to include the percentage of successful Builds in the last month
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      * @memberof ProjectApi
      */
-    public getProject(projectName: string, includeBuilds?: boolean, options?: any) {
-        return ProjectApiFp(this.configuration).getProject(projectName, includeBuilds, options).then((request) => request(this.axios, this.basePath));
+    public getProject(projectName: string, includeBuilds?: boolean, includeDeployments?: boolean, includeSuccessfulBuildPercentage?: boolean, options?: any) {
+        return ProjectApiFp(this.configuration).getProject(projectName, includeBuilds, includeDeployments, includeSuccessfulBuildPercentage, options).then((request) => request(this.axios, this.basePath));
     }
 
     /**
