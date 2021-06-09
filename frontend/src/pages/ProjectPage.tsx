@@ -16,7 +16,7 @@ export default function ProjectPage() {
     data,
   } = useQuery(
     'project',
-    () => projectApi.getProject(name, true),
+    () => projectApi.getProject(name, true, true, true),
   );
   let contents: string | ReactNode;
   if (isLoading) {

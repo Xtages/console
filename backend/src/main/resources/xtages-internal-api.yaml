@@ -77,6 +77,18 @@ paths:
             type: boolean
             default: false
           description: Whether to include data the Builds for the project
+        - in: query
+          name: includeDeployments
+          schema:
+            type: boolean
+            default: false
+          description: Whether to include data the last Deployments for the project
+        - in: query
+          name: includeSuccessfulBuildPercentage
+          schema:
+            type: boolean
+            default: false
+          description: Whether to include the percentage of successful Builds in the last month
       responses:
         '200':
           description: Project and builds
@@ -313,10 +325,17 @@ components:
           minLength: 1
         passCheckRuleEnabled:
           type: boolean
+        percentageOfSuccessfulBuildsInTheLastMonth:
+          type: number
+          format: double
         builds:
           type: array
           items:
             $ref: "#/components/schemas/Build"
+        deployments:
+          type: array
+          items:
+            $ref: "#/components/schemas/Deployment"
       required:
         - id
         - name
@@ -326,6 +345,7 @@ components:
         - version
         - passCheckRuleEnabled
         - builds
+        - deployments
     CreateProjectReq:
       description: Request made to POST /project
       required:
@@ -498,6 +518,45 @@ components:
         - name
         - status
         - startTimestampInMillis
+    Deployment:
+      description: A record of a deployment that has ocurred to an environment
+      properties:
+        id:
+          type: integer
+          format: int64
+        initiatorEmail:
+          type: string
+          minLength: 1
+        initiatorName:
+          type: string
+          minLength: 1
+        initiatorAvatarUrl:
+          type: string
+        commitHash:
+          type: string
+          minLength: 1
+        commitUrl:
+          type: string
+          minLength: 1
+        env:
+          type: string
+          minLength: 1
+        timestampInMillis:
+          type: integer
+          format: int64
+        serviceUrl:
+          type: string
+          minLength: 1
+      required:
+        - id
+        - initiatorEmail
+        - initiatorName
+        - initiatorAvatarUrl
+        - commitHash
+        - commitUrl
+        - env
+        - timestampInMillis
+        - serviceUrl
   responses:
     DefaultError:
       description: Default error
