@@ -18,6 +18,7 @@ const projectData = {
   version: '15',
   passCheckRuleEnabled: false,
   builds: [],
+  deployments: [],
 };
 
 const Template: Story<ProjectDetailsCardProps> = (args) => <MemoryRouter><ProjectDetailsCard {...args} /></MemoryRouter>;

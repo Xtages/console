@@ -13,14 +13,12 @@ import xtages.console.controller.api.model.Build.Status
 import xtages.console.controller.model.CodeBuildType
 import xtages.console.controller.model.buildEventPojoToBuildPhaseConverter
 import xtages.console.controller.model.projectPojoTypeToProjectTypeConverter
-import xtages.console.dao.fetchByProjectTypeAndVersion
-import xtages.console.dao.fetchLatestByProject
-import xtages.console.dao.fetchOneByCognitoUserId
-import xtages.console.dao.fetchOneByNameAndOrganization
+import xtages.console.dao.*
 import xtages.console.exception.ExceptionCode
 import xtages.console.exception.ExceptionCode.RECIPE_NOT_FOUND
 import xtages.console.exception.ExceptionCode.USER_NOT_FOUND
 import xtages.console.exception.ensure
+import xtages.console.query.enums.BuildStatus
 import xtages.console.query.enums.ProjectType
 import xtages.console.query.tables.daos.*
 import xtages.console.query.tables.pojos.BuildEvent
@@ -34,6 +32,7 @@ import xtages.console.service.XtagesUserWithCognitoAttributes
 import xtages.console.service.aws.AwsService
 import xtages.console.service.aws.CodeBuildService
 import xtages.console.time.toUtcMillis
+import xtages.console.query.enums.BuildType as BuildTypePojo
 import xtages.console.query.tables.pojos.Build as BuildPojo
 import xtages.console.query.tables.pojos.Project as ProjectPojo
 
@@ -55,11 +54,21 @@ class ProjectApiController(
     private val recipeDao: RecipeDao,
 ) : ProjectApiControllerBase {
 
-    override fun getProject(projectName: String, includeBuilds: Boolean): ResponseEntity<Project> {
+    override fun getProject(
+        projectName: String,
+        includeBuilds: Boolean,
+        includeDeployments: Boolean,
+        includeSuccessfulBuildPercentage: Boolean,
+    ): ResponseEntity<Project> {
         val organization = organizationDao.fetchOneByCognitoUserId(authenticationService.currentCognitoUserId)
         val project = projectDao.fetchOneByNameAndOrganization(orgName = organization.name!!, projectName = projectName)
-        val projectPojo = projectPojoToProjectConverter(project)
-        if (includeBuilds) {
+        val percentageOfSuccessfulBuildsInTheLastMonth =
+            when {
+                includeSuccessfulBuildPercentage -> buildDao
+                    .findPercentageOfSuccessfulBuildsInMonth(organizationName = organization.name!!)
+                else -> null
+            }
+        if (includeBuilds || includeDeployments) {
             val comparator = BuildComparator.reversed()
             val buildPojos = buildDao.fetchByProjectId(project.id!!).sortedWith(comparator)
             val buildIdToBuild = buildPojos.associateBy { build -> build.id!! }
@@ -69,20 +78,47 @@ class ProjectApiController(
                 .fetchByBuildId(*buildIdToBuild.keys.toLongArray())
                 .groupBy { buildEvent -> buildEvent.buildId!! }
 
-            val builds = buildPojos.map { build ->
-                val events = buildIdToBuildEvents[build.id]!!
-                buildPojoToBuild(
+            val builds = when {
+                includeBuilds -> buildPojos.map { build ->
+                    val events = buildIdToBuildEvents[build.id]!!
+                    buildPojoToBuild(
+                        organization = organization,
+                        project = project,
+                        build = build,
+                        events = events,
+                        usernameToGithubUser = usernameToGithubUser,
+                        idToXtagesUser = idToXtagesUser
+                    )
+                }
+                else -> emptyList()
+            }
+
+            val deployments = when {
+                includeDeployments -> findLatestDeployments(
                     organization = organization,
                     project = project,
-                    build = build,
-                    events = events,
+                    builds = buildPojos,
                     usernameToGithubUser = usernameToGithubUser,
                     idToXtagesUser = idToXtagesUser
                 )
+                else -> emptyList()
             }
-            return ResponseEntity.ok(projectPojo.copy(builds = builds))
+            return ResponseEntity.ok(
+                convertProjectPojoToProject(
+                    source = project,
+                    percentageOfSuccessfulBuildsInTheLastMonth = percentageOfSuccessfulBuildsInTheLastMonth,
+                    builds = builds,
+                    deployments = deployments
+                )
+            )
         }
-        return ResponseEntity.ok(projectPojo)
+        return ResponseEntity.ok(
+            convertProjectPojoToProject(
+                source = project,
+                percentageOfSuccessfulBuildsInTheLastMonth = percentageOfSuccessfulBuildsInTheLastMonth,
+            )
+        )
+
     }
 
     override fun getProjects(includeLastBuild: Boolean): ResponseEntity<List<Project>> {
@@ -112,11 +148,10 @@ class ProjectApiController(
                             idToXtagesUser = idToXtagesUser,
                         )
                     }
-                    var convertedProject = projectPojoToProjectConverter(project)
-                    if (convertedBuild != null) {
-                        convertedProject = convertedProject.copy(builds = listOf(convertedBuild))
-                    }
-                    convertedProject
+                    convertProjectPojoToProject(
+                        source = project,
+                        builds = if (convertedBuild != null) listOf(convertedBuild) else emptyList()
+                    )
                 }.sortedWith { projectA, projectB ->
                     val startTimestampA = projectA.builds.singleOrNull()?.startTimestampInMillis
                     val startTimestampB = projectB.builds.singleOrNull()?.startTimestampInMillis
@@ -130,7 +165,7 @@ class ProjectApiController(
             return ResponseEntity.ok(convertedProjects)
         }
         return ResponseEntity.ok(
-            projectDao.fetchByOrganization(organization.name!!).map { projectPojoToProjectConverter(it) }
+            projectDao.fetchByOrganization(organization.name!!).map(this::convertProjectPojoToProject)
         )
     }
 
@@ -160,6 +195,65 @@ class ProjectApiController(
         usernameToGithubUser: Map<String, GithubUser>,
         idToXtagesUser: Map<Int, XtagesUserWithCognitoAttributes>
     ): Build {
+        val initiator = getBuildInitiator(build, usernameToGithubUser, idToXtagesUser)
+
+        return Build(
+            id = build.id!!,
+            type = BuildType.valueOf(build.type!!.name),
+            status = Status.valueOf(build.status!!.name),
+            initiatorName = initiator.name,
+            initiatorEmail = initiator.email,
+            initiatorAvatarUrl = initiator.avatarUrl.toUriString(),
+            commitHash = build.commitHash!!,
+            commitUrl = GitHubUrl(
+                organizationName = organization.name!!,
+                repoName = project.name,
+                commitHash = build.commitHash
+            ).toUriString(),
+            startTimestampInMillis = build.startTime!!.toUtcMillis(),
+            endTimestampInMillis = build.endTime?.toUtcMillis(),
+            phases = events.mapNotNull(buildEventPojoToBuildPhaseConverter::convert)
+        )
+    }
+
+    private fun findLatestDeployments(
+        organization: Organization,
+        project: ProjectPojo,
+        builds: List<BuildPojo>,
+        usernameToGithubUser: Map<String, GithubUser>,
+        idToXtagesUser: Map<Int, XtagesUserWithCognitoAttributes>
+    ): List<Deployment> {
+        val prodDeployment = builds.firstOrNull { build ->
+            build.type == BuildTypePojo.CD && build.status == BuildStatus.SUCCEEDED && build.environment == "production"
+        }
+        val stagingDeployment = builds.firstOrNull { build ->
+            build.type == BuildTypePojo.CD && build.status == BuildStatus.SUCCEEDED && build.environment == "staging"
+        }
+        return listOfNotNull(prodDeployment, stagingDeployment).map { build ->
+            val initiator = getBuildInitiator(build, usernameToGithubUser, idToXtagesUser)
+            Deployment(
+                id = build.id!!,
+                initiatorName = initiator.name,
+                initiatorEmail = initiator.email,
+                initiatorAvatarUrl = initiator.avatarUrl.toUriString(),
+                commitHash = build.commitHash!!,
+                commitUrl = GitHubUrl(
+                    organizationName = organization.name!!,
+                    repoName = project.name,
+                    commitHash = build.commitHash
+                ).toUriString(),
+                env = build.environment!!,
+                timestampInMillis = build.endTime!!.toUtcMillis(),
+                serviceUrl = "https://FIXME.somecompany-someproject.xtages.dev",
+            )
+        }
+    }
+
+    private fun getBuildInitiator(
+        build: BuildPojo,
+        usernameToGithubUser: Map<String, GithubUser>,
+        idToXtagesUser: Map<Int, XtagesUserWithCognitoAttributes>
+    ): Initiator {
         val initiatorName = when (build.userId) {
             null -> usernameToGithubUser[build.githubUserUsername!!]?.name
             else -> idToXtagesUser[build.userId]?.attrs?.get("name")
@@ -172,25 +266,10 @@ class ProjectApiController(
             null -> GitHubAvatarUrl(usernameToGithubUser[build.githubUserUsername!!]?.username)
             else -> GitHubAvatarUrl.fromUriString(idToXtagesUser[build.userId]?.githubUser?.avatarUrl)
         }
-
-        return Build(
-            id = build.id!!,
-            type = BuildType.valueOf(build.type!!.name),
-            status = Status.valueOf(build.status!!.name),
-            initiatorName = initiatorName,
-            initiatorEmail = initiatorEmail,
-            initiatorAvatarUrl = initiatorAvatarUrl.toUriString(),
-            commitHash = build.commitHash!!,
-            commitUrl = GitHubUrl(
-                organizationName = organization.name!!,
-                repoName = project.name,
-                commitHash = build.commitHash
-            ).toUriString(),
-            startTimestampInMillis = build.startTime!!.toUtcMillis(),
-            endTimestampInMillis = build.endTime?.toUtcMillis(),
-            phases = events.mapNotNull(buildEventPojoToBuildPhaseConverter::convert)
-        )
+        val initiator = Initiator(name = initiatorName, email = initiatorEmail, avatarUrl = initiatorAvatarUrl)
+        return initiator
     }
+
 
     override fun createProject(createProjectReq: CreateProjectReq): ResponseEntity<Project> {
         val user = ensure.foundOne(
@@ -220,7 +299,7 @@ class ProjectApiController(
                 description = createProjectReq.description
             )
             awsService.registerProject(project = projectPojo, recipe = recipe, organization = organization)
-            return ResponseEntity.status(CREATED).body(projectPojoToProjectConverter(projectPojo))
+            return ResponseEntity.status(CREATED).body(convertProjectPojoToProject(projectPojo))
         }
         logger.error { "Cannot create project [${projectPojo.name}] for organization [${organization.name}]. The repo already exists in GitHub" }
         return ResponseEntity.status(CONFLICT).build()
@@ -302,7 +381,12 @@ class ProjectApiController(
 
     /** Converts a [xtages.console.query.tables.pojos.Project] into a [Project]. */
     @Cacheable
-    fun projectPojoToProjectConverter(source: ProjectPojo): Project {
+    fun convertProjectPojoToProject(
+        source: ProjectPojo,
+        percentageOfSuccessfulBuildsInTheLastMonth: Double? = null,
+        builds: List<Build> = emptyList(),
+        deployments: List<Deployment> = emptyList()
+    ): Project {
         val recipe = recipeDao.fetchOneById(source.recipe!!)
         return Project(
             id = source.id!!,
@@ -312,7 +396,9 @@ class ProjectApiController(
             passCheckRuleEnabled = source.passCheckRuleEnabled!!,
             ghRepoUrl = GitHubUrl(organizationName = source.organization!!, repoName = source.name).toUriString(),
             organization = source.organization!!,
-            builds = emptyList(),
+            percentageOfSuccessfulBuildsInTheLastMonth = percentageOfSuccessfulBuildsInTheLastMonth,
+            builds = builds,
+            deployments = deployments,
         )
     }
 }
@@ -325,7 +411,7 @@ class ProjectApiController(
  *  * if A is completed but B isn't, then A is more recent
  *  * if both A and B are completed then compare their endTime
  */
-object BuildComparator: Comparator<BuildPojo> {
+object BuildComparator : Comparator<BuildPojo> {
     override fun compare(
         buildA: xtages.console.query.tables.pojos.Build,
         buildB: xtages.console.query.tables.pojos.Build
@@ -343,3 +429,5 @@ object BuildComparator: Comparator<BuildPojo> {
         }
     }
 }
+
+private data class Initiator(val name: String, val email: String, val avatarUrl: GitHubAvatarUrl)

@@ -5,7 +5,7 @@ import ReactApexChart from 'react-apexcharts';
 import {ApexOptions} from 'apexcharts';
 import colors from '../../assets/css/colors.module.scss';
 import {GitHubCommitLink, GitHubLink} from '../link/XtagesLink';
-import {Project} from '../../gen/api';
+import {Deployment, Project} from '../../gen/api';
 import {formatDateTimeFull} from '../../helpers/time';
 
 export interface ProjectDetailsCardProps {
@@ -16,6 +16,8 @@ export interface ProjectDetailsCardProps {
  * Renders some vitals about a [Project] and its last deployments.
  */
 export default function ProjectDetailsCard({project}: ProjectDetailsCardProps) {
+  const prodDeployment = project.deployments.find((deployment) => deployment.env === 'production');
+  const stagingDeployment = project.deployments.find((deployment) => deployment.env === 'staging');
   return (
     <Card>
       <Card.Body>
@@ -31,13 +33,10 @@ export default function ProjectDetailsCard({project}: ProjectDetailsCardProps) {
             </Col>
             <Col sm={6} className="text-sm">
               <DeploymentDetailsRow
-                env="Prod"
-                commitHash="abcdeeb"
-                gitHubCommitUrl=""
-                projectId={project.id}
-                deployBuildId={123}
-                lastDeployTimestampInMillis={99990}
-                serviceUrl="https://somecompany-someproject.xtages.dev"
+                title="In production"
+                name="production"
+                projectName={project.name}
+                deployment={prodDeployment}
               />
               <Row>
                 <Col>
@@ -45,23 +44,27 @@ export default function ProjectDetailsCard({project}: ProjectDetailsCardProps) {
                 </Col>
               </Row>
               <DeploymentDetailsRow
-                env="Staging"
-                commitHash="abcdeeb"
-                gitHubCommitUrl=""
-                projectId={project.id}
-                deployBuildId={123}
-                lastDeployTimestampInMillis={99990}
-                serviceUrl="https://somecompany-someproject.xtages.dev"
+                title="In staging"
+                name="staging"
+                projectName={project.name}
+                deployment={stagingDeployment}
               />
             </Col>
             <Col sm={3} className="p-0">
-              <BuildSuccessRadialBarChart percentage={100} />
-              <div className="text-center">
-                <small>
-                  % of successful builds in the last
-                  month
-                </small>
-              </div>
+              {project.percentageOfSuccessfulBuildsInTheLastMonth !== undefined
+                && (
+                <>
+                  <BuildSuccessRadialBarChart
+                    percentage={project.percentageOfSuccessfulBuildsInTheLastMonth * 100}
+                  />
+                  <div className="text-center">
+                    <small>
+                      % of successful builds in the last
+                      month
+                    </small>
+                  </div>
+                </>
+                )}
             </Col>
           </Row>
         </Container>
@@ -70,68 +73,83 @@ export default function ProjectDetailsCard({project}: ProjectDetailsCardProps) {
   );
 }
 
-interface DeploymentDetailsRowProps {
-  env: string;
+type DeploymentDetailsRowProps = {
+  /** Row title */
+  title: string;
 
-  commitHash: string;
+  /** Deployment environment name */
+  name: string;
 
-  gitHubCommitUrl: string;
+  /** Project name */
+  projectName: string;
 
-  projectId: number,
-
-  deployBuildId: number;
-
-  lastDeployTimestampInMillis: number;
-
-  serviceUrl: string,
-}
+  /** [Deployment] data */
+  deployment: Deployment | undefined;
+};
 
 /**
  * Renders information about a deployment.
  */
 function DeploymentDetailsRow({
-  env,
-  commitHash,
-  gitHubCommitUrl,
-  projectId,
-  deployBuildId,
-  lastDeployTimestampInMillis,
-  serviceUrl,
+  title,
+  name,
+  projectName,
+  deployment,
 }: DeploymentDetailsRowProps) {
   return (
     <Row>
       <Col>
         <h3 className="h5">
-          {env}
-          :
+          {title}
         </h3>
-        <div>
-          Commit:
-          {' '}
-          <GitHubCommitLink gitHubCommitUrl={gitHubCommitUrl} commitHash={commitHash} />
-        </div>
-        <div>
-          last deployed on:
-          {' '}
-          <OverlayTrigger overlay={(
-            <Tooltip id="seeMoreBuildDetailsTooltip">
-              See build
-              details
-            </Tooltip>
-)}
-          >
-            <Link
-              className="font-weight-bold"
-              to={`/project/${projectId}/build/${deployBuildId}`}
-            >
-              {formatDateTimeFull(lastDeployTimestampInMillis)}
-            </Link>
-          </OverlayTrigger>
-        </div>
-        <div>
-          <a href={serviceUrl} target="_blank" rel="noreferrer">{serviceUrl}</a>
-          {' '}
-        </div>
+        {deployment ? (
+          <>
+            <div>
+              Commit:
+              {' '}
+              <GitHubCommitLink
+                gitHubCommitUrl={deployment.commitUrl}
+                commitHash={deployment.commitHash}
+              />
+            </div>
+            <div>
+              last deployed on:
+              {' '}
+              <OverlayTrigger overlay={(
+                <Tooltip id="seeMoreBuildDetailsTooltip">
+                  See build
+                  details
+                </Tooltip>
+                            )}
+              >
+                <Link
+                  className="font-weight-bold"
+                  to={`/project/${projectName}/build/${(deployment.id)}`}
+                >
+                  {formatDateTimeFull(deployment.timestampInMillis)}
+                </Link>
+              </OverlayTrigger>
+            </div>
+            <div>
+              <a
+                href={deployment.serviceUrl}
+                target="_blank"
+                rel="noreferrer"
+              >
+                {deployment.serviceUrl}
+              </a>
+              {' '}
+            </div>
+          </>
+        ) : (
+          <span>
+            There are no deployments to
+            {' '}
+            {name}
+            {' '}
+            yet.
+          </span>
+        )}
       </Col>
     </Row>
   );
@@ -175,8 +193,6 @@ function BuildSuccessRadialBarChart({percentage}: {percentage: number}) {
           position: 'front',
           dropShadow: {
             enabled: true,
-            top: 3,
-            left: 0,
             blur: 4,
             opacity: 0.20,
           },
@@ -187,10 +203,9 @@ function BuildSuccessRadialBarChart({percentage}: {percentage: number}) {
           margin: 0, // margin is in pixels
           dropShadow: {
             enabled: true,
-            top: -3,
-            left: 0,
             blur: 4,
             opacity: 0.20,
+            color: percentage === 0 ? colors.dangerBootstrap : undefined,
           },
         },
         dataLabels: {
