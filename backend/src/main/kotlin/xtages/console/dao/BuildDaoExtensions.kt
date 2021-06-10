@@ -41,6 +41,6 @@ fun BuildDao.findPercentageOfSuccessfulBuildsInMonth(organizationName: String): 
     return when {
         succeeded == 0L || failed == 0L -> 0.0
         failed == 0L && succeeded != 0L -> 1.0
-        else -> (succeeded + failed).toDouble() / failed
+        else -> succeeded.toDouble() / (succeeded + failed).toDouble()
     }
 }
