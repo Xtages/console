@@ -246,6 +246,7 @@ class CodeBuildService(
                         buildEnvironmentVariable("XTAGES_SCRIPT", scriptName),
                         buildEnvironmentVariable("XTAGES_COMMIT", commitHash),
                         buildEnvironmentVariable("XTAGES_REPO", project.ghRepoFullName),
+                        buildEnvironmentVariable("XTAGES_PROJECT", project.name),
                         buildEnvironmentVariable("XTAGES_GITHUB_TOKEN", gitHubAppToken),
                         buildEnvironmentVariable("XTAGES_GH_PROJECT_TAG", gitHubProjectTag),
                         buildEnvironmentVariable("XTAGES_APP_ENV", environment.toLowerCase()),
