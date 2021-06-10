@@ -2,8 +2,7 @@ package xtages.console.controller.api
 
 import mu.KotlinLogging
 import org.springframework.cache.annotation.Cacheable
-import org.springframework.http.HttpStatus.CONFLICT
-import org.springframework.http.HttpStatus.CREATED
+import org.springframework.http.HttpStatus.*
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Controller
 import xtages.console.controller.GitHubAvatarUrl
@@ -318,13 +317,14 @@ class ProjectApiController(
             recipe = recipe,
             organization = organization,
             commitHash = ciReq.commitHash,
-            codeBuildType = CodeBuildType.CI
+            codeBuildType = CodeBuildType.CI,
+            environment = "dev",
         )
 
         return ResponseEntity.ok(CI(id = startCodeBuildResponse.second.id))
     }
 
-    override fun cd(projectName: String, cdReq: CDReq): ResponseEntity<CD> {
+    override fun deploy(projectName: String, cdReq: CDReq): ResponseEntity<CD> {
         val (user, organization, project) = checkRepoBelongsToOrg(projectName)
 
         val userName = ensure.notNull(
@@ -345,11 +345,72 @@ class ProjectApiController(
             organization = organization,
             commitHash = cdReq.commitHash,
             codeBuildType = CodeBuildType.CD,
-            environment = cdReq.env,
+            environment = "staging",
             gitHubProjectTag = tag,
         )
 
         return ResponseEntity.ok(CD(id = startCodeBuildResponse.second.id))
+    }
+
+    override fun promote(projectName: String): ResponseEntity<CD> {
+        val (user, organization, project) = checkRepoBelongsToOrg(projectName)
+
+        val recipe = ensure.foundOne(
+            operation = { recipeDao.fetchOneById(project.recipe!!) },
+            code = RECIPE_NOT_FOUND
+        )
+        val lastDeployment = buildDao.findLatestDeploy(
+            organizationName = organization.name!!,
+            projectName = project.name!!
+        )
+        if (lastDeployment != null) {
+            val startCodeBuildResponse = codeBuildService.startCodeBuildProject(
+                gitHubAppToken = gitHubService.appToken(organization),
+                user = user,
+                project = project,
+                recipe = recipe,
+                organization = organization,
+                commitHash = lastDeployment.commitHash!!,
+                codeBuildType = CodeBuildType.CD,
+                environment = "production",
+                gitHubProjectTag = lastDeployment.tag!!,
+            )
+
+            return ResponseEntity.ok(CD(id = startCodeBuildResponse.second.id))
+        }
+        return ResponseEntity(BAD_REQUEST)
+    }
+
+    override fun rollback(projectName: String): ResponseEntity<CD> {
+        val (user, organization, project) = checkRepoBelongsToOrg(projectName)
+
+        val recipe = ensure.foundOne(
+            operation = { recipeDao.fetchOneById(project.recipe!!) },
+            code = RECIPE_NOT_FOUND
+        )
+        val lastTwoPromotions = buildDao.findLastTwoPreviousPromotions(
+            organizationName = organization.name!!,
+            projectName = project.name!!,
+        )
+        if (lastTwoPromotions.size == 2) {
+            val lastPromotion = lastTwoPromotions.first()
+            val previousPromotion = lastTwoPromotions.last()
+            val startCodeBuildResponse = codeBuildService.startCodeBuildProject(
+                gitHubAppToken = gitHubService.appToken(organization),
+                user = user,
+                project = project,
+                recipe = recipe,
+                organization = organization,
+                commitHash = previousPromotion.commitHash!!,
+                codeBuildType = CodeBuildType.CD,
+                environment = "production",
+                gitHubProjectTag = lastPromotion.tag!!,
+                previousGitHubProjectTag = previousPromotion.tag!!,
+            )
+
+            return ResponseEntity.ok(CD(id = startCodeBuildResponse.second.id))
+        }
+        return ResponseEntity(BAD_REQUEST)
     }
 
     /**

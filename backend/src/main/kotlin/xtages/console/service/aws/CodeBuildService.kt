@@ -21,6 +21,7 @@ import xtages.console.config.ConsoleProperties
 import xtages.console.controller.api.model.LogEvent
 import xtages.console.controller.model.CodeBuildType
 import xtages.console.exception.ExceptionCode
+import xtages.console.exception.ExceptionCode.INVALID_ENVIRONMENT
 import xtages.console.exception.ensure
 import xtages.console.pojo.*
 import xtages.console.query.enums.BuildStatus
@@ -197,10 +198,16 @@ class CodeBuildService(
         organization: Organization,
         commitHash: String,
         codeBuildType: CodeBuildType,
-        environment: String = "dev",
+        environment: String,
         fromGitHubApp: Boolean = false,
         gitHubProjectTag: String? = null,
+        previousGitHubProjectTag: String? = null,
     ): Pair<StartBuildResponse, Build> {
+        ensure.isTrue(
+            environment in setOf("dev", "staging", "production"),
+            INVALID_ENVIRONMENT,
+            "[$environment] is not valid"
+        )
         val build = Build(
             environment = environment,
             type = BuildType.valueOf(codeBuildType.name),
@@ -210,7 +217,7 @@ class CodeBuildService(
             projectId = project.id,
             commitHash = commitHash,
             startTime = LocalDateTime.now(ZoneOffset.UTC),
-            tag = gitHubProjectTag
+            tag = previousGitHubProjectTag ?: gitHubProjectTag
         )
         val buildRecord = buildDao.ctx().newRecord(BUILD, build)
         buildRecord.store()
@@ -223,21 +230,27 @@ class CodeBuildService(
             project.codeBuildCdProjectName
 
         val codeBuildClient = if (fromGitHubApp) codeBuildAsyncClient else userSessionCodeBuildClient()
+
+        val scriptPath = getScriptPath(recipe, previousGitHubProjectTag, environment)
+
         val startBuildResponse = codeBuildClient.startBuild(
             StartBuildRequest.builder()
                 .projectName(cbProjectName)
                 .environmentVariablesOverride(
                     listOf(
+                        buildEnvironmentVariable("XTAGES_SCRIPT", scriptPath),
                         buildEnvironmentVariable("XTAGES_COMMIT", commitHash),
                         buildEnvironmentVariable("XTAGES_REPO", project.ghRepoFullName),
+                        buildEnvironmentVariable("XTAGES_PROJECT", project.name),
                         buildEnvironmentVariable("XTAGES_GITHUB_TOKEN", gitHubAppToken),
                         buildEnvironmentVariable("XTAGES_GH_PROJECT_TAG", gitHubProjectTag),
                         buildEnvironmentVariable("XTAGES_APP_ENV", environment.toLowerCase()),
                         buildEnvironmentVariable("XTAGES_PROJECT_TYPE", recipe.projectType?.name!!.toLowerCase()),
                         buildEnvironmentVariable("XTAGES_ORG", organization.name!!.toLowerCase()),
                         buildEnvironmentVariable("XTAGES_RECIPE_REPO", recipe.repository),
-                        buildEnvironmentVariable("XTAGES_GH_RECIPE_TAG",recipe.tag),
+                        buildEnvironmentVariable("XTAGES_GH_RECIPE_TAG", recipe.tag),
                         buildEnvironmentVariable("XTAGES_NODE_VER", recipe.version),
+                        buildEnvironmentVariable("XTAGES_PREVIOUS_GH_PROJECT_TAG", previousGitHubProjectTag)
                     )
                 )
                 .build()
@@ -251,6 +264,21 @@ class CodeBuildService(
 
         logger.info { "started CodeBuild project: $cbProjectName" }
         return Pair(startBuildResponse, buildRecord.into(Build::class.java))
+    }
+
+    private fun getScriptPath(
+        recipe: Recipe,
+        previousGitHubProjectTag: String?,
+        environment: String
+    ): String {
+        val scriptPath = when {
+            previousGitHubProjectTag != null -> recipe.rollbackScriptPath
+            environment == "staging" -> recipe.deployScriptPath
+            environment == "production" -> recipe.promoteScriptPath
+            environment == "dev" -> recipe.buildScriptPath
+            else -> null
+        }
+        return ensure.notNull(value = scriptPath, valueDesc = "scriptPath")
     }
 
     /**
