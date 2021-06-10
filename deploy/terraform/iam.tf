@@ -1,5 +1,5 @@
 resource "aws_iam_role" "ecs_console_task_role" {
-  name        = "task-role-console"
+  name               = "task-role-console"
   description        = "Task role for customer apps running in ECS"
   assume_role_policy = <<EOF
 {
