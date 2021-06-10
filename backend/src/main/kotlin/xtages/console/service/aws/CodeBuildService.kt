@@ -231,19 +231,14 @@ class CodeBuildService(
 
         val codeBuildClient = if (fromGitHubApp) codeBuildAsyncClient else userSessionCodeBuildClient()
 
-        val scriptName = when {
-            previousGitHubProjectTag != null -> "rollback.sh"
-            environment == "staging" -> "deploy.sh"
-            environment == "production" -> "promote.sh"
-            else -> null
-        }
+        val scriptPath = getScriptPath(recipe, previousGitHubProjectTag, environment)
 
         val startBuildResponse = codeBuildClient.startBuild(
             StartBuildRequest.builder()
                 .projectName(cbProjectName)
                 .environmentVariablesOverride(
                     listOf(
-                        buildEnvironmentVariable("XTAGES_SCRIPT", scriptName),
+                        buildEnvironmentVariable("XTAGES_SCRIPT", scriptPath),
                         buildEnvironmentVariable("XTAGES_COMMIT", commitHash),
                         buildEnvironmentVariable("XTAGES_REPO", project.ghRepoFullName),
                         buildEnvironmentVariable("XTAGES_PROJECT", project.name),
@@ -253,7 +248,7 @@ class CodeBuildService(
                         buildEnvironmentVariable("XTAGES_PROJECT_TYPE", recipe.projectType?.name!!.toLowerCase()),
                         buildEnvironmentVariable("XTAGES_ORG", organization.name!!.toLowerCase()),
                         buildEnvironmentVariable("XTAGES_RECIPE_REPO", recipe.repository),
-                        buildEnvironmentVariable("XTAGES_GH_RECIPE_TAG",recipe.tag),
+                        buildEnvironmentVariable("XTAGES_GH_RECIPE_TAG", recipe.tag),
                         buildEnvironmentVariable("XTAGES_NODE_VER", recipe.version),
                         buildEnvironmentVariable("XTAGES_PREVIOUS_GH_PROJECT_TAG", previousGitHubProjectTag)
                     )
@@ -269,6 +264,21 @@ class CodeBuildService(
 
         logger.info { "started CodeBuild project: $cbProjectName" }
         return Pair(startBuildResponse, buildRecord.into(Build::class.java))
+    }
+
+    private fun getScriptPath(
+        recipe: Recipe,
+        previousGitHubProjectTag: String?,
+        environment: String
+    ): String {
+        val scriptPath = when {
+            previousGitHubProjectTag != null -> recipe.rollbackScriptPath
+            environment == "staging" -> recipe.deployScriptPath
+            environment == "production" -> recipe.promoteScriptPath
+            environment == "dev" -> recipe.buildScriptPath
+            else -> null
+        }
+        return ensure.notNull(value = scriptPath, valueDesc = "scriptPath")
     }
 
     /**
