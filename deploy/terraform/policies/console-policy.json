@@ -11,7 +11,8 @@
         "cognito-idp:*",
         "ecr:*",
         "logs:*",
-        "rds:*"
+        "rds:*",
+        "ssm:*"
       ],
       "Resource": "*"
     }
