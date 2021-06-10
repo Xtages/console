@@ -102,6 +102,7 @@ class GitHubService(
                     organization = organization,
                     commitHash = push.head,
                     codeBuildType = CodeBuildType.CI,
+                    environment = "dev",
                     fromGitHubApp = true,
                 )
             } else {

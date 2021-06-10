@@ -21,6 +21,7 @@ import xtages.console.config.ConsoleProperties
 import xtages.console.controller.api.model.LogEvent
 import xtages.console.controller.model.CodeBuildType
 import xtages.console.exception.ExceptionCode
+import xtages.console.exception.ExceptionCode.INVALID_ENVIRONMENT
 import xtages.console.exception.ensure
 import xtages.console.pojo.*
 import xtages.console.query.enums.BuildStatus
@@ -197,10 +198,16 @@ class CodeBuildService(
         organization: Organization,
         commitHash: String,
         codeBuildType: CodeBuildType,
-        environment: String = "dev",
+        environment: String,
         fromGitHubApp: Boolean = false,
         gitHubProjectTag: String? = null,
+        previousGitHubProjectTag: String? = null,
     ): Pair<StartBuildResponse, Build> {
+        ensure.isTrue(
+            environment in setOf("dev", "staging", "production"),
+            INVALID_ENVIRONMENT,
+            "[$environment] is not valid"
+        )
         val build = Build(
             environment = environment,
             type = BuildType.valueOf(codeBuildType.name),
@@ -210,7 +217,7 @@ class CodeBuildService(
             projectId = project.id,
             commitHash = commitHash,
             startTime = LocalDateTime.now(ZoneOffset.UTC),
-            tag = gitHubProjectTag
+            tag = previousGitHubProjectTag ?: gitHubProjectTag
         )
         val buildRecord = buildDao.ctx().newRecord(BUILD, build)
         buildRecord.store()
@@ -223,11 +230,20 @@ class CodeBuildService(
             project.codeBuildCdProjectName
 
         val codeBuildClient = if (fromGitHubApp) codeBuildAsyncClient else userSessionCodeBuildClient()
+
+        val scriptName = when {
+            previousGitHubProjectTag != null -> "rollback.sh"
+            environment == "staging" -> "deploy.sh"
+            environment == "production" -> "promote.sh"
+            else -> null
+        }
+
         val startBuildResponse = codeBuildClient.startBuild(
             StartBuildRequest.builder()
                 .projectName(cbProjectName)
                 .environmentVariablesOverride(
                     listOf(
+                        buildEnvironmentVariable("XTAGES_SCRIPT", scriptName),
                         buildEnvironmentVariable("XTAGES_COMMIT", commitHash),
                         buildEnvironmentVariable("XTAGES_REPO", project.ghRepoFullName),
                         buildEnvironmentVariable("XTAGES_GITHUB_TOKEN", gitHubAppToken),
@@ -238,6 +254,7 @@ class CodeBuildService(
                         buildEnvironmentVariable("XTAGES_RECIPE_REPO", recipe.repository),
                         buildEnvironmentVariable("XTAGES_GH_RECIPE_TAG",recipe.tag),
                         buildEnvironmentVariable("XTAGES_NODE_VER", recipe.version),
+                        buildEnvironmentVariable("XTAGES_PREVIOUS_GH_PROJECT_TAG", previousGitHubProjectTag)
                     )
                 )
                 .build()
