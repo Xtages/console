@@ -1,0 +1,20 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "cloudwatch:*",
+        "codebuild:*",
+        "codestar-notifications:*",
+        "cognito-identity:*",
+        "cognito-idp:*",
+        "ecr:*",
+        "logs:*",
+        "rds:*",
+        "ssm:*"
+      ],
+      "Resource": "*"
+    }
+  ]
+}
