@@ -163,10 +163,10 @@ paths:
           $ref: "#/components/responses/UnauthorizedError"
         default:
           $ref: "#/components/responses/DefaultError"
-  /project/{projectName}/cd:
+  /project/{projectName}/deploy:
     post:
-      summary: Run continuous delivery for the project specified
-      operationId: cd
+      summary: Deploy the project to staging
+      operationId: deploy
       tags:
         - cd
       parameters:
@@ -176,7 +176,7 @@ paths:
             type: string
             minLength: 1
           required: true
-          description: Name of the project to run the CD operation
+          description: Name of the project to run the CD operation on
       requestBody:
         required: true
         content:
@@ -185,7 +185,57 @@ paths:
               $ref: "#/components/schemas/CDReq"
       responses:
         "200":
-          description: Request to run a CI was successful
+          description: Request to deploy to staging was successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CD"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        default:
+          $ref: "#/components/responses/DefaultError"
+  /project/{projectName}/promote:
+    post:
+      summary: Promote the project from staging to production
+      operationId: promote
+      tags:
+        - cd
+      parameters:
+        - in: path
+          name: projectName
+          schema:
+            type: string
+            minLength: 1
+          required: true
+          description: Name of the project to run the CD operation on
+      responses:
+        "200":
+          description: Request to deploy to staging was successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CD"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        default:
+          $ref: "#/components/responses/DefaultError"
+  /project/{projectName}/rollback:
+    post:
+      summary: Rollback the project from the currently deployed version, in production, to the previous one.
+      operationId: rollback
+      tags:
+        - cd
+      parameters:
+        - in: path
+          name: projectName
+          schema:
+            type: string
+            minLength: 1
+          required: true
+          description: Name of the project to run the CD operation on
+      responses:
+        "200":
+          description: Request to deploy to staging was successful
           content:
             application/json:
               schema:
@@ -398,15 +448,11 @@ components:
           type: integer
           format: int64
     CDReq:
-      description: Request made to POST /cd
+      description: Request made to POST /deploy or /promote
       required:
         - commitHash
-        - env
       properties:
         commitHash:
-          type: string
-          minLength: 1
-        env:
           type: string
           minLength: 1
     CreateCheckoutSessionReq:

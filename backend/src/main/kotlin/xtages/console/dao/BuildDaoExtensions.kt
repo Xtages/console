@@ -1,12 +1,14 @@
 package xtages.console.dao
 
 import xtages.console.query.enums.BuildStatus
+import xtages.console.query.enums.BuildType
 import xtages.console.query.tables.daos.BuildDao
 import xtages.console.query.tables.pojos.Build
 import xtages.console.query.tables.pojos.BuildStatsPerMonth
 import xtages.console.query.tables.pojos.Project
 import xtages.console.query.tables.references.BUILD
 import xtages.console.query.tables.references.BUILD_STATS_PER_MONTH
+import xtages.console.query.tables.references.PROJECT
 import java.time.LocalDate
 import java.time.ZoneOffset
 
@@ -43,4 +45,57 @@ fun BuildDao.findPercentageOfSuccessfulBuildsInMonth(organizationName: String): 
         failed == 0L && succeeded != 0L -> 1.0
         else -> succeeded.toDouble() / (succeeded + failed).toDouble()
     }
+}
+
+/**
+ * Finds the last [Build] deployed to `staging` for [organizationName] and [projectName].
+ *
+ * @return `null` if there hasn't been a deploy yet.
+ */
+fun BuildDao.findLatestDeploy(organizationName: String, projectName: String): Build? {
+    return findCdBuildsByOrganizationAndEnvironment(
+        organizationName = organizationName,
+        projectName = projectName,
+        environment = "staging",
+        limit = 1,
+    ).singleOrNull()
+}
+
+/**
+ * Finds the last 2 [Build]s that were promoted to `production` for [organizationName] and [projectName].
+ */
+fun BuildDao.findLastTwoPreviousPromotions(organizationName: String, projectName: String): List<Build> {
+    return findCdBuildsByOrganizationAndEnvironment(
+        organizationName = organizationName,
+        projectName = projectName,
+        environment = "production",
+        limit = 2
+    )
+}
+
+private fun BuildDao.findCdBuildsByOrganizationAndEnvironment(
+    organizationName: String,
+    projectName: String,
+    environment: String,
+    limit: Int,
+): List<Build> {
+    return ctx()
+        .select(BUILD.asterisk())
+        .from(BUILD)
+        .join(PROJECT).on(BUILD.PROJECT_ID.eq(PROJECT.ID))
+        .where(
+            PROJECT.NAME.eq(projectName).and(
+                PROJECT.ORGANIZATION.eq(organizationName)
+                    .and(
+                        BUILD.TYPE.eq(BuildType.CD)
+                            .and(
+                                BUILD.STATUS.eq(BuildStatus.SUCCEEDED)
+                                    .and(BUILD.ENVIRONMENT.eq(environment))
+                            )
+                    )
+            )
+        )
+        .orderBy(BUILD.END_TIME.desc())
+        .limit(limit)
+        .fetchInto(Build::class.java)
 }
