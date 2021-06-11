@@ -18,7 +18,7 @@ EOF
 }
 
 resource "aws_iam_role_policy" "ecs_app_task_policy" {
-  name_prefix = "task-policy-console"
+  name        = "task-policy-console"
   role        = aws_iam_role.ecs_console_task_role.id
   policy      = templatefile("${path.root}/policies/console-policy.json", {})
 }
