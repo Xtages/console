@@ -26,4 +26,5 @@
     <include file="changesets/relax-build-table-user-constraint.postgresql.sql" relativeToChangelogFile="true" />
     <include file="changesets/add-daily-build-stats-view.postgres.sql" relativeToChangelogFile="true" />
     <include file="changesets/add-script-locations-to-recipe.postgres.sql" relativeToChangelogFile="true" />
+    <include file="changesets/remove-not-null-constraint-from-github-username.postgres.sql" relativeToChangelogFile="true" />
 </databaseChangeLog>
