@@ -29,22 +29,23 @@ class CloudWatchLogsService(
     private val consoleProperties: ConsoleProperties,
 ) {
 
+
     /**
      * Creates a log group for the [organization] if necessary.
      */
     fun maybeCreateLogGroupForOrganization(organization: Organization) {
+        val tags = buildLogGroupTags(organization)
         if (organization.cdLogGroupArn == null || organization.ciLogGroupArn == null) {
-            val name = ensure.notNull(value = organization.name, valueDesc = "organization.name")
             cloudWatchLogsAsyncClient.createLogGroup(
                 CreateLogGroupRequest.builder()
                     .logGroupName(organization.codeBuildLogsGroupNameFor(CodeBuildType.CI))
-                    .tags(mapOf("organization" to name))
+                    .tags(tags)
                     .build()
             ).get()
             cloudWatchLogsAsyncClient.createLogGroup(
                 CreateLogGroupRequest.builder()
                     .logGroupName(organization.codeBuildLogsGroupNameFor(CodeBuildType.CD))
-                    .tags(mapOf("organization" to name))
+                    .tags(tags)
                     .build()
             ).get()
             // For some reason the `createLogGroup` call doesn't return anything in it's response, so we have to create the
@@ -83,5 +84,14 @@ class CloudWatchLogsService(
         message = message(),
         timestamp = timestamp(),
     )
+
+    private fun buildLogGroupTags(organization: Organization): Map<String,String> {
+        val orgHash = ensure.notNull(value = organization.hash, valueDesc = "organization.hash")
+        val orgName = ensure.notNull(value = organization.name, valueDesc = "organization.name")
+        return mapOf(
+            "organization" to orgHash,
+            "organization-name" to orgName
+        )
+    }
 
 }

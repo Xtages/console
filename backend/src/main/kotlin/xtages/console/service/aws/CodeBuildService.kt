@@ -321,11 +321,10 @@ class CodeBuildService(
         ).get()
         val arn = response.project().arn()
         project.codebuildCiProjectArn = arn
-        val organizationName = ensure.notNull(project.organization, valueDesc = "project.organization")
         project.codebuildCiNotificationRuleArn = codestarNotificationsService.createNotificationRule(
             notificationRuleName = project.codeBuildCiNotificationRuleName,
             projectArn = arn,
-            organizationName = organizationName,
+            organization = organization,
             eventTypeIds = eventTypeIds
         )
         projectDao.merge(project)
@@ -348,11 +347,11 @@ class CodeBuildService(
         ).get()
         val arn = response.project().arn()
         project.codebuildCdProjectArn = arn
-        val organizationName = ensure.notNull(project.organization, valueDesc = "project.organization")
+
         project.codebuildCdNotificationRuleArn = codestarNotificationsService.createNotificationRule(
             notificationRuleName = project.codeBuildCdNotificationRuleName,
             projectArn = arn,
-            organizationName = organizationName,
+            organization = organization,
             eventTypeIds = eventTypeIds,
         )
         projectDao.merge(project)
@@ -411,7 +410,8 @@ class CodeBuildService(
             )
             .tags(
                 xtagesCodeBuildTag,
-                buildCodeBuildProjectTag(key = "organization", value = project.organization!!)
+                buildCodeBuildProjectTag(key = "organization-name", value = project.organization!!),
+                buildCodeBuildProjectTag(key = "organization", value = organization.hash!!)
             )
             .badgeEnabled(false)
         if (concurrentBuildLimit != null) {

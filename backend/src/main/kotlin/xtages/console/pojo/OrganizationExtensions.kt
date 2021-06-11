@@ -3,11 +3,12 @@ package xtages.console.pojo
 import xtages.console.exception.ensure
 import xtages.console.query.tables.pojos.Organization
 import xtages.console.controller.model.CodeBuildType
+import xtages.console.controller.model.MD5
 
 /**
  * Returns the name of the CloudWatch Logs group to use in the CodeBuild project.
  */
 fun Organization.codeBuildLogsGroupNameFor(codeBuildType: CodeBuildType): String {
-    val name = ensure.notNull(value = name, valueDesc = "organization.name")
-    return "${name}_${codeBuildType.name}_logs".toLowerCase()
+    val hash = ensure.notNull(value = hash, valueDesc = "organization.hash")
+    return "${hash}_${codeBuildType.name}_logs".toLowerCase()
 }

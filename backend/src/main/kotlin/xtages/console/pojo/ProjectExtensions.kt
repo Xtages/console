@@ -9,9 +9,8 @@ import xtages.console.query.tables.pojos.Project
  */
 val Project.codeBuildCiProjectName: String
     get() {
-        val name = ensure.notNull(value = name, valueDesc = "project.name")
-        val organization = ensure.notNull(value = organization, valueDesc = "project.organization")
-        return "${organization}_${name}_ci".toLowerCase()
+        val hash = ensure.notNull(value = hash, valueDesc = "project.hash")
+        return "${hash}_ci"
     }
 
 /**
@@ -19,9 +18,8 @@ val Project.codeBuildCiProjectName: String
  */
 val Project.codeBuildCdProjectName: String
     get() {
-        val name = ensure.notNull(value = name, valueDesc = "project.name")
-        val organization = ensure.notNull(value = organization, valueDesc = "project.organization")
-        return "${organization}_${name}_cd".toLowerCase()
+        val hash = ensure.notNull(value = name, valueDesc = "project.hash")
+        return "${hash}_cd"
     }
 
 
@@ -50,8 +48,8 @@ val Project.codeBuildCdProjectDescription: String
  * [CodeBuildType]
  */
 fun Project.codeBuildLogsStreamNameFor(codeBuildType: CodeBuildType): String {
-    val name = ensure.notNull(value = name, valueDesc = "project.name")
-    return "${name}_${codeBuildType.name}_logs".toLowerCase()
+    val hash = ensure.notNull(value = hash, valueDesc = "project.hash")
+    return "${hash}_${codeBuildType.name}_logs".toLowerCase()
 }
 
 /**
