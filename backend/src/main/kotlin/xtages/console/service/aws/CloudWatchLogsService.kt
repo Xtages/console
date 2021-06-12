@@ -34,20 +34,13 @@ class CloudWatchLogsService(
      * Creates a log group for the [organization] if necessary.
      */
     fun maybeCreateLogGroupForOrganization(organization: Organization) {
-        val tags = buildLogGroupTags(organization)
+
+        val ciLogGroupName = organization.codeBuildLogsGroupNameFor(CodeBuildType.CI)
+        val cdLogGroupName = organization.codeBuildLogsGroupNameFor(CodeBuildType.CD)
         if (organization.cdLogGroupArn == null || organization.ciLogGroupArn == null) {
-            cloudWatchLogsAsyncClient.createLogGroup(
-                CreateLogGroupRequest.builder()
-                    .logGroupName(organization.codeBuildLogsGroupNameFor(CodeBuildType.CI))
-                    .tags(tags)
-                    .build()
-            ).get()
-            cloudWatchLogsAsyncClient.createLogGroup(
-                CreateLogGroupRequest.builder()
-                    .logGroupName(organization.codeBuildLogsGroupNameFor(CodeBuildType.CD))
-                    .tags(tags)
-                    .build()
-            ).get()
+            buildLogGroup(ciLogGroupName, organization)
+            buildLogGroup(cdLogGroupName, organization)
+
             // For some reason the `createLogGroup` call doesn't return anything in it's response, so we have to create the
             // ARNs for the LogGroups by hand.
             val cdLogGroupArn = Arn.builder()
@@ -55,11 +48,11 @@ class CloudWatchLogsService(
                 .withService("logs")
                 .withRegion(awsRegionProperties.static)
                 .withAccountId(consoleProperties.aws.accountId)
-                .withResource("log-group:${organization.cdLogGroupArn}")
+                .withResource("log-group:${cdLogGroupName}")
                 .build()
             organization.cdLogGroupArn = cdLogGroupArn.toString()
             val ciLogGroupArn = cdLogGroupArn.toBuilder()
-                .withResource("log-group:${organization.ciLogGroupArn}")
+                .withResource("log-group:${ciLogGroupName}")
                 .build()
             organization.ciLogGroupArn = ciLogGroupArn.toString()
             organizationDao.merge(organization)
@@ -89,9 +82,19 @@ class CloudWatchLogsService(
         val orgHash = ensure.notNull(value = organization.hash, valueDesc = "organization.hash")
         val orgName = ensure.notNull(value = organization.name, valueDesc = "organization.name")
         return mapOf(
-            "organization" to orgHash,
-            "organization-name" to orgName
+            "organization" to orgName,
+            "organization-hash" to orgHash
         )
+    }
+
+    private fun buildLogGroup(name: String, organization: Organization) {
+        val tags = buildLogGroupTags(organization)
+        cloudWatchLogsAsyncClient.createLogGroup(
+            CreateLogGroupRequest.builder()
+                .logGroupName(name)
+                .tags(tags)
+                .build()
+        ).get()
     }
 
 }

@@ -25,6 +25,7 @@ class EcrService(
      * Creates an `ECR` repository for the [organization] if one hasn't already been created. The repository's name is
      * the [Organization.name] in lower case.
      */
+    //TODO(@mdellamerlina) add perms to the repo so ECR can pull it
     fun maybeCreateEcrRepositoryForOrganization(organization: Organization, project: Project) {
         if (project.ecrRepositoryArn == null) {
             logger.debug { "Creating ECR repository for project: ${project.name}" }
@@ -42,8 +43,8 @@ class EcrService(
                         .scanOnPush(true).build()
                     )
                     .tags(xtagesEcrTag,
-                        buildEcrTag("organization", orgHash),
-                        buildEcrTag("organization-name", orgName)
+                        buildEcrTag("organization", orgName),
+                        buildEcrTag("organization-hash", orgHash)
                     )
                     .build()
             ).get()

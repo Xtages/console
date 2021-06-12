@@ -18,7 +18,7 @@ val Project.codeBuildCiProjectName: String
  */
 val Project.codeBuildCdProjectName: String
     get() {
-        val hash = ensure.notNull(value = name, valueDesc = "project.hash")
+        val hash = ensure.notNull(value = hash, valueDesc = "project.hash")
         return "${hash}_cd"
     }
 
