@@ -216,7 +216,7 @@ function BuildSuccessRadialBarChart({percentage}: {percentage: number}) {
           value: {
             show: true,
             formatter(val: number) {
-              return `${val}%`;
+              return `${Math.trunc(val)}%`;
             },
             offsetY: 8,
             color: '#111',
