@@ -63,8 +63,10 @@ class ProjectApiController(
         val project = projectDao.fetchOneByNameAndOrganization(orgName = organization.name!!, projectName = projectName)
         val percentageOfSuccessfulBuildsInTheLastMonth =
             when {
-                includeSuccessfulBuildPercentage -> buildDao
-                    .findPercentageOfSuccessfulBuildsInMonth(organizationName = organization.name!!)
+                includeSuccessfulBuildPercentage -> buildDao.findPercentageOfSuccessfulBuildsInMonth(
+                    organizationName = organization.name!!,
+                    projectName = projectName
+                )
                 else -> null
             }
         if (includeBuilds || includeDeployments) {
