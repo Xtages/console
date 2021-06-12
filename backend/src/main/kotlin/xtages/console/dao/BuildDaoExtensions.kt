@@ -28,13 +28,15 @@ fun BuildDao.fetchLatestByProject(projects: List<Project>): List<Build> {
 /**
  * Returns the percentage of successful [Build]s in the last month.
  */
-fun BuildDao.findPercentageOfSuccessfulBuildsInMonth(organizationName: String): Double {
+fun BuildDao.findPercentageOfSuccessfulBuildsInMonth(organizationName: String, projectName: String): Double {
     val stats = ctx().select(BUILD_STATS_PER_MONTH.asterisk()).from(BUILD_STATS_PER_MONTH)
         .where(
             BUILD_STATS_PER_MONTH.ORGANIZATION.eq(organizationName)
                 .and(
-                    BUILD_STATS_PER_MONTH.DATE.eq(
-                        LocalDate.now(ZoneOffset.UTC).withDayOfMonth(1)
+                    BUILD_STATS_PER_MONTH.PROJECT.eq(projectName).and(
+                        BUILD_STATS_PER_MONTH.DATE.eq(
+                            LocalDate.now(ZoneOffset.UTC).withDayOfMonth(1)
+                        )
                     )
                 )
         ).fetchInto(BuildStatsPerMonth::class.java)
