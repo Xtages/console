@@ -1,5 +1,6 @@
 package xtages.console.service.aws
 
+import com.amazonaws.arn.Arn
 import com.amazonaws.services.sns.message.SnsMessageManager
 import com.amazonaws.services.sns.message.SnsNotification
 import com.fasterxml.jackson.core.JsonParser
@@ -241,12 +242,12 @@ class CodeBuildService(
                         buildEnvironmentVariable("XTAGES_SCRIPT", scriptPath),
                         buildEnvironmentVariable("XTAGES_COMMIT", commitHash),
                         buildEnvironmentVariable("XTAGES_REPO", project.ghRepoFullName),
-                        buildEnvironmentVariable("XTAGES_PROJECT", project.name),
+                        buildEnvironmentVariable("XTAGES_PROJECT", project.hash),
                         buildEnvironmentVariable("XTAGES_GITHUB_TOKEN", gitHubAppToken),
                         buildEnvironmentVariable("XTAGES_GH_PROJECT_TAG", gitHubProjectTag),
                         buildEnvironmentVariable("XTAGES_APP_ENV", environment.toLowerCase()),
                         buildEnvironmentVariable("XTAGES_PROJECT_TYPE", recipe.projectType?.name!!.toLowerCase()),
-                        buildEnvironmentVariable("XTAGES_ORG", organization.name!!.toLowerCase()),
+                        buildEnvironmentVariable("XTAGES_ORG", organization.hash),
                         buildEnvironmentVariable("XTAGES_RECIPE_REPO", recipe.repository),
                         buildEnvironmentVariable("XTAGES_GH_RECIPE_TAG", recipe.tag),
                         buildEnvironmentVariable("XTAGES_NODE_VER", recipe.version),
@@ -321,12 +322,10 @@ class CodeBuildService(
         ).get()
         val arn = response.project().arn()
         project.codebuildCiProjectArn = arn
-        val organizationName = ensure.notNull(project.organization, valueDesc = "project.organization")
-        project.codebuildCiNotificationRuleArn = codestarNotificationsService.createNotificationRule(
-            notificationRuleName = project.codeBuildCiNotificationRuleName,
-            projectArn = arn,
-            organizationName = organizationName,
-            eventTypeIds = eventTypeIds
+        project.codebuildCiNotificationRuleArn = createCodeStarNotification(
+            organization = organization,
+            notificationName =  project.codeBuildCiNotificationRuleName,
+            arn = arn
         )
         projectDao.merge(project)
     }
@@ -346,14 +345,13 @@ class CodeBuildService(
                 concurrentBuildLimit = 2,
             )
         ).get()
+
         val arn = response.project().arn()
         project.codebuildCdProjectArn = arn
-        val organizationName = ensure.notNull(project.organization, valueDesc = "project.organization")
-        project.codebuildCdNotificationRuleArn = codestarNotificationsService.createNotificationRule(
-            notificationRuleName = project.codeBuildCdNotificationRuleName,
-            projectArn = arn,
-            organizationName = organizationName,
-            eventTypeIds = eventTypeIds,
+        project.codebuildCdNotificationRuleArn = createCodeStarNotification(
+            organization = organization,
+            notificationName = project.codeBuildCdNotificationRuleName,
+            arn = arn
         )
         projectDao.merge(project)
     }
@@ -411,13 +409,23 @@ class CodeBuildService(
             )
             .tags(
                 xtagesCodeBuildTag,
-                buildCodeBuildProjectTag(key = "organization", value = project.organization!!)
+                buildCodeBuildProjectTag(key = "organization", value = project.organization!!),
+                buildCodeBuildProjectTag(key = "organization-hash", value = organization.hash!!)
             )
             .badgeEnabled(false)
         if (concurrentBuildLimit != null) {
             builder.concurrentBuildLimit(concurrentBuildLimit)
         }
         return builder.build()
+    }
+
+    private fun createCodeStarNotification(organization: Organization, notificationName: String, arn: String): String {
+        return codestarNotificationsService.createNotificationRule(
+            notificationRuleName = notificationName,
+            projectArn = arn,
+            organization = organization,
+            eventTypeIds = eventTypeIds
+        )
     }
 }
 
@@ -429,6 +437,7 @@ private fun buildEnvironmentVariable(name: String, value: String? = null) = Envi
 
 private fun buildCodeBuildProjectTag(key: String, value: String) =
     CodebuildTag.builder().key(key).value(value).build()
+
 
 private enum class CodeBuildEventDetailType(
     private

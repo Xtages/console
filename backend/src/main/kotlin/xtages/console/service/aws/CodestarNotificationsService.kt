@@ -7,6 +7,8 @@ import software.amazon.awssdk.services.codestarnotifications.model.DetailType
 import software.amazon.awssdk.services.codestarnotifications.model.NotificationRuleStatus
 import software.amazon.awssdk.services.codestarnotifications.model.Target
 import xtages.console.config.ConsoleProperties
+import xtages.console.exception.ensure
+import xtages.console.query.tables.pojos.Organization
 
 /**
  * A [Service] to handle the logic to communicate to the AWS Codestar service.
@@ -23,9 +25,11 @@ class CodestarNotificationsService(
     fun createNotificationRule(
         notificationRuleName: String,
         projectArn: String,
-        organizationName: String,
+        organization: Organization,
         eventTypeIds: List<String>,
     ): String {
+        val organizationName = ensure.notNull(organization.name, valueDesc = "organization.name")
+        val organizationHash = ensure.notNull(organization.hash, valueDesc = "organization.hash")
         return codestarNotificationsAsyncClient.createNotificationRule(
             CreateNotificationRuleRequest.builder()
                 .name(notificationRuleName)
@@ -41,7 +45,10 @@ class CodestarNotificationsService(
                         .build()
                 )
                 .status(NotificationRuleStatus.ENABLED)
-                .tags(mapOf("organization" to organizationName))
+                .tags(mapOf(
+                    "organization" to organizationHash,
+                    "organizatio-name" to organizationName
+                ))
                 .build()
         ).get().arn()
     }
