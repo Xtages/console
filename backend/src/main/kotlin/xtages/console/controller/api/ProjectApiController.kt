@@ -10,6 +10,7 @@ import xtages.console.controller.GitHubUrl
 import xtages.console.controller.api.model.*
 import xtages.console.controller.api.model.Build.Status
 import xtages.console.controller.model.CodeBuildType
+import xtages.console.controller.model.MD5
 import xtages.console.controller.model.buildEventPojoToBuildPhaseConverter
 import xtages.console.controller.model.projectPojoTypeToProjectTypeConverter
 import xtages.console.dao.*
@@ -31,6 +32,8 @@ import xtages.console.service.XtagesUserWithCognitoAttributes
 import xtages.console.service.aws.AwsService
 import xtages.console.service.aws.CodeBuildService
 import xtages.console.time.toUtcMillis
+import java.util.*
+import kotlin.Comparator
 import xtages.console.query.enums.BuildType as BuildTypePojo
 import xtages.console.query.tables.pojos.Build as BuildPojo
 import xtages.console.query.tables.pojos.Project as ProjectPojo
@@ -290,6 +293,7 @@ class ProjectApiController(
             recipe = recipe.id,
             passCheckRuleEnabled = createProjectReq.passCheckRuleEnabled,
             user = user.id,
+            hash = MD5.md5("${organization.hash}${UUID.randomUUID()}"),
         )
         if (gitHubService.getRepositoryForProject(project = projectPojo, organization = organization) == null) {
             projectDao.insert(projectPojo)
