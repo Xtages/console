@@ -19,7 +19,7 @@ class AwsService(
      *   * a CodeBuild project for CD
      */
     fun registerProject(project: Project, recipe: Recipe, organization: Organization) {
-        ecrService.maybeCreateEcrRepositoryForOrganization(organization = organization, project = project)
+        ecrService.createEcrRepositoryForProject(organization = organization, project = project)
         registerOrganization(organization)
         codeBuildService.createCodeBuildCiProject(organization = organization, project = project, recipe = recipe)
         codeBuildService.createCodeBuildCdProject(organization = organization, project = project, recipe = recipe)
