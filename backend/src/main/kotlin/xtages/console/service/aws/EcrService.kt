@@ -22,11 +22,11 @@ class EcrService(
     ) {
 
     /**
-     * Creates an `ECR` repository for the [organization] if one hasn't already been created. The repository's name is
-     * the [Organization.name] in lower case.
+     * Creates an `ECR` repository for the [project] if one hasn't already been created. The repository's name is
+     * the [Project.hash].
      */
     //TODO(@mdellamerlina) add perms to the repo so ECR can pull it
-    fun maybeCreateEcrRepositoryForOrganization(organization: Organization, project: Project) {
+    fun createEcrRepositoryForProject(organization: Organization, project: Project) {
         if (project.ecrRepositoryArn == null) {
             logger.debug { "Creating ECR repository for project: ${project.name}" }
             val orgName = ensure.notNull(value = organization.name, valueDesc = "organization.name")
