@@ -1,8 +1,8 @@
 import React from 'react';
 import {Card, Col, Container, OverlayTrigger, Row, Tooltip} from 'react-bootstrap';
 import {Link} from 'react-router-dom';
-import ReactApexChart from 'react-apexcharts';
-import {ApexOptions} from 'apexcharts';
+import {Gauge} from '@ant-design/charts';
+import {GaugeConfig} from '@ant-design/charts/es/gauge';
 import colors from '../../assets/css/colors.module.scss';
 import {GitHubCommitLink, GitHubLink} from '../link/XtagesLink';
 import {Deployment, Project} from '../../gen/api';
@@ -31,7 +31,7 @@ export default function ProjectDetailsCard({project}: ProjectDetailsCardProps) {
                 <GitHubLink href={project.ghRepoUrl}>See in GitHub</GitHubLink>
               </div>
             </Col>
-            <Col sm={6} className="text-sm">
+            <Col sm={7} className="text-sm">
               <DeploymentDetailsRow
                 title="In production"
                 name="production"
@@ -50,12 +50,12 @@ export default function ProjectDetailsCard({project}: ProjectDetailsCardProps) {
                 deployment={stagingDeployment}
               />
             </Col>
-            <Col sm={3} className="p-0">
+            <Col sm={2} className="p-0">
               {project.percentageOfSuccessfulBuildsInTheLastMonth !== undefined
                 && (
                 <>
                   <BuildSuccessRadialBarChart
-                    percentage={project.percentageOfSuccessfulBuildsInTheLastMonth * 100}
+                    percentage={project.percentageOfSuccessfulBuildsInTheLastMonth}
                   />
                   <div className="text-center">
                     <small>
@@ -157,97 +157,49 @@ function DeploymentDetailsRow({
 
 /** Renders a gauge chart of the percentage of successful builds. */
 function BuildSuccessRadialBarChart({percentage}: {percentage: number}) {
-  let startColor: string;
-  let endColor: string;
-  if (percentage > 75) {
-    startColor = colors.successLight;
-    endColor = colors.successBootstrap;
-  } else if (percentage > 50) {
-    startColor = colors.warningLight;
-    endColor = colors.warningBootstrap;
-  } else {
-    startColor = colors.dangerLight;
-    endColor = colors.dangerBootstrap;
-  }
-  const options: ApexOptions = {
-    chart: {
-      height: 150,
-      width: 50,
-      type: 'radialBar',
-      toolbar: {
-        show: false,
-      },
+  const config: GaugeConfig = {
+    percent: percentage,
+    renderer: 'svg',
+    range: {
+      ticks: [0, 1],
+      color: [`l(0) 0:${colors.danger} 0.5:${colors.warning} 1:${colors.success}`],
     },
-    plotOptions: {
-      radialBar: {
-        inverseOrder: true,
-        startAngle: -180,
-        endAngle: 180,
-        hollow: {
-          margin: 0,
-          size: '50%',
-          background: '#fff',
-          image: undefined,
-          imageOffsetX: 0,
-          imageOffsetY: 0,
-          position: 'front',
-          dropShadow: {
-            enabled: true,
-            blur: 4,
-            opacity: 0.20,
-          },
+    indicator: {
+      pointer: {
+        style: {
+          stroke: colors.infoLight,
+          lineWidth: 4,
         },
-        track: {
-          background: '#fff',
-          strokeWidth: '67%',
-          margin: 0, // margin is in pixels
-          dropShadow: {
-            enabled: true,
-            blur: 4,
-            opacity: 0.20,
-            color: percentage === 0 ? colors.dangerBootstrap : undefined,
-          },
-        },
-        dataLabels: {
-          show: true,
-          name: {
-            show: false,
-          },
-          value: {
-            show: true,
-            formatter(val: number) {
-              return `${Math.trunc(val)}%`;
-            },
-            offsetY: 8,
-            color: '#111',
-            fontSize: '1.5em',
-          },
+      },
+      pin: {
+        style: {
+          stroke: colors.infoLight,
+          r: 4,
         },
       },
     },
-    colors: [startColor],
-    fill: {
-      type: 'gradient',
-      gradient: {
-        shade: 'dark',
-        type: 'vertical',
-        shadeIntensity: 0.5,
-        gradientToColors: [endColor],
-        inverseColors: true,
-        opacityFrom: 1,
-        opacityTo: 1,
-        stops: [0, 100],
+    axis: {
+      label: {
+        formatter: function formatter(v) {
+          return Number(v) * 100;
+        },
       },
+      subTickLine: {count: 1},
     },
-    stroke: {
-      lineCap: 'round',
+    statistic: {
+      content: {
+        offsetY: 10,
+        style: {
+          fontSize: '20px',
+          color: '#4B535E',
+        },
+        formatter: function formatter(datum) {
+          // @ts-ignore
+          const {percent} = datum;
+          return `${Math.trunc(percent * 100)}`;
+        },
+      },
     },
   };
-  return (
-    <ReactApexChart
-      options={options}
-      series={[percentage]}
-      type="radialBar"
-    />
-  );
+  return <Gauge {...config} />;
 }
