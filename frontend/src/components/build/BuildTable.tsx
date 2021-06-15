@@ -9,7 +9,7 @@ import {ArrowUpCircle,
   UploadCloud,
   X} from 'react-feather';
 import cx from 'classnames';
-import {useQuery} from 'react-query';
+import {useQuery, useQueryClient} from 'react-query';
 import {Button,
   Dropdown,
   DropdownButton,
@@ -21,7 +21,7 @@ import {Build, BuildPhase, BuildType, Project} from '../../gen/api';
 import {BuildStatusIcon} from './BuildStatusIcon';
 import Avatar from '../avatar/Avatar';
 import {durationString, formatDateTimeMed, formatDateTimeRelativeToNow} from '../../helpers/time';
-import {logsApi} from '../../service/Services';
+import {cdApi, logsApi} from '../../service/Services';
 import {LogViewer} from '../logviewer/LogViewer';
 import {GitHubCommitLink} from '../link/XtagesLink';
 
@@ -78,6 +78,30 @@ export function BuildRowInner({
 }: BuildRowInnerProps) {
   const [collapsed, setCollapsed] = useState(true);
   const toggleCollapsed = () => setCollapsed(!collapsed);
+  const queryClient = useQueryClient();
+
+  async function deploy() {
+    await cdApi.deploy(project.name, {
+      commitHash: build.commitHash,
+    });
+    await queryClient.invalidateQueries(project.name);
+  }
+
+  async function promote() {
+    await cdApi.promote(project.name, {
+      commitHash: build.commitHash,
+      env: 'prod',
+    });
+    await queryClient.invalidateQueries(project.name);
+  }
+
+  async function rollback() {
+    await cdApi.rollback(project.name, {
+      commitHash: build.commitHash,
+      env: 'prod',
+    });
+    await queryClient.invalidateQueries(project.name);
+  }
 
   return (
     <>
@@ -170,15 +194,15 @@ export function BuildRowInner({
         </div>
         <div className="col-2">
           <DropdownButton title="Actions" id={`actions-${build.id}`} menuRole="menu" size="sm">
-            <Dropdown.Item>
+            <Dropdown.Item onClick={promote}>
               <span className="pr-2 text-dark-success"><UploadCloud size="1.3em" /></span>
-              Deploy to Prod
+              Promote to Prod
             </Dropdown.Item>
-            <Dropdown.Item>
+            <Dropdown.Item onClick={deploy}>
               <span className="pr-2 text-primary"><ArrowUpCircle size="1.3em" /></span>
               Deploy to Staging
             </Dropdown.Item>
-            <Dropdown.Item>
+            <Dropdown.Item onClick={rollback}>
               <span className="pr-2 text-danger"><RotateCcw size="1.3em" /></span>
               Rollback
             </Dropdown.Item>
