@@ -57,7 +57,7 @@ export default function ProjectDetailsCard({project}: ProjectDetailsCardProps) {
                   <BuildSuccessRadialBarChart
                     percentage={project.percentageOfSuccessfulBuildsInTheLastMonth}
                   />
-                  <div className="text-center">
+                  <div className="text-center pt-1">
                     <small>
                       % of successful builds in the last
                       month
@@ -160,6 +160,7 @@ function BuildSuccessRadialBarChart({percentage}: {percentage: number}) {
   const config: GaugeConfig = {
     percent: percentage,
     renderer: 'svg',
+    height: 140,
     range: {
       ticks: [0, 1],
       color: [`l(0) 0:${colors.danger} 0.5:${colors.warning} 1:${colors.success}`],
