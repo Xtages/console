@@ -31,4 +31,5 @@
     <include file="changesets/org-project-hash-column.postgres.sql" relativeToChangelogFile="true" />
     <include file="changesets/add-per-project-build-id.postgresql.sql" relativeToChangelogFile="true" />
     <include file="changesets/fix-external-id-name.postgresql.sql" relativeToChangelogFile="true" />
+    <include file="changesets/plan-and-credit-tables.postgresql.sql" relativeToChangelogFile="true" />
 </databaseChangeLog>
