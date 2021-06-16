@@ -14,6 +14,7 @@ const Template: Story<BuildTableProps> = (args) => <BrowserRouter><BuildTable {.
 
 const buildData = {
   id: 100,
+  buildNumber: 1,
   status: BuildStatusEnum.Failed,
   type: BuildType.Ci,
   initiatorName: 'Bill Murray',

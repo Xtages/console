@@ -204,6 +204,7 @@ class ProjectApiController(
 
         return Build(
             id = build.id!!,
+            buildNumber = build.buildNumber!!,
             type = BuildType.valueOf(build.type!!.name),
             status = Status.valueOf(build.status!!.name),
             initiatorName = initiator.name,
