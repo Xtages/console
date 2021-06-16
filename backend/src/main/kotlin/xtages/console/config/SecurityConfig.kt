@@ -19,7 +19,6 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
 import org.springframework.security.web.access.expression.WebExpressionVoter
 import org.springframework.stereotype.Component
 import xtages.console.dao.fetchOneByCognitoUserId
-import xtages.console.exception.ExceptionCode
 import xtages.console.exception.ensure
 import xtages.console.query.enums.OrganizationSubscriptionStatus
 import xtages.console.query.tables.daos.OrganizationDao
