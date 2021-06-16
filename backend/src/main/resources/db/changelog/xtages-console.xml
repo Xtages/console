@@ -29,4 +29,5 @@
     <include file="changesets/remove-not-null-constraint-from-github-username.postgres.sql" relativeToChangelogFile="true" />
     <include file="changesets/add-project-build-states-per-month-view.postgres.sql" relativeToChangelogFile="true" />
     <include file="changesets/org-project-hash-column.postgres.sql" relativeToChangelogFile="true" />
+    <include file="changesets/add-per-project-build-id.postgresql.sql" relativeToChangelogFile="true" />
 </databaseChangeLog>

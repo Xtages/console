@@ -35,6 +35,12 @@ export interface Build {
     id: number;
     /**
      * 
+     * @type {number}
+     * @memberof Build
+     */
+    buildNumber: number;
+    /**
+     * 
      * @type {BuildType}
      * @memberof Build
      */
