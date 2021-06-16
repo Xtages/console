@@ -3,14 +3,11 @@
 -- changeset czuniga:1 logicalFilePath:seed-xtages-console-dev-db.xml
 
 -- Xtages
-INSERT INTO
-    "organization"(name, stripe_customer_id, subscription_status, github_app_installation_id,
-    github_app_installation_status, ecr_repository_arn, ci_log_group_arn, cd_log_group_arn)
-	VALUES
-	('Xtages', 'cus_JNlr07Ilq8tnxc', 'ACTIVE', 16569285,
-	'ACTIVE', 'arn:aws:ecr:us-east-1:606626603369:repository/xtages',
-	'arn:aws:logs:us-east-1:606626603369:log-group:xtages_ci_logs',
-	'arn:aws:logs:us-east-1:606626603369:log-group:xtages_cd_logs');
+INSERT INTO "organization"(name, stripe_customer_id, subscription_status, github_app_installation_id,
+                           github_app_installation_status, ci_log_group_arn, cd_log_group_arn, hash)
+VALUES ('Xtages', 'cus_JNlr07Ilq8tnxc', 'ACTIVE', 16569285, 'ACTIVE',
+        'arn:aws:logs:us-east-1:606626603369:log-group:xtages_ci_logs',
+        'arn:aws:logs:us-east-1:606626603369:log-group:xtages_cd_logs', 'e374f5be2de51dbbd75cc52cc1badcf1');
 
 -- czuniga@xtages.com
 INSERT INTO "xtages_user"
@@ -23,5 +20,9 @@ SELECT pg_catalog.setval('public.project_id_seq', 1, true);
 
 INSERT INTO "stripe_checkout_session"
     (organization_name, stripe_checkout_session_id)
-    VALUES
-    ('Xtages', 'cs_test_a1d6zBhwGHiJWtj6YhMvLiXqLybR5qTtNO8Pf5HVasQrieGf0H6QavPQB8');
+VALUES ('Xtages', 'cs_test_a1d6zBhwGHiJWtj6YhMvLiXqLybR5qTtNO8Pf5HVasQrieGf0H6QavPQB8');
+
+INSERT INTO "recipe" (project_type, version, repository, tag, build_script_path, deploy_script_path,
+                      promote_script_path, rollback_script_path)
+VALUES ('NODE', '15.13.0', 'Xtages/recipes', 'v0.1.6', 'node/ci/build.sh', 'node/cd/deploy.sh',
+        'node/cd/promote.sh', 'node/cd/rollback.sh');
