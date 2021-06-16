@@ -2,7 +2,7 @@ import React from 'react';
 import {Meta, Story} from '@storybook/react';
 import {BrowserRouter} from 'react-router-dom';
 import {BuildTable, BuildTableProps} from './BuildTable';
-import {Build, BuildStatusEnum, BuildType, ProjectTypeEnum} from '../../gen/api';
+import {BuildStatusEnum, BuildType, ProjectTypeEnum} from '../../gen/api';
 
 export default {
   title: 'Xtages/Build/BuildTable',

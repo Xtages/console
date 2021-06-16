@@ -146,12 +146,12 @@ paths:
           required: true
           description: Name of the project to get the logs from
         - in: query
-          name: buildNumber
+          name: buildId
           schema:
             type: integer
             format: int64
           required: true
-          description: The number of the build
+          description: The id of the build
       responses:
         "200":
           description: Logs successfully returned

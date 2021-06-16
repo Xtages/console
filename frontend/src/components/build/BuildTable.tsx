@@ -231,7 +231,7 @@ function AdditionalInfoPane({
       data,
     } = useQuery(
       `project/${project.name}/${build.type}/${build.id}/logs`,
-      () => logsApi.logs(project.name, build.buildNumber),
+      () => logsApi.logs(project.name, build.id),
     );
     let logs: string | ReactNode;
     if (isLoading) {

@@ -13,15 +13,6 @@ import java.time.LocalDate
 import java.time.ZoneOffset
 
 /**
- * Fetches one [Build] object by its [Project.id] and [buildNumber].
- */
-fun BuildDao.fetchOneByProjectIdAndBuildNumber(projectId: Int, buildNumber: Long): Build? {
-    return ctx().select(BUILD.asterisk()).from(BUILD)
-        .where(BUILD.PROJECT_ID.eq(projectId).and(BUILD.BUILD_NUMBER.eq(buildNumber)))
-        .fetchOneInto(Build::class.java)
-}
-
-/**
  * Fetches the latest [Build]s for [projects].
  */
 fun BuildDao.fetchLatestByProject(projects: List<Project>): List<Build> {
