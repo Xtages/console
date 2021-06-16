@@ -120,6 +120,10 @@ export function BuildRowInner({
               Deployment
             </>
           )}
+          {' '}
+          (#
+          {build.buildNumber}
+          )
           <hr className="mt-2 mb-3" />
         </div>
       </div>
