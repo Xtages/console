@@ -120,6 +120,10 @@ export function BuildRowInner({
               Deployment
             </>
           )}
+          {' '}
+          (#
+          {build.buildNumber}
+          )
           <hr className="mt-2 mb-3" />
         </div>
       </div>
@@ -227,7 +231,7 @@ function AdditionalInfoPane({
       data,
     } = useQuery(
       `project/${project.name}/${build.type}/${build.id}/logs`,
-      () => logsApi.logs(project.name, build.id),
+      () => logsApi.logs(project.name, build.buildNumber),
     );
     let logs: string | ReactNode;
     if (isLoading) {

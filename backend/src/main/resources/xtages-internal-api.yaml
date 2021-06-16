@@ -146,12 +146,12 @@ paths:
           required: true
           description: Name of the project to get the logs from
         - in: query
-          name: buildId
+          name: buildNumber
           schema:
             type: integer
             format: int64
           required: true
-          description: The id of the build
+          description: The number of the build
       responses:
         "200":
           description: Logs successfully returned
@@ -495,6 +495,9 @@ components:
           type: integer
           format: int64
           description: This is actually the id of the first build_event for this build.
+        buildNumber:
+          type: integer
+          format: int64
         type:
           $ref: "#/components/schemas/BuildType"
         status:
@@ -531,6 +534,7 @@ components:
             $ref: "#/components/schemas/BuildPhase"
       required:
         - id
+        - buildNumber
         - type
         - status
         - initiatorEmail

@@ -204,6 +204,7 @@ class ProjectApiController(
 
         return Build(
             id = build.id!!,
+            buildNumber = build.buildNumber!!,
             type = BuildType.valueOf(build.type!!.name),
             status = Status.valueOf(build.status!!.name),
             initiatorName = initiator.name,
@@ -424,12 +425,12 @@ class ProjectApiController(
      * Retrieve logs from CloudWatch given a [Project] an [BuildEvent] id and
      * an operation id ([CodeBuildType])
      */
-    override fun logs(projectName: String, buildId: Long): ResponseEntity<CILogs> {
+    override fun logs(projectName: String, buildNumber: Long): ResponseEntity<CILogs> {
         val (_, organization, project) = checkRepoBelongsToOrg(projectName)
         val build = ensure.foundOne(
-            operation = { buildDao.fetchById(buildId).first() },
+            operation = { buildDao.fetchOneByProjectIdAndBuildNumber(project.id!!, buildNumber) },
             code = ExceptionCode.BUILD_NOT_FOUND,
-            lazyMessage = { "Build with id [$buildId] was not found" }
+            lazyMessage = { "Build with build_number [$buildNumber] for project [$projectName] was not found" }
         )
 
         val logs = codeBuildService.getLogsFor(CodeBuildType.valueOf(build.type!!.name), build, project, organization)
