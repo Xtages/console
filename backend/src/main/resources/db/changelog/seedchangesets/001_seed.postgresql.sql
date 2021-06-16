@@ -24,5 +24,5 @@ VALUES ('Xtages', 'cs_test_a1d6zBhwGHiJWtj6YhMvLiXqLybR5qTtNO8Pf5HVasQrieGf0H6Qa
 
 INSERT INTO "recipe" (project_type, version, repository, tag, build_script_path, deploy_script_path,
                       promote_script_path, rollback_script_path)
-VALUES ('NODE', '15.13.0', 'Xtages/recipes', 'v0.1.7-alpha.1', 'node/ci/build.sh', 'node/cd/deploy.sh',
+VALUES ('NODE', '15.13.0', 'Xtages/recipes', 'v0.1.6', 'node/ci/build.sh', 'node/cd/deploy.sh',
         'node/cd/promote.sh', 'node/cd/rollback.sh');
