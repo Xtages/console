@@ -5,6 +5,7 @@ import org.springframework.cache.annotation.Cacheable
 import org.springframework.http.HttpStatus.*
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Controller
+import org.springframework.web.util.UriComponentsBuilder
 import xtages.console.controller.GitHubAvatarUrl
 import xtages.console.controller.GitHubUrl
 import xtages.console.controller.api.model.*
@@ -248,7 +249,7 @@ class ProjectApiController(
                 ).toUriString(),
                 env = build.environment!!,
                 timestampInMillis = build.endTime!!.toUtcMillis(),
-                serviceUrl = "https://FIXME.somecompany-someproject.xtages.dev",
+                serviceUrl = "https://${build.environment}-${project.hash!!.substring(0..12)}.xtages.dev",
             )
         }
     }
