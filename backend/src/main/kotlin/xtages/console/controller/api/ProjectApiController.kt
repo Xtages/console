@@ -250,7 +250,7 @@ class ProjectApiController(
                 ).toUriString(),
                 env = build.environment!!,
                 timestampInMillis = build.endTime!!.toUtcMillis(),
-                serviceUrl = "https://${build.environment}-${project.hash!!.substring(0..12)}.xtages.dev",
+                serviceUrl = "https://${build.environment}-${project.hash!!.substring(0, 12)}.xtages.dev",
             )
         }
     }
