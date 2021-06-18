@@ -12,7 +12,16 @@
             "containerPort": 8080,
             "hostPort": 0
         }
-    ]
+    ],
+    "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+            "awslogs-create-group": "true",
+            "awslogs-group" : "xtages-console",
+            "awslogs-region": "us-east-1",
+            "awslogs-stream-prefix": "ecs"
+        }
+    }
   }
 ]
 
