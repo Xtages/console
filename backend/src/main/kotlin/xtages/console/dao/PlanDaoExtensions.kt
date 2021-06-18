@@ -1,6 +1,5 @@
 package xtages.console.dao
 
-import org.jooq.conf.ParamType
 import xtages.console.query.tables.daos.PlanDao
 import xtages.console.query.tables.pojos.Plan
 import xtages.console.query.tables.references.ORGANIZATION_TO_PLAN
@@ -11,7 +10,7 @@ import java.time.LocalDateTime
  * Finds the latest active [Plan] for [organizationName].
  */
 fun PlanDao.fetchLatestByOrganizationName(organizationName: String): PlanWithBillingCycleAnchorDay? {
-    val limit = ctx()
+    val result = ctx()
         .select(PLAN.asterisk(), ORGANIZATION_TO_PLAN.START_TIME)
         .from(PLAN)
         .join(ORGANIZATION_TO_PLAN).on(PLAN.ID.eq(ORGANIZATION_TO_PLAN.PLAN_ID))
@@ -24,8 +23,6 @@ fun PlanDao.fetchLatestByOrganizationName(organizationName: String): PlanWithBil
         )
         .orderBy(ORGANIZATION_TO_PLAN.START_TIME.desc())
         .limit(1)
-    println(limit.getSQL(ParamType.INLINED))
-    val result = limit
         .fetch()
     if (result.isEmpty()) {
         return null
