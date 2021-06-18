@@ -76,7 +76,7 @@ class UsageService(
                             resourceType = resourceType,
                             dateRange = currentBillingMonth,
                         )
-                        return if (usage > limit) {
+                        return if (usage >= limit) {
                             UsageOverLimitWithDetails(resourceType = resourceType, limit = limit, usage = usage)
                         } else {
                             UsageUnderLimitWithDetails(resourceType = resourceType, limit = limit, usage = usage)
