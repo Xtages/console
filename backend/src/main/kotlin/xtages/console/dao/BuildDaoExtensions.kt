@@ -10,7 +10,7 @@ import xtages.console.query.tables.references.BUILD
 import xtages.console.query.tables.references.BUILD_STATS_PER_MONTH
 import xtages.console.query.tables.references.PROJECT
 import java.time.LocalDate
-import java.time.ZoneOffset
+import java.time.LocalDateTime
 
 /**
  * Fetches the latest [Build]s for [projects].
@@ -34,8 +34,8 @@ fun BuildDao.findPercentageOfSuccessfulBuildsInMonth(organizationName: String, p
             BUILD_STATS_PER_MONTH.ORGANIZATION.eq(organizationName)
                 .and(
                     BUILD_STATS_PER_MONTH.PROJECT.eq(projectName).and(
-                        BUILD_STATS_PER_MONTH.DATE.eq(
-                            LocalDate.now(ZoneOffset.UTC).withDayOfMonth(1)
+                        BUILD_STATS_PER_MONTH.DATE.greaterOrEqual(
+                            LocalDate.now().withDayOfMonth(1)
                         )
                     )
                 )
@@ -43,8 +43,7 @@ fun BuildDao.findPercentageOfSuccessfulBuildsInMonth(organizationName: String, p
     val succeeded = stats.singleOrNull { stat -> stat.status == BuildStatus.SUCCEEDED }?.buildCount ?: 0L
     val failed = stats.singleOrNull { stat -> stat.status == BuildStatus.FAILED }?.buildCount ?: 0L
     return when {
-        succeeded == 0L || failed == 0L -> 0.0
-        failed == 0L && succeeded != 0L -> 1.0
+        succeeded + failed == 0L -> 0.0
         else -> succeeded.toDouble() / (succeeded + failed).toDouble()
     }
 }
@@ -99,5 +98,23 @@ private fun BuildDao.findCdBuildsByOrganizationAndEnvironment(
         )
         .orderBy(BUILD.END_TIME.desc())
         .limit(limit)
+        .fetchInto(Build::class.java)
+}
+
+/** @return All the [Build]s that where either started or ended within [dateRange]. */
+fun BuildDao.fetchByOrganizationInDateRange(
+    organizationName: String,
+    dateRange: ClosedRange<LocalDateTime>
+): List<Build> {
+    return ctx()
+        .select(BUILD.asterisk())
+        .from(BUILD)
+        .join(PROJECT).on(BUILD.PROJECT_ID.eq(PROJECT.ID))
+        .where(
+            PROJECT.ORGANIZATION.eq(organizationName).and(
+                BUILD.START_TIME.between(dateRange.start, dateRange.endInclusive)
+                    .or(BUILD.END_TIME.between(dateRange.start, dateRange.endInclusive))
+            )
+        )
         .fetchInto(Build::class.java)
 }

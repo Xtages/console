@@ -21,6 +21,6 @@ fun ProjectDao.fetchOneByNameAndOrganization(orgName: String, projectName: Strin
                 .fetchOneInto(Project::class.java)
         },
         code = ExceptionCode.PROJECT_NOT_FOUND,
-        message = "Could not find project in organization"
+        message = "Could not find project [$projectName] in organization [$orgName]"
     )
 }

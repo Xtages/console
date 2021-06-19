@@ -26,3 +26,9 @@ INSERT INTO "recipe" (project_type, version, repository, tag, build_script_path,
                       promote_script_path, rollback_script_path)
 VALUES ('NODE', '15.13.0', 'Xtages/recipes', 'v0.1.6', 'node/ci/build.sh', 'node/cd/deploy.sh',
         'node/cd/promote.sh', 'node/cd/rollback.sh');
+
+INSERT INTO "organization_to_plan" (organization_name, plan_id, start_time, end_time)
+    (SELECT 'Xtages', "id", now(), NULL FROM "plan" WHERE "name" = 'Unlimited');
+
+INSERT INTO "plan" (name, limit_projects, limit_monthly_build_minutes, limit_monthly_data_transfer_gbs)
+VALUES ('Tiny for testing', 1, 1, 1);

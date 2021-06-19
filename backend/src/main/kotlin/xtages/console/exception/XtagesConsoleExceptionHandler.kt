@@ -14,6 +14,7 @@ class XtagesConsoleExceptionHandler : ResponseEntityExceptionHandler() {
 
     @ExceptionHandler(XtagesConsoleException::class)
     fun handleXtagesConsoleException(ex: Exception, request: WebRequest): ResponseEntity<Any> {
+        logger.error(ex.message, ex)
         val headers = HttpHeaders()
         return super.handleExceptionInternal(ex, null, headers, INTERNAL_SERVER_ERROR, request)
     }

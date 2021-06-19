@@ -32,4 +32,6 @@
     <include file="changesets/add-per-project-build-id.postgresql.sql" relativeToChangelogFile="true" />
     <include file="changesets/fix-external-id-name.postgresql.sql" relativeToChangelogFile="true" />
     <include file="changesets/plan-and-credit-tables.postgresql.sql" relativeToChangelogFile="true" />
+    <include file="changesets/start-time-and-end-time-for-org-to-plan-table.postgresql.sql" relativeToChangelogFile="true" />
+    <include file="changesets/indices-on-build-table.postgresql.sql" relativeToChangelogFile="true" />
 </databaseChangeLog>
