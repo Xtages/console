@@ -5,7 +5,6 @@ import org.springframework.cache.annotation.Cacheable
 import org.springframework.http.HttpStatus.*
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Controller
-import org.springframework.web.util.UriComponentsBuilder
 import xtages.console.controller.GitHubAvatarUrl
 import xtages.console.controller.GitHubUrl
 import xtages.console.controller.api.model.*
@@ -21,20 +20,17 @@ import xtages.console.exception.ExceptionCode.USER_NOT_FOUND
 import xtages.console.exception.ensure
 import xtages.console.query.enums.BuildStatus
 import xtages.console.query.enums.ProjectType
+import xtages.console.query.enums.ResourceType
 import xtages.console.query.tables.daos.*
 import xtages.console.query.tables.pojos.BuildEvent
 import xtages.console.query.tables.pojos.GithubUser
 import xtages.console.query.tables.pojos.Organization
 import xtages.console.query.tables.pojos.XtagesUser
-import xtages.console.service.AuthenticationService
-import xtages.console.service.GitHubService
-import xtages.console.service.UserService
-import xtages.console.service.XtagesUserWithCognitoAttributes
+import xtages.console.service.*
 import xtages.console.service.aws.AwsService
 import xtages.console.service.aws.CodeBuildService
 import xtages.console.time.toUtcMillis
 import java.util.*
-import kotlin.Comparator
 import xtages.console.query.enums.BuildType as BuildTypePojo
 import xtages.console.query.tables.pojos.Build as BuildPojo
 import xtages.console.query.tables.pojos.Project as ProjectPojo
@@ -52,6 +48,7 @@ class ProjectApiController(
     private val gitHubService: GitHubService,
     private val awsService: AwsService,
     private val codeBuildService: CodeBuildService,
+    private val usageService: UsageService,
     private val buildDao: BuildDao,
     private val buildEventDao: BuildEventDao,
     private val recipeDao: RecipeDao,
@@ -278,12 +275,13 @@ class ProjectApiController(
 
 
     override fun createProject(createProjectReq: CreateProjectReq): ResponseEntity<Project> {
+        val organization = organizationDao.fetchOneByCognitoUserId(authenticationService.currentCognitoUserId)
+        usageService.checkUsageIsBelowLimit(organization = organization, resourceType = ResourceType.PROJECT)
         val user = ensure.foundOne(
             operation = { userDao.fetchOneByCognitoUserId(authenticationService.currentCognitoUserId.id) },
             code = USER_NOT_FOUND,
             message = "User not found"
         )
-        val organization = organizationDao.fetchOneByCognitoUserId(authenticationService.currentCognitoUserId)
         val recipe = recipeDao.fetchByProjectTypeAndVersion(
             ProjectType.valueOf(createProjectReq.type.name),
             createProjectReq.version

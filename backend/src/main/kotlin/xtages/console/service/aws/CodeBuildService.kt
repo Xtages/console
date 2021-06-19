@@ -1,6 +1,5 @@
 package xtages.console.service.aws
 
-import com.amazonaws.arn.Arn
 import com.amazonaws.services.sns.message.SnsMessageManager
 import com.amazonaws.services.sns.message.SnsNotification
 import com.fasterxml.jackson.core.JsonParser
@@ -27,6 +26,7 @@ import xtages.console.exception.ensure
 import xtages.console.pojo.*
 import xtages.console.query.enums.BuildStatus
 import xtages.console.query.enums.BuildType
+import xtages.console.query.enums.ResourceType
 import xtages.console.query.tables.daos.BuildDao
 import xtages.console.query.tables.daos.BuildEventDao
 import xtages.console.query.tables.daos.ProjectDao
@@ -35,6 +35,7 @@ import xtages.console.query.tables.pojos.Build
 import xtages.console.query.tables.pojos.Project
 import xtages.console.query.tables.references.BUILD
 import xtages.console.service.AuthenticationService
+import xtages.console.service.UsageService
 import xtages.console.time.toUtcLocalDateTime
 import java.time.*
 import java.time.format.DateTimeFormatter
@@ -73,6 +74,7 @@ class CodeBuildService(
     private val buildEventDao: BuildEventDao,
     private val consoleProperties: ConsoleProperties,
     private val authenticationService: AuthenticationService,
+    private val usageService: UsageService,
     private val objectMapper: ObjectMapper,
 ) {
     private val snsMessageManager = SnsMessageManager()
@@ -209,6 +211,10 @@ class CodeBuildService(
             INVALID_ENVIRONMENT,
             "[$environment] is not valid"
         )
+        usageService.checkUsageIsBelowLimit(
+            organization = organization,
+            resourceType = ResourceType.MONTHLY_BUILD_MINUTES
+        )
         val build = Build(
             environment = environment,
             type = BuildType.valueOf(codeBuildType.name),
@@ -325,7 +331,7 @@ class CodeBuildService(
         project.codebuildCiProjectArn = arn
         project.codebuildCiNotificationRuleArn = createCodeStarNotification(
             organization = organization,
-            notificationName =  project.codeBuildCiNotificationRuleName,
+            notificationName = project.codeBuildCiNotificationRuleName,
             arn = arn
         )
         projectDao.merge(project)
