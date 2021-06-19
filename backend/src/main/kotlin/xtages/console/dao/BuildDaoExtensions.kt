@@ -101,7 +101,7 @@ private fun BuildDao.findCdBuildsByOrganizationAndEnvironment(
         .fetchInto(Build::class.java)
 }
 
-/** @return All the [Build]s that where either started or ended withing [dateRange]. */
+/** @return All the [Build]s that where either started or ended within [dateRange]. */
 fun BuildDao.fetchByOrganizationInDateRange(
     organizationName: String,
     dateRange: ClosedRange<LocalDateTime>
