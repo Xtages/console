@@ -1,5 +1,7 @@
 package xtages.console.exception
 
+import org.springframework.http.HttpStatus
+import org.springframework.web.bind.annotation.ResponseStatus
 import xtages.console.query.enums.ResourceType
 import xtages.console.service.UsageOverLimit
 import xtages.console.service.UsageOverLimitBecauseOfSubscriptionStatus
@@ -26,20 +28,26 @@ enum class ExceptionCode {
 /**
  * Base [Throwable] class for the Xtages console app.
  */
+@ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
 sealed class XtagesConsoleException(
     val code: ExceptionCode,
-    innerMessage: String,
-) : Exception("[$code] $innerMessage")
+    message: String,
+) : Exception("[$code] $message") {
+    val messageWithoutCode = message
+}
 
+@ResponseStatus(HttpStatus.NOT_FOUND)
 class NotFoundException(code: ExceptionCode, innerMessage: String) :
     XtagesConsoleException(code, innerMessage)
 
+@ResponseStatus(HttpStatus.BAD_REQUEST)
 class IllegalArgumentException(code: ExceptionCode, innerMessage: String) :
     XtagesConsoleException(code, innerMessage)
 
 class NullValueException(code: ExceptionCode, valueDesc: String, innerMessage: String) :
     XtagesConsoleException(code, "[$valueDesc] $innerMessage")
 
+@ResponseStatus(HttpStatus.BAD_REQUEST)
 class UsageOverLimitException(details: UsageOverLimit) :
     XtagesConsoleException(ExceptionCode.USAGE_OVER_LIMIT, usageToMessage(details)) {
 
