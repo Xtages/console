@@ -1,18 +1,14 @@
 package xtages.console.controller.model
 
 import org.springframework.core.convert.converter.Converter
-import org.springframework.web.util.UriComponentsBuilder
-import xtages.console.controller.GitHubUrl
-import xtages.console.controller.api.model.BuildPhase
-import xtages.console.controller.api.model.Organization
-import xtages.console.controller.api.model.Project
+import xtages.console.controller.api.model.*
 import xtages.console.query.enums.OrganizationSubscriptionStatus
 import xtages.console.query.enums.ProjectType
 import xtages.console.query.tables.pojos.BuildEvent
+import xtages.console.service.*
 import xtages.console.time.toUtcMillis
-import java.time.ZoneOffset
 import xtages.console.query.tables.pojos.Organization as OrganizationPojo
-import xtages.console.query.tables.pojos.Project as ProjectPojo
+import xtages.console.service.UsageDetail as UsageDetailPojo
 
 /**
  * Convert an [OrganizationSubscriptionStatus] to an [Organization.SubscriptionStatus].
@@ -50,3 +46,31 @@ val buildEventPojoToBuildPhaseConverter = Converter { source: BuildEvent ->
     )
 }
 
+/** Converts an [xtages.console.service.UsageDetail] into an [UsageDetail]. */
+val usageDetailPojoToUsageDetail = Converter { source: UsageDetailPojo ->
+    var limit = -1L
+    var usage = -1L
+    var status = UsageDetail.Status.UNDER_LIMIT
+    when (source) {
+        is UsageOverLimitBecauseOfSubscriptionStatus -> status = UsageDetail.Status.ORG_IN_BAD_STANDING
+        is UsageOverLimitNoPlan -> status = UsageDetail.Status.ORG_NOT_SUBSCRIBED_TO_PLAN
+        is UsageOverLimitWithDetails -> {
+            status = UsageDetail.Status.OVER_LIMIT
+            usage = source.usage
+            limit = source.limit
+        }
+        is UsageUnderLimitGrandfathered -> status = UsageDetail.Status.GRANDFATHERED
+        is UsageUnderLimitWithDetails -> {
+            status = UsageDetail.Status.UNDER_LIMIT
+            usage = source.usage
+            limit = source.limit
+        }
+    }
+    UsageDetail(
+        resourceType = ResourceType.valueOf(source.resourceType.name),
+        status = status,
+        usage = usage,
+        limit = limit,
+        resetTimestampInMillis = source.resetDateTime?.toUtcMillis()
+    )
+}
