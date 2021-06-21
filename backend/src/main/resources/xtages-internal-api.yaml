@@ -308,6 +308,48 @@ paths:
           $ref: "#/components/responses/UnauthorizedError"
         default:
           $ref: "#/components/responses/DefaultError"
+  /usage:
+    get:
+      summary: Gets the usage for a certain resource type accross all projects across all resource types
+      operationId: getAllUsageDetails
+      tags:
+        - usage
+      responses:
+        '200':
+          description: The usage for the resource type
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/UsageDetail"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        default:
+          $ref: "#/components/responses/DefaultError"
+  /usage/{resourceType}:
+    get:
+      summary: Gets the usage for a certain resource type accross all projects
+      operationId: getUsageDetail
+      tags:
+        - usage
+      parameters:
+        - in: path
+          name: resourceType
+          schema:
+            $ref: "#/components/schemas/ResourceType"
+          required: true
+      responses:
+        '200':
+          description: The usage for the resource type
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UsageDetail"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        default:
+          $ref: "#/components/responses/DefaultError"
 components:
   securitySchemes:
     bearerAuth:
@@ -607,6 +649,44 @@ components:
         - env
         - timestampInMillis
         - serviceUrl
+    ResourceType:
+      description: Enum of resources
+      type: string
+      enum:
+        - PROJECT
+        - MONTHLY_BUILD_MINUTES
+        - MONTHLY_DATA_TRANSFER_GBS
+    UsageDetail:
+      description: The usage for a certain resource
+      properties:
+        resourceType:
+          $ref: "#/components/schemas/ResourceType"
+        status:
+          type: string
+          minLength: 1
+          enum:
+            - UNDER_LIMIT
+            - OVER_LIMIT
+            - GRANDFATHERED
+            - ORG_NOT_SUBSCRIBED_TO_PLAN
+            - ORG_IN_BAD_STANDING
+        limit:
+          type: integer
+          format: int64
+          default: -1
+        usage:
+          type: integer
+          format: int64
+          default: -1
+        resetTimestampInMillis:
+          type: integer
+          format: int64
+      required:
+        - resourceType
+        - status
+        - limit
+        - usage
+        - grandfathered
   responses:
     DefaultError:
       description: Default error

@@ -13,10 +13,7 @@ import xtages.console.query.tables.daos.PlanDao
 import xtages.console.query.tables.daos.ProjectDao
 import xtages.console.query.tables.pojos.Organization
 import xtages.console.query.tables.pojos.Plan
-import java.time.Duration
-import java.time.LocalDateTime
-import java.time.LocalTime
-import java.time.ZoneOffset
+import java.time.*
 
 private const val UNLIMITED = -1L
 
@@ -32,11 +29,11 @@ class UsageService(
      * subscribed to.
      *
      * @return An [UsageUnderLimit] instance if the usage is under the limit then, otherwise throws an
-     * [UsageOverLimitException]. For an non-throwing version use [getUsageDetails].
+     * [UsageOverLimitException]. For an non-throwing version use [getUsageDetail].
      * @throws [UsageOverLimitException] if the usage of the resource if over the limit.
      */
     fun checkUsageIsBelowLimit(organization: Organization, resourceType: ResourceType): UsageUnderLimit {
-        return when (val usageResult = getUsageDetails(organization, resourceType)) {
+        return when (val usageResult = getUsageDetail(organization, resourceType)) {
             is UsageUnderLimit -> usageResult
             is UsageOverLimitBecauseOfSubscriptionStatus -> throw UsageOverLimitException(usageResult)
             is UsageOverLimitNoPlan -> throw UsageOverLimitException(usageResult)
@@ -45,10 +42,10 @@ class UsageService(
     }
 
     /**
-     * @return An [UsageResult] with the details of the usage for [resourceType] and the limit set by the [Plan]
+     * @return An [UsageDetail] with the details of the usage for [resourceType] and the limit set by the [Plan]
      * [organization] is currently subscribed to.
      */
-    fun getUsageDetails(organization: Organization, resourceType: ResourceType): UsageResult {
+    fun getUsageDetail(organization: Organization, resourceType: ResourceType): UsageDetail {
         return when (val subscriptionStatus = organization.subscriptionStatus!!) {
             OrganizationSubscriptionStatus.UNCONFIRMED,
             OrganizationSubscriptionStatus.SUSPENDED,
@@ -76,10 +73,25 @@ class UsageService(
                             resourceType = resourceType,
                             dateRange = currentBillingMonth,
                         )
+                        val resetDateTime = when (resourceType) {
+                            ResourceType.PROJECT -> null
+                            ResourceType.MONTHLY_BUILD_MINUTES,
+                            ResourceType.MONTHLY_DATA_TRANSFER_GBS -> currentBillingMonth.endInclusive
+                        }
                         return if (usage >= limit) {
-                            UsageOverLimitWithDetails(resourceType = resourceType, limit = limit, usage = usage)
+                            UsageOverLimitWithDetails(
+                                resourceType = resourceType,
+                                limit = limit,
+                                usage = usage,
+                                resetDateTime = resetDateTime
+                            )
                         } else {
-                            UsageUnderLimitWithDetails(resourceType = resourceType, limit = limit, usage = usage)
+                            UsageUnderLimitWithDetails(
+                                resourceType = resourceType,
+                                limit = limit,
+                                usage = usage,
+                                resetDateTime = resetDateTime
+                            )
                         }
                     }
                 }
@@ -156,17 +168,24 @@ class UsageService(
 }
 
 /** A sealed class hierarchy to represent different usage states */
-sealed class UsageResult(val resourceType: ResourceType)
+sealed class UsageDetail(val resourceType: ResourceType, val resetDateTime: LocalDateTime?)
 
 /** Represents usage of [resourceType] being *over* the limit. */
-sealed class UsageOverLimit(resourceType: ResourceType) : UsageResult(resourceType = resourceType)
+sealed class UsageOverLimit(resourceType: ResourceType, resetDateTime: LocalDateTime?) :
+    UsageDetail(resourceType = resourceType, resetDateTime = resetDateTime)
 
 /** Represents usage of [resourceType] being *under* the limit. */
-sealed class UsageUnderLimit(resourceType: ResourceType) : UsageResult(resourceType = resourceType)
+sealed class UsageUnderLimit(resourceType: ResourceType, resetDateTime: LocalDateTime?) :
+    UsageDetail(resourceType = resourceType, resetDateTime = resetDateTime)
 
 /** Represents [usage] of [resourceType] being *over* the [limit]. */
-class UsageOverLimitWithDetails(resourceType: ResourceType, val limit: Long, val usage: Long) :
-    UsageOverLimit(resourceType = resourceType)
+class UsageOverLimitWithDetails(
+    resourceType: ResourceType,
+    resetDateTime: LocalDateTime?,
+    val limit: Long,
+    val usage: Long
+) :
+    UsageOverLimit(resourceType = resourceType, resetDateTime = resetDateTime)
 
 /**
  * Represents [resourceType] being considered *over* the limit because the [OrganizationSubscriptionStatus] of the
@@ -175,22 +194,29 @@ class UsageOverLimitWithDetails(resourceType: ResourceType, val limit: Long, val
 class UsageOverLimitBecauseOfSubscriptionStatus(
     resourceType: ResourceType,
     val status: OrganizationSubscriptionStatus
-) : UsageOverLimit(resourceType = resourceType)
+) : UsageOverLimit(resourceType = resourceType, resetDateTime = null)
 
 /**
  * Represents [resourceType] being considered *over* the limit because the [Organization] doesn't have a current [Plan].
  */
-class UsageOverLimitNoPlan(resourceType: ResourceType) : UsageOverLimit(resourceType = resourceType)
+class UsageOverLimitNoPlan(resourceType: ResourceType) :
+    UsageOverLimit(resourceType = resourceType, resetDateTime = null)
 
 /** Represents [usage] of [resourceType] being *under* the [limit] and includes details about [usage] and [limit]. */
-class UsageUnderLimitWithDetails(resourceType: ResourceType, val limit: Long, val usage: Long) :
-    UsageUnderLimit(resourceType = resourceType)
+class UsageUnderLimitWithDetails(
+    resourceType: ResourceType,
+    resetDateTime: LocalDateTime?,
+    val limit: Long,
+    val usage: Long
+) :
+    UsageUnderLimit(resourceType = resourceType, resetDateTime = resetDateTime)
 
 /**
  * Represents [resourceType] being considered *under* the limit because the [Organization] has been grandfathered into a
  * [Plan] that doesn't have a limit for [resourceType] configured.
  */
-class UsageUnderLimitGrandfathered(resourceType: ResourceType) : UsageUnderLimit(resourceType = resourceType)
+class UsageUnderLimitGrandfathered(resourceType: ResourceType) :
+    UsageUnderLimit(resourceType = resourceType, resetDateTime = null)
 
 
 /**
