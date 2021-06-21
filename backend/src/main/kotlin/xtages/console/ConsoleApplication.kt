@@ -10,5 +10,7 @@ import xtages.console.config.ConsoleProperties
 class ConsoleApplication
 
 fun main(args: Array<String>) {
+    // Disable the JOOQ logo from logs
+    System.getProperties().setProperty("org.jooq.no-logo", "true")
     runApplication<ConsoleApplication>(*args)
 }
