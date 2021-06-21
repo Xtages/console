@@ -34,4 +34,5 @@
     <include file="changesets/plan-and-credit-tables.postgresql.sql" relativeToChangelogFile="true" />
     <include file="changesets/start-time-and-end-time-for-org-to-plan-table.postgresql.sql" relativeToChangelogFile="true" />
     <include file="changesets/indices-on-build-table.postgresql.sql" relativeToChangelogFile="true" />
+    <include file="changesets/fix-fill-build-number-trigger-function.postgresql.sql" relativeToChangelogFile="true" />
 </databaseChangeLog>
