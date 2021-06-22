@@ -25,9 +25,9 @@ export default function AccountPage() {
       <LoadIndicatingSection queryResult={customerPortalLinkQueryResult}>
         {(axiosResponse) => (
           <>
-            <SectionTitle title="Account settings" icon={User} />
+            <SectionTitle title="Billing settings" icon={User} />
             <Col sm={12}>
-              <a href={axiosResponse.data} target="_blank" rel="noreferrer">Manage my payments</a>
+              <a href={axiosResponse.data} target="_blank" rel="noreferrer">Manage payments</a>
             </Col>
           </>
         )}
@@ -35,7 +35,7 @@ export default function AccountPage() {
       <LoadIndicatingSection queryResult={usageQueryResult} last>
         {(axiosResponse) => (
           <>
-            <SectionTitle title="Usage" icon={Activity} />
+            <SectionTitle title="Usage this month" icon={Activity} />
             <Col sm={12}>
               <UsageDashboard usageDetails={axiosResponse.data} />
             </Col>

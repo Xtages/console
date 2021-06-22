@@ -24,17 +24,14 @@ export function UsageDashboard({usageDetails}: UsageDashboardProps) {
     <CardDeck>
       <UsageCard
         title="Projects"
-        message={`${projectUsage.usage} / ${projectUsage.limit} projects`}
         usageDetails={projectUsage}
       />
       <UsageCard
         title="Build minutes"
-        message={`${buildMinUsage.usage} min / ${buildMinUsage.limit} build minutes`}
         usageDetails={buildMinUsage}
       />
       <UsageCard
         title="Data transfer (egress)"
-        message={`${dataTransferUsage.usage} / ${dataTransferUsage.limit} GB`}
         usageDetails={dataTransferUsage}
       />
     </CardDeck>
@@ -47,12 +44,15 @@ const RESOURCE_TYPE_TO_ICON: Record<ResourceType, FC<IconProps>> = {
   [ResourceType.MonthlyDataTransferGbs]: DownloadCloud,
 };
 
+const RESOURCE_TYPE_TO_UNIT: Record<ResourceType, string> = {
+  [ResourceType.Project]: 'project(s)',
+  [ResourceType.MonthlyBuildMinutes]: 'min',
+  [ResourceType.MonthlyDataTransferGbs]: 'GB',
+};
+
 interface UsageCardProps {
   /** The title of the card. */
   title: string;
-
-  /** The message of the card. */
-  message: string;
 
   usageDetails: UsageDetail;
 }
@@ -62,11 +62,11 @@ interface UsageCardProps {
  */
 function UsageCard({
   title,
-  message,
   usageDetails,
 }: UsageCardProps) {
   const icon = RESOURCE_TYPE_TO_ICON[usageDetails.resourceType];
   const iconEl = icon && React.createElement(icon);
+  const unit = RESOURCE_TYPE_TO_UNIT[usageDetails.resourceType];
   const resetsInDays = usageDetails.resetTimestampInMillis
     ? (differenceInDays(toDate(usageDetails.resetTimestampInMillis), Date.now()))
     : undefined;
@@ -81,15 +81,28 @@ function UsageCard({
           {title}
         </Card.Title>
         <Card.Text>
-          <p>{message}</p>
           <p>
+            Used:
+            {' '}
+            {usageDetails.usage}
+            {' '}
+            {unit}
+          </p>
+          <p>
+            Quota:
+            {' '}
+            {usageDetails.limit}
+            {' '}
+            {unit}
+          </p>
+          <p className="text-sm">
             {resetsInDays ? (
               <>
-                Resets in
+                (Quota resets in
                 {' '}
                 {resetsInDays}
                 {' '}
-                days.
+                days.)
               </>
             ) : <>&nbsp;</>}
           </p>
