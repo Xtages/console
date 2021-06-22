@@ -522,6 +522,67 @@ export enum ProjectTypeEnum {
     Node = 'NODE'
 }
 
+/**
+ * Enum of resources
+ * @export
+ * @enum {string}
+ */
+export enum ResourceType {
+    Project = 'PROJECT',
+    MonthlyBuildMinutes = 'MONTHLY_BUILD_MINUTES',
+    MonthlyDataTransferGbs = 'MONTHLY_DATA_TRANSFER_GBS'
+}
+
+/**
+ * The usage for a certain resource
+ * @export
+ * @interface UsageDetail
+ */
+export interface UsageDetail {
+    /**
+     * 
+     * @type {ResourceType}
+     * @memberof UsageDetail
+     */
+    resourceType: ResourceType;
+    /**
+     * 
+     * @type {string}
+     * @memberof UsageDetail
+     */
+    status: UsageDetailStatusEnum;
+    /**
+     * 
+     * @type {number}
+     * @memberof UsageDetail
+     */
+    limit: number;
+    /**
+     * 
+     * @type {number}
+     * @memberof UsageDetail
+     */
+    usage: number;
+    /**
+     * 
+     * @type {number}
+     * @memberof UsageDetail
+     */
+    resetTimestampInMillis?: number;
+}
+
+/**
+    * @export
+    * @enum {string}
+    */
+export enum UsageDetailStatusEnum {
+    UnderLimit = 'UNDER_LIMIT',
+    OverLimit = 'OVER_LIMIT',
+    Grandfathered = 'GRANDFATHERED',
+    OrgNotSubscribedToPlan = 'ORG_NOT_SUBSCRIBED_TO_PLAN',
+    OrgInBadStanding = 'ORG_IN_BAD_STANDING'
+}
+
 
 /**
  * CdApi - axios parameter creator
@@ -1580,6 +1641,179 @@ export class ProjectApi extends BaseAPI {
      */
     public getProjects(includeLastBuild?: boolean, options?: any) {
         return ProjectApiFp(this.configuration).getProjects(includeLastBuild, options).then((request) => request(this.axios, this.basePath));
+    }
+}
+
+
+/**
+ * UsageApi - axios parameter creator
+ * @export
+ */
+export const UsageApiAxiosParamCreator = function (configuration?: Configuration) {
+    return {
+        /**
+         * 
+         * @summary Gets the usage for a certain resource type across all projects across all resource types
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getAllUsageDetails: async (options: any = {}): Promise<RequestArgs> => {
+            const localVarPath = `/usage`;
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            // authentication bearerAuth required
+            // http bearer authentication required
+            await setBearerAuthToObject(localVarHeaderParameter, configuration)
+
+
+    
+            setSearchParams(localVarUrlObj, localVarQueryParameter, options.query);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
+         * 
+         * @summary Gets the usage for a certain resource type across all projects
+         * @param {ResourceType} resourceType 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getUsageDetail: async (resourceType: ResourceType, options: any = {}): Promise<RequestArgs> => {
+            // verify required parameter 'resourceType' is not null or undefined
+            assertParamExists('getUsageDetail', 'resourceType', resourceType)
+            const localVarPath = `/usage/{resourceType}`
+                .replace(`{${"resourceType"}}`, encodeURIComponent(String(resourceType)));
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            // authentication bearerAuth required
+            // http bearer authentication required
+            await setBearerAuthToObject(localVarHeaderParameter, configuration)
+
+
+    
+            setSearchParams(localVarUrlObj, localVarQueryParameter, options.query);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+    }
+};
+
+/**
+ * UsageApi - functional programming interface
+ * @export
+ */
+export const UsageApiFp = function(configuration?: Configuration) {
+    const localVarAxiosParamCreator = UsageApiAxiosParamCreator(configuration)
+    return {
+        /**
+         * 
+         * @summary Gets the usage for a certain resource type across all projects across all resource types
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async getAllUsageDetails(options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Array<UsageDetail>>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.getAllUsageDetails(options);
+            return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
+        },
+        /**
+         * 
+         * @summary Gets the usage for a certain resource type across all projects
+         * @param {ResourceType} resourceType 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async getUsageDetail(resourceType: ResourceType, options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<UsageDetail>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.getUsageDetail(resourceType, options);
+            return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
+        },
+    }
+};
+
+/**
+ * UsageApi - factory interface
+ * @export
+ */
+export const UsageApiFactory = function (configuration?: Configuration, basePath?: string, axios?: AxiosInstance) {
+    const localVarFp = UsageApiFp(configuration)
+    return {
+        /**
+         * 
+         * @summary Gets the usage for a certain resource type across all projects across all resource types
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getAllUsageDetails(options?: any): AxiosPromise<Array<UsageDetail>> {
+            return localVarFp.getAllUsageDetails(options).then((request) => request(axios, basePath));
+        },
+        /**
+         * 
+         * @summary Gets the usage for a certain resource type across all projects
+         * @param {ResourceType} resourceType 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getUsageDetail(resourceType: ResourceType, options?: any): AxiosPromise<UsageDetail> {
+            return localVarFp.getUsageDetail(resourceType, options).then((request) => request(axios, basePath));
+        },
+    };
+};
+
+/**
+ * UsageApi - object-oriented interface
+ * @export
+ * @class UsageApi
+ * @extends {BaseAPI}
+ */
+export class UsageApi extends BaseAPI {
+    /**
+     * 
+     * @summary Gets the usage for a certain resource type across all projects across all resource types
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof UsageApi
+     */
+    public getAllUsageDetails(options?: any) {
+        return UsageApiFp(this.configuration).getAllUsageDetails(options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * 
+     * @summary Gets the usage for a certain resource type across all projects
+     * @param {ResourceType} resourceType 
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof UsageApi
+     */
+    public getUsageDetail(resourceType: ResourceType, options?: any) {
+        return UsageApiFp(this.configuration).getUsageDetail(resourceType, options).then((request) => request(this.axios, this.basePath));
     }
 }
 

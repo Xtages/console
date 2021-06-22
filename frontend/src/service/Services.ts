@@ -1,5 +1,11 @@
 import {Auth as CognitoAuth} from 'aws-amplify';
-import {CdApi, CheckoutApi, Configuration, LogsApi, OrganizationApi, ProjectApi} from 'gen/api';
+import {CdApi,
+  CheckoutApi,
+  Configuration,
+  LogsApi,
+  OrganizationApi,
+  ProjectApi,
+  UsageApi} from 'gen/api';
 import {BaseAPI} from 'gen/api/base';
 
 function getBasePath() {
@@ -23,3 +29,4 @@ export const organizationApi = buildAuthdApi<OrganizationApi>(OrganizationApi);
 export const projectApi = buildAuthdApi<ProjectApi>(ProjectApi);
 export const logsApi = buildAuthdApi<LogsApi>(LogsApi);
 export const cdApi = buildAuthdApi<CdApi>(CdApi);
+export const usageApi = buildAuthdApi<UsageApi>(UsageApi);

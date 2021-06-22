@@ -30,7 +30,7 @@ export default function NavBar() {
   const auth = useAuth();
   const history = useHistory();
 
-  function goToMyAccount() {
+  function goToAccount() {
     history.push('/account');
   }
 
@@ -80,7 +80,7 @@ export default function NavBar() {
               <Avatar rounded />
             </Dropdown.Toggle>
             <Dropdown.Menu>
-              <Dropdown.Item onClick={goToMyAccount}>My account</Dropdown.Item>
+              <Dropdown.Item onClick={goToAccount}>Account</Dropdown.Item>
               <Dropdown.Divider />
               <Dropdown.Item onClick={signOut}>Sign out</Dropdown.Item>
             </Dropdown.Menu>

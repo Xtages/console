@@ -2,6 +2,9 @@ import React, {Children, FC, ReactNode} from 'react';
 import * as ReactIs from 'react-is';
 import {IconProps} from 'react-feather';
 import cx from 'classnames';
+import {UseQueryResult} from 'react-query/types/react/types';
+import {AxiosResponse} from 'axios';
+import {Spinner} from 'react-bootstrap';
 
 interface SectionTitleProps {
   /** Optional Icon for the section */
@@ -62,7 +65,10 @@ interface SectionProps {
 }
 
 /** A section in a page */
-export function Section({children, last = false} : SectionProps) {
+export function Section({
+  children,
+  last = false,
+}: SectionProps) {
   let sectionTitle: ReactNode | undefined;
   const restOfChildren: ReactNode[] = [];
   Children.forEach(children, (child) => {
@@ -86,4 +92,52 @@ export function Section({children, last = false} : SectionProps) {
       && <hr />}
     </>
   );
+}
+
+export type LoadIndicatingSectionProps<
+    TQueryFnData = unknown,
+    TError = unknown,
+    TData = TQueryFnData> = {
+      /** The result from an {@link useQuery} call. */
+      queryResult: UseQueryResult<TData, TError>;
+
+      /**
+       * A function that takes {@link TData} (ie {@link AxiosResponse}) and returns a
+       * {@link ReactNode}>
+       */
+      children: ((axiosResponse: TData) => ReactNode);
+    } & SectionProps;
+
+/**
+ * A {@link Section} that will take an {@link useQuery} result and consistently show a loading
+ * indicator, or error message or finally call {@link children} with the result of the operation.
+ */
+export function LoadIndicatingSection<
+    TQueryFnData = unknown,
+    TError = unknown,
+    TData = TQueryFnData>({
+  queryResult,
+  children,
+  ...props
+}: LoadIndicatingSectionProps<TQueryFnData, TError, TData>) {
+  const {
+    isLoading,
+    error,
+  } = queryResult;
+
+  let content: string | ReactNode;
+  if (isLoading) {
+    content = (
+      <div className="mx-auto py-5">
+        <Spinner animation="grow" role="status" variant="dark-secondary">
+          <span className="sr-only">Loading...</span>
+        </Spinner>
+      </div>
+    );
+  } else if (error) {
+    content = `An error has occurred: ${error}`;
+  } else {
+    content = children(queryResult.data!!);
+  }
+  return <Section {...props}>{content}</Section>;
 }
