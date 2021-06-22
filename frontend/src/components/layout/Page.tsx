@@ -1,7 +1,7 @@
 import React, {Children, ReactNode} from 'react';
 import ReactIs from 'react-is';
 import cx from 'classnames';
-import {Section} from './Section';
+import {LoadIndicatingSection, Section} from './Section';
 import NavBar from '../nav/NavBar';
 
 interface PageProps {
@@ -16,7 +16,7 @@ interface PageProps {
  */
 export default function Page({children, width = 'wide'} : PageProps) {
   Children.forEach(children, (child) => {
-    if (!ReactIs.isElement(child) || child.type !== Section) {
+    if (!ReactIs.isElement(child) || (child.type !== Section && child.type !== LoadIndicatingSection)) {
       throw Error('All children of Page must be Sections');
     }
   });

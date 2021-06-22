@@ -1,5 +1,6 @@
 package xtages.console.exception
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import mu.KotlinLogging
 import org.springframework.boot.web.error.ErrorAttributeOptions
 import org.springframework.boot.web.servlet.error.DefaultErrorAttributes
@@ -13,12 +14,15 @@ private val logger = KotlinLogging.logger { }
  * one occurred.
  */
 @Component
-class XtagesErrorAttributes : DefaultErrorAttributes() {
+class XtagesErrorAttributes(val objectMapper: ObjectMapper) : DefaultErrorAttributes() {
     override fun getErrorAttributes(webRequest: WebRequest?, options: ErrorAttributeOptions?): MutableMap<String, Any> {
         val errorAttributes = super.getErrorAttributes(webRequest, options)
         val error = getError(webRequest)
         if (error is XtagesConsoleException) {
             errorAttributes["error_code"] = error.code.name
+            if (error.exceptionDetails != null) {
+                errorAttributes["details"] = objectMapper.convertValue(error.exceptionDetails, Map::class.java)
+            }
         }
         if (error != null) {
             logger.error(error) { "An error occurred." }

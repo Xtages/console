@@ -2,6 +2,7 @@ package xtages.console.exception
 
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.ResponseStatus
+import xtages.console.controller.model.usageDetailPojoToUsageDetail
 import xtages.console.query.enums.ResourceType
 import xtages.console.service.UsageOverLimit
 import xtages.console.service.UsageOverLimitBecauseOfSubscriptionStatus
@@ -26,30 +27,36 @@ enum class ExceptionCode {
 }
 
 /**
- * Base [Throwable] class for the Xtages console app.
+ * Base [Throwable] class for the Xtages console app. If [exceptionDetails] is not `null` then it will be serialized and
+ * sent to the client.
  */
 @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
 sealed class XtagesConsoleException(
     val code: ExceptionCode,
     message: String,
+    val exceptionDetails: Any? = null,
 ) : Exception("[$code] $message") {
     val messageWithoutCode = message
 }
 
 @ResponseStatus(HttpStatus.NOT_FOUND)
 class NotFoundException(code: ExceptionCode, innerMessage: String) :
-    XtagesConsoleException(code, innerMessage)
+    XtagesConsoleException(code = code, message = innerMessage)
 
 @ResponseStatus(HttpStatus.BAD_REQUEST)
 class IllegalArgumentException(code: ExceptionCode, innerMessage: String) :
-    XtagesConsoleException(code, innerMessage)
+    XtagesConsoleException(code = code, message = innerMessage)
 
 class NullValueException(code: ExceptionCode, valueDesc: String, innerMessage: String) :
-    XtagesConsoleException(code, "[$valueDesc] $innerMessage")
+    XtagesConsoleException(code = code, message = "[$valueDesc] $innerMessage")
 
 @ResponseStatus(HttpStatus.BAD_REQUEST)
-class UsageOverLimitException(details: UsageOverLimit) :
-    XtagesConsoleException(ExceptionCode.USAGE_OVER_LIMIT, usageToMessage(details)) {
+class UsageOverLimitException(usageDetails: UsageOverLimit) :
+    XtagesConsoleException(
+        code = ExceptionCode.USAGE_OVER_LIMIT,
+        message = usageToMessage(usageDetails),
+        exceptionDetails = usageDetailPojoToUsageDetail.convert(usageDetails)
+    ) {
 
     companion object {
         private fun usageToMessage(details: UsageOverLimit) = when (details) {

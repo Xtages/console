@@ -1,16 +1,16 @@
 import {Codesandbox} from 'react-feather';
-import React, {useState} from 'react';
+import React, {ReactNode, useState} from 'react';
 import * as z from 'zod';
 import {Field, Form, Formik, FormikErrors} from 'formik';
 import Page from 'components/layout/Page';
 import {Section, SectionTitle} from 'components/layout/Section';
 import ProjectTemplateCard from 'components/project/ProjectTemplateCard';
 import {FormikHelpers} from 'formik/dist/types';
-import {useHistory} from 'react-router-dom';
+import {useHistory, Link} from 'react-router-dom';
 import {Alert, Button} from 'react-bootstrap';
 import LabeledFormField from '../components/form/LabeledFormField';
 import {projectApi} from '../service/Services';
-import {CreateProjectReqTypeEnum} from '../gen/api';
+import {CreateProjectReqTypeEnum, UsageDetail} from '../gen/api';
 import {useAuth} from '../hooks/useAuth';
 
 const createProjectFormValuesSchema = z.object({
@@ -29,7 +29,7 @@ export default function CreateProjectPage() {
   const initialValues: CreateProjectFromValues = {
     projectName: '',
   };
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [errorMsg, setErrorMsg] = useState<ReactNode>(null);
   const auth = useAuth();
   const organization = auth.principal?.org!!;
   const history = useHistory();
@@ -46,8 +46,30 @@ export default function CreateProjectPage() {
         description: values.description,
       });
     } catch (e) {
-      if (e.isAxiosError && e.response.status === 409) {
-        setErrorMsg(`A GitHub repository named "${organization}/${values.projectName}" already exists.`);
+      const {isAxiosError, response} = e;
+      const {status, data} = response;
+      if (isAxiosError) {
+        if (status === 409) {
+          setErrorMsg(`A GitHub repository named "${organization}/${values.projectName}" already exists.`);
+        } else if (status === 400 && data.error_code === 'USAGE_OVER_LIMIT') {
+          const usageDetail: UsageDetail = data.details;
+          setErrorMsg(
+            <>
+              {organization}
+              {' '}
+              has reached the limit (
+              {usageDetail.limit}
+              ) for projects.
+              {' '}
+              See your usage
+              {' '}
+              <Link className="alert-link" to="/account">here</Link>
+              .
+            </>,
+          );
+        } else {
+          setErrorMsg('An unexpected error occurred');
+        }
       } else {
         setErrorMsg('An unexpected error occurred');
       }
@@ -106,10 +128,8 @@ export default function CreateProjectPage() {
                 }) => (
                   <Form noValidate>
                     {errorMsg && (
-                      <Alert className="alert-outline-danger">
-                        <div className="d-flex justify-content-center">
-                          <strong>{errorMsg}</strong>
-                        </div>
+                      <Alert variant="danger">
+                        {errorMsg}
                       </Alert>
                     )}
                     <h3 className="h6">Info</h3>

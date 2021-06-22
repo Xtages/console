@@ -310,7 +310,7 @@ paths:
           $ref: "#/components/responses/DefaultError"
   /usage:
     get:
-      summary: Gets the usage for a certain resource type accross all projects across all resource types
+      summary: Gets the usage for a certain resource type across all projects across all resource types
       operationId: getAllUsageDetails
       tags:
         - usage
@@ -329,7 +329,7 @@ paths:
           $ref: "#/components/responses/DefaultError"
   /usage/{resourceType}:
     get:
-      summary: Gets the usage for a certain resource type accross all projects
+      summary: Gets the usage for a certain resource type across all projects
       operationId: getUsageDetail
       tags:
         - usage

@@ -1,40 +1,47 @@
-import React, {ReactNode} from 'react';
+import React from 'react';
 import {useQuery} from 'react-query';
-import {checkoutApi} from 'service/Services';
-import {User} from 'react-feather';
+import {checkoutApi, usageApi} from 'service/Services';
+import {Activity, User} from 'react-feather';
+import {Col} from 'react-bootstrap';
 import Page from '../components/layout/Page';
-import {Section, SectionTitle} from '../components/layout/Section';
+import {LoadIndicatingSection, SectionTitle} from '../components/layout/Section';
+import {UsageDashboard} from '../components/usage/UsageDashboard';
 
 /**
  * A simple account page where the user can then click to go to their Striper customer portal.
  */
 export default function AccountPage() {
-  const {
-    isLoading,
-    error,
-    data,
-  } = useQuery(
+  const customerPortalLinkQueryResult = useQuery(
     'customerPortalLink',
     () => checkoutApi.getCustomerPortalSession(),
   );
-
-  let content: string | ReactNode;
-  if (isLoading) {
-    content = 'Loading...';
-  } else if (error) {
-    content = `An error has occurred: ${error}`;
-  } else {
-    content = <a href={data?.data} target="_blank" rel="noreferrer">Manage my payments</a>;
-  }
+  const usageQueryResult = useQuery(
+    'usage',
+    () => usageApi.getAllUsageDetails(),
+  );
 
   return (
     <Page>
-      <Section last>
-        <SectionTitle title="Account settings" icon={User} />
-        <div className="col-12">
-          {content}
-        </div>
-      </Section>
+      <LoadIndicatingSection queryResult={customerPortalLinkQueryResult}>
+        {(axiosResponse) => (
+          <>
+            <SectionTitle title="Account settings" icon={User} />
+            <Col sm={12}>
+              <a href={axiosResponse.data} target="_blank" rel="noreferrer">Manage my payments</a>
+            </Col>
+          </>
+        )}
+      </LoadIndicatingSection>
+      <LoadIndicatingSection queryResult={usageQueryResult} last>
+        {(axiosResponse) => (
+          <>
+            <SectionTitle title="Usage" icon={Activity} />
+            <Col sm={12}>
+              <UsageDashboard usageDetails={axiosResponse.data} />
+            </Col>
+          </>
+        )}
+      </LoadIndicatingSection>
     </Page>
   );
 }
