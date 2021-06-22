@@ -17,7 +17,7 @@ fun PlanDao.fetchLatestByOrganizationName(organizationName: String): PlanWithBil
         .where(
             ORGANIZATION_TO_PLAN.ORGANIZATION_NAME.eq(organizationName).and(
                 ORGANIZATION_TO_PLAN.END_TIME.isNull.or(
-                    ORGANIZATION_TO_PLAN.END_TIME.lessOrEqual(LocalDateTime.now())
+                    ORGANIZATION_TO_PLAN.END_TIME.greaterOrEqual(LocalDateTime.now())
                 )
             )
         )
