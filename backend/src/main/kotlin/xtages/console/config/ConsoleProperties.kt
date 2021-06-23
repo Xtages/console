@@ -30,5 +30,20 @@ data class ConsoleProperties(val stripe: Stripe, val server: Server, val gitHubA
         val cognito: Cognito,
         val codeBuild: CodeBuild,
         val cloudWatch: CloudWatch,
+        val rds: Rds,
+    )
+
+    data class Rds(val engine: String,
+                   val engineVersion: String,
+                   val storageType: String,
+                   val dbSecurityGroup: String,
+                   val backupRetentionPeriod: Int,
+                   val enablePerformanceInsights: Boolean,
+                   val storageEncrypted: Boolean,
+                   val kmsKeyId: String,
+                   val performanceInsightsRetentionPeriod: Int,
+                   val publiclyAccessible: Boolean,
+                   val ssmPrefix: String,
+                   val dbSubnetGroupName: String,
     )
 }

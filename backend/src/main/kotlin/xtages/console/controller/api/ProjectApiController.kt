@@ -29,6 +29,7 @@ import xtages.console.query.tables.pojos.XtagesUser
 import xtages.console.service.*
 import xtages.console.service.aws.AwsService
 import xtages.console.service.aws.CodeBuildService
+import xtages.console.service.aws.RdsService
 import xtages.console.time.toUtcMillis
 import java.util.*
 import xtages.console.query.enums.BuildType as BuildTypePojo
@@ -52,6 +53,7 @@ class ProjectApiController(
     private val buildDao: BuildDao,
     private val buildEventDao: BuildEventDao,
     private val recipeDao: RecipeDao,
+    private val rdsService: RdsService,
 ) : ProjectApiControllerBase {
 
     override fun getProject(
@@ -316,6 +318,7 @@ class ProjectApiController(
             operation = { recipeDao.fetchOneById(project.recipe!!) },
             code = RECIPE_NOT_FOUND
         )
+        ensureDbIsAvailable(organization)
         val startCodeBuildResponse = codeBuildService.startCodeBuildProject(
             gitHubAppToken = gitHubService.appToken(organization),
             user = user,
@@ -337,6 +340,9 @@ class ProjectApiController(
             authenticationService.jwt.getClaim<String>("name"),
             "name"
         )
+
+        ensureDbIsAvailable(organization)
+
         val tag = gitHubService.tagProject(organization, project, userName)
         val recipe = ensure.foundOne(
             operation = { recipeDao.fetchOneById(project.recipe!!) },
@@ -467,6 +473,17 @@ class ProjectApiController(
             builds = builds,
             deployments = deployments,
         )
+    }
+
+    private fun ensureDbIsAvailable(organization: Organization) {
+        if (organization.rdsEndpoint == null) {
+            val endpoint = ensure.notNull(
+                rdsService.getEndpoint(organization),
+                "Database it's still being provisioned. Please try again in 5 minutes"
+            )
+            organization.rdsEndpoint = endpoint
+            organizationDao.merge(organization)
+        }
     }
 }
 
