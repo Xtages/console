@@ -1,0 +1,18 @@
+.usageOverLimitToast {
+  p {
+    margin-bottom: .3em;
+  }
+}
+
+.usageCheckerToastArea {
+  position: relative;
+  maxHeight: 100%;
+  z-index: 999;
+
+  .inner {
+    position: fixed;
+    top: 100px;
+    right: 0;
+    padding-right: 20px;
+  }
+}
