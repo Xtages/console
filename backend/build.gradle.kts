@@ -29,6 +29,7 @@ dependencies {
     developmentOnly("org.springframework.boot:spring-boot-devtools")
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jdk8")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
+    implementation("com.jakewharton.byteunits:byteunits:0.9.1")
     implementation("com.stripe:stripe-java:20.45.0")
     implementation("io.awspring.cloud:spring-cloud-aws-autoconfigure:$awspringVersion")
     implementation("io.awspring.cloud:spring-cloud-aws-messaging:$awspringVersion")
@@ -43,6 +44,7 @@ dependencies {
     implementation("org.kohsuke:github-api:1.127")
     implementation("org.liquibase:liquibase-core")
     implementation(platform("software.amazon.awssdk:bom:2.16.48"))
+    implementation("software.amazon.awssdk:cloudwatch")
     implementation("software.amazon.awssdk:cloudwatchlogs")
     implementation("software.amazon.awssdk:codebuild")
     implementation("software.amazon.awssdk:codestarnotifications")
@@ -120,7 +122,6 @@ liquibase {
             "username" to "xtages_console"
         )
     }
-    println(liquibaseRunList)
     runList = liquibaseRunList ?: "main"
 }
 
@@ -188,9 +189,9 @@ tasks.withType<Test> {
 val buildFrontend = tasks.register<NpmTask>("buildFrontend") {
     dependsOn(tasks.npmInstall)
     npmCommand.set(listOf("run", "build"))
-    inputs.dir("${frontendDir}/src")
-    inputs.dir("${frontendDir}/public")
-    outputs.dir("${frontendDir}/build")
+    inputs.dir("$frontendDir/src")
+    inputs.dir("$frontendDir/public")
+    outputs.dir("$frontendDir/build")
 }
 
 // Copy the built frontend app from `console/frontend/build/` to
@@ -198,7 +199,7 @@ val buildFrontend = tasks.register<NpmTask>("buildFrontend") {
 // serves it.
 val copyFrontendToResources = tasks.register<Copy>("copyFrontendToResources") {
     dependsOn(buildFrontend)
-    from(file("${frontendDir}/build"))
+    from(file("$frontendDir/build"))
     val publicOutDir = "${sourceSets["main"].resources.srcDirs.first()}/public"
     into(file(publicOutDir))
 }
