@@ -1,5 +1,6 @@
 package xtages.console.service
 
+import com.jakewharton.byteunits.BinaryByteUnit
 import org.springframework.stereotype.Service
 import xtages.console.dao.fetchActiveCreditsByOrganizationName
 import xtages.console.dao.fetchByOrganizationInDateRange
@@ -13,7 +14,11 @@ import xtages.console.query.tables.daos.PlanDao
 import xtages.console.query.tables.daos.ProjectDao
 import xtages.console.query.tables.pojos.Organization
 import xtages.console.query.tables.pojos.Plan
-import java.time.*
+import xtages.console.service.aws.CloudWatchService
+import java.time.Duration
+import java.time.LocalDateTime
+import java.time.LocalTime
+import java.time.ZoneOffset
 
 private const val UNLIMITED = -1L
 
@@ -22,7 +27,8 @@ class UsageService(
     private val creditDao: CreditDao,
     private val planDao: PlanDao,
     private val projectDao: ProjectDao,
-    private val buildDao: BuildDao
+    private val buildDao: BuildDao,
+    private val cloudWatchService: CloudWatchService,
 ) {
     /**
      * Checks if the usage for [resourceType] is over the limit configured in the [Plan] [organization] is currently
@@ -110,7 +116,13 @@ class UsageService(
                 organization = organization,
                 billingCycle = dateRange
             )
-            ResourceType.MONTHLY_DATA_TRANSFER_GBS -> 0L
+            ResourceType.MONTHLY_DATA_TRANSFER_GBS -> BinaryByteUnit.BYTES.toGibibytes(
+                cloudWatchService.getBytesSent(
+                    organization = organization,
+                    projects = projectDao.fetchByOrganization(organization.name!!).toTypedArray(),
+                    since = dateRange.start
+                )
+            )
         }
     }
 
