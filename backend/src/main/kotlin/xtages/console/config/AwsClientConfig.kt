@@ -10,6 +10,7 @@ import org.springframework.messaging.converter.MappingJackson2MessageConverter
 import org.springframework.messaging.converter.MessageConverter
 import org.springframework.messaging.handler.annotation.support.PayloadMethodArgumentResolver
 import software.amazon.awssdk.auth.credentials.AnonymousCredentialsProvider
+import software.amazon.awssdk.services.cloudwatch.CloudWatchAsyncClient
 import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsAsyncClient
 import software.amazon.awssdk.services.codebuild.CodeBuildAsyncClient
 import software.amazon.awssdk.services.codestarnotifications.CodestarNotificationsAsyncClient
@@ -41,6 +42,9 @@ class AwsClientConfig {
 
     @Bean
     fun cloudWatchLogsClient(): CloudWatchLogsAsyncClient = CloudWatchLogsAsyncClient.create()
+
+    @Bean
+    fun cloudWatchClient(): CloudWatchAsyncClient = CloudWatchAsyncClient.create()
 
     @Bean
     fun queueMessagingTemplate(amazonSQSAsync: AmazonSQSAsync): QueueMessagingTemplate =
