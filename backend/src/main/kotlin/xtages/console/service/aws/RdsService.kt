@@ -1,5 +1,7 @@
 package xtages.console.service.aws
 
+import com.amazonaws.arn.Arn
+import io.awspring.cloud.autoconfigure.context.properties.AwsRegionProperties
 import mu.KotlinLogging
 import org.apache.commons.lang3.RandomStringUtils
 import org.springframework.stereotype.Service
@@ -12,37 +14,38 @@ import software.amazon.awssdk.services.ssm.model.ParameterType
 import software.amazon.awssdk.services.ssm.model.PutParameterRequest
 import software.amazon.awssdk.services.ssm.model.Tag
 import xtages.console.config.ConsoleProperties
-import xtages.console.dao.findPlanBy
+import xtages.console.dao.fetchLatestByOrganizationName
 import xtages.console.query.tables.daos.OrganizationDao
-import xtages.console.query.tables.daos.OrganizationToPlanDao
+import xtages.console.query.tables.daos.PlanDao
 import xtages.console.query.tables.pojos.Organization
 import software.amazon.awssdk.services.rds.model.Tag as TagRds
 
 private val logger = KotlinLogging.logger { }
+private val charsNotAllowedInPasswordRegex: Regex = Regex("/|\"|@|\\s")
 
 /**
  * A service to handle the logic to communicate with AWS RDS
  */
 @Service
-class RdsService (
+class RdsService(
     private val rdsAsyncClient: RdsAsyncClient,
     private val ssmAsyncClient: SsmAsyncClient,
     private val consoleProperties: ConsoleProperties,
-    private val organizationToPlanDao: OrganizationToPlanDao,
+    private val planDao: PlanDao,
     private val organizationDao: OrganizationDao,
-    private val charsNotAllowInPassword: String = "/|\"|@|\\s",
-){
+    private val awsRegionProperties: AwsRegionProperties,
+) {
     /**
      * Async operation to not slow down the Organization setup
      */
     fun provision(organization: Organization) {
-        val plan = organizationToPlanDao.findPlanBy(organization)
+        val plan = planDao.fetchLatestByOrganizationName(organization.name!!)?.plan
         val password = createAndStorePassInSsm(organization)
 
         val instanceRequest = CreateDbInstanceRequest.builder()
             .dbInstanceIdentifier(organization.hash)
             .masterUserPassword(password)
-            .allocatedStorage(plan.dbStorageGbs!!.toInt())
+            .allocatedStorage(plan?.dbStorageGbs!!.toInt())
             .dbName(organization.name)
             .engine(consoleProperties.aws.rds.engine)
             .dbInstanceClass(plan.dbInstance)
@@ -64,10 +67,19 @@ class RdsService (
             .build()
         try {
             rdsAsyncClient.createDBInstance(instanceRequest).get()
+            organization.rdsArn = Arn.builder()
+                .withPartition("aws")
+                .withService("rds")
+                .withRegion(awsRegionProperties.static)
+                .withAccountId(consoleProperties.aws.accountId)
+                .withResource("db:${organization.hash}")
+                .build().toString()
+            organizationDao.merge(organization)
         } catch (e: RdsException) {
-            logger.error { "There was an error while provisioning the DB for " +
-                    "organization: ${organization.name}. Plan id used: ${plan.id}" }
-            logger.error { e.localizedMessage }
+            logger.error {
+                "There was an error while provisioning the DB for organization: ${organization.name}. Plan id used: ${plan.id}"
+            }
+            logger.error(e) {}
         }
     }
 
@@ -75,14 +87,11 @@ class RdsService (
         val rdsResponse = rdsAsyncClient.describeDBInstances(
             DescribeDbInstancesRequest
                 .builder()
-                    .dbInstanceIdentifier(organization.hash)
-                    .build()
+                .dbInstanceIdentifier(organization.hash)
+                .build()
         ).get()
-        if (rdsResponse.hasDbInstances() && rdsResponse.dbInstances().first().endpoint() != null) {
-            return rdsResponse.dbInstances().first().endpoint().address()
-        }
 
-        return null
+        return rdsResponse.dbInstances().firstOrNull()?.endpoint()?.address()
     }
 
     /**
@@ -91,9 +100,8 @@ class RdsService (
      * [ConsoleProperties.aws.rds.ssmPrefix] + [organization.hash] + /rds/password
      */
     private fun createAndStorePassInSsm(organization: Organization): String {
-        val regexRemoveChars = Regex(charsNotAllowInPassword)
-        val password = RandomStringUtils.randomAscii(25).replace(regexRemoveChars,"")
-        organization.ssmDbPassPath =  "${consoleProperties.aws.rds.ssmPrefix}${organization.hash}/rds/password"
+        val password = RandomStringUtils.randomAscii(25).replace(charsNotAllowedInPasswordRegex, "")
+        organization.ssmDbPassPath = "${consoleProperties.aws.rds.ssmPrefix}${organization.hash}/rds/password"
         val putParameterRequest = PutParameterRequest.builder()
             .name(organization.ssmDbPassPath)
             .type(ParameterType.SECURE_STRING)

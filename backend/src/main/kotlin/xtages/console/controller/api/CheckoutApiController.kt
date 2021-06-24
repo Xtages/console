@@ -11,9 +11,7 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestHeader
 import xtages.console.config.ConsoleProperties
 import xtages.console.controller.api.model.CreateCheckoutSessionReq
-import xtages.console.query.tables.daos.OrganizationDao
 import xtages.console.service.StripeService
-import xtages.console.service.aws.RdsService
 import java.net.URI
 
 private const val STRIPE_SIGNATURE_HEADER = "Stripe-Signature"

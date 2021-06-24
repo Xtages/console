@@ -20,3 +20,8 @@ ALTER TABLE "organization"
     ADD COLUMN "ssm_db_pass_path" VARCHAR(2048),
     ADD COLUMN "rds_endpoint"     VARCHAR(2048);
 -- rollback ALTER TABLE "organization" DROP COLUMN "ssm_db_pass_path", DROP COLUMN "rds_endpoint";
+
+-- changeset mdellamerlina:14 logicalFilePath:xtages-console.xml
+ALTER TABLE "organization"
+    ADD COLUMN "rds_arn" VARCHAR(2048);
+-- rollback ALTER TABLE "organization" DROP COLUMN "rds_arn";
