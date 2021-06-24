@@ -22,5 +22,13 @@ data class ConsoleProperties(val stripe: Stripe, val server: Server, val gitHubA
         val buildEventsSqsQueueArn: String
     )
 
-    data class Aws(val accountId: String, val aimRoleArnPrefix: String, val cognito: Cognito, val codeBuild: CodeBuild)
+    data class CloudWatch(val egressBytesMetricName: String)
+
+    data class Aws(
+        val accountId: String,
+        val aimRoleArnPrefix: String,
+        val cognito: Cognito,
+        val codeBuild: CodeBuild,
+        val cloudWatch: CloudWatch,
+    )
 }

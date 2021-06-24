@@ -3,6 +3,7 @@ package xtages.console.service.aws
 import org.springframework.stereotype.Service
 import software.amazon.awssdk.services.cloudwatch.CloudWatchAsyncClient
 import software.amazon.awssdk.services.cloudwatch.model.*
+import xtages.console.config.ConsoleProperties
 import xtages.console.query.tables.pojos.Organization
 import xtages.console.query.tables.pojos.Project
 import java.time.Duration
@@ -11,10 +12,11 @@ import java.time.OffsetDateTime
 import java.time.ZoneOffset
 import java.time.temporal.ChronoUnit
 
-private const val NGINX_BYTES_SENT_METRIC_NAME = "nginx_bytes_sent"
-
 @Service
-class CloudWatchService(private val cloudWatchAsyncClient: CloudWatchAsyncClient) {
+class CloudWatchService(
+    private val cloudWatchAsyncClient: CloudWatchAsyncClient,
+    private val consoleProperties: ConsoleProperties
+) {
 
     /**
      * @return The amount of bytes sent (egress) by the [projects] of [organization] from [since] until now.
@@ -51,7 +53,7 @@ class CloudWatchService(private val cloudWatchAsyncClient: CloudWatchAsyncClient
                 MetricStat.builder()
                     .metric(
                         Metric.builder()
-                            .metricName(NGINX_BYTES_SENT_METRIC_NAME)
+                            .metricName(consoleProperties.aws.cloudWatch.egressBytesMetricName)
                             .namespace(project.hash!!)
                             .dimensions(
                                 getDimensions(
