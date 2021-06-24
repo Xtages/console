@@ -7,6 +7,7 @@ import {LoadIndicatingSection} from '../components/layout/Section';
 import {BuildTable} from '../components/build/BuildTable';
 import Page from '../components/layout/Page';
 import ProjectDetailsCard from '../components/project/ProjectDetailsCard';
+import UsageChecker from '../components/usage/UsageChecker';
 
 export default function ProjectPage() {
   const {name} = useParams<{name: string}>();
@@ -15,21 +16,24 @@ export default function ProjectPage() {
     () => projectApi.getProject(name, true, true, true),
   );
   return (
-    <Page>
-      <LoadIndicatingSection queryResult={getProjectQueryResult} last>
-        {((axiosResponse) => (
-          <>
-            <Container>
-              <Row>
-                <Col sm={12} className="p-0">
-                  <ProjectDetailsCard project={axiosResponse.data} />
-                </Col>
-              </Row>
-            </Container>
-            <BuildTable project={axiosResponse.data} />
-          </>
-        ))}
-      </LoadIndicatingSection>
-    </Page>
+    <>
+      <UsageChecker />
+      <Page>
+        <LoadIndicatingSection queryResult={getProjectQueryResult} last>
+          {((axiosResponse) => (
+            <>
+              <Container>
+                <Row>
+                  <Col sm={12} className="p-0">
+                    <ProjectDetailsCard project={axiosResponse.data} />
+                  </Col>
+                </Row>
+              </Container>
+              <BuildTable project={axiosResponse.data} />
+            </>
+          ))}
+        </LoadIndicatingSection>
+      </Page>
+    </>
   );
 }
