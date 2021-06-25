@@ -10,6 +10,7 @@ import org.springframework.messaging.converter.MappingJackson2MessageConverter
 import org.springframework.messaging.converter.MessageConverter
 import org.springframework.messaging.handler.annotation.support.PayloadMethodArgumentResolver
 import software.amazon.awssdk.auth.credentials.AnonymousCredentialsProvider
+import software.amazon.awssdk.services.acm.AcmAsyncClient
 import software.amazon.awssdk.services.cloudwatch.CloudWatchAsyncClient
 import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsAsyncClient
 import software.amazon.awssdk.services.codebuild.CodeBuildAsyncClient
@@ -31,7 +32,10 @@ class AwsClientConfig {
     }
 
     @Bean
-    fun cognitoIdpClient(): CognitoIdentityProviderAsyncClient = CognitoIdentityProviderAsyncClient.create();
+    fun acmClient(): AcmAsyncClient = AcmAsyncClient.create()
+
+    @Bean
+    fun cognitoIdpClient(): CognitoIdentityProviderAsyncClient = CognitoIdentityProviderAsyncClient.create()
 
     @Bean
     fun ecrAsyncClient(): EcrAsyncClient = EcrAsyncClient.create()
