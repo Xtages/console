@@ -1,6 +1,8 @@
 package xtages.console.controller.api
 
 import mu.KotlinLogging
+import org.apache.commons.validator.routines.DomainValidator
+import org.apache.commons.validator.routines.UrlValidator
 import org.springframework.cache.annotation.Cacheable
 import org.springframework.http.HttpStatus.*
 import org.springframework.http.ResponseEntity
@@ -9,10 +11,7 @@ import xtages.console.controller.GitHubAvatarUrl
 import xtages.console.controller.GitHubUrl
 import xtages.console.controller.api.model.*
 import xtages.console.controller.api.model.Build.Status
-import xtages.console.controller.model.CodeBuildType
-import xtages.console.controller.model.MD5
-import xtages.console.controller.model.buildEventPojoToBuildPhaseConverter
-import xtages.console.controller.model.projectPojoTypeToProjectTypeConverter
+import xtages.console.controller.model.*
 import xtages.console.dao.*
 import xtages.console.exception.ExceptionCode
 import xtages.console.exception.ExceptionCode.RECIPE_NOT_FOUND
@@ -27,15 +26,21 @@ import xtages.console.query.tables.pojos.GithubUser
 import xtages.console.query.tables.pojos.Organization
 import xtages.console.query.tables.pojos.XtagesUser
 import xtages.console.service.*
+import xtages.console.service.aws.AcmService
 import xtages.console.service.aws.AwsService
 import xtages.console.service.aws.CodeBuildService
 import xtages.console.time.toUtcMillis
+import java.net.URL
 import java.util.*
+import javax.validation.ValidationException
 import xtages.console.query.enums.BuildType as BuildTypePojo
 import xtages.console.query.tables.pojos.Build as BuildPojo
 import xtages.console.query.tables.pojos.Project as ProjectPojo
 
 private val logger = KotlinLogging.logger { }
+
+private val urlValidator = UrlValidator(UrlValidator.NO_FRAGMENTS)
+private val domainValidator = DomainValidator.getInstance()
 
 @Controller
 class ProjectApiController(
@@ -49,6 +54,7 @@ class ProjectApiController(
     private val awsService: AwsService,
     private val codeBuildService: CodeBuildService,
     private val usageService: UsageService,
+    private val acmService: AcmService,
     private val buildDao: BuildDao,
     private val buildEventDao: BuildEventDao,
     private val recipeDao: RecipeDao,
@@ -433,6 +439,50 @@ class ProjectApiController(
 
         val logs = codeBuildService.getLogsFor(CodeBuildType.valueOf(build.type!!.name), build, project, organization)
         return ResponseEntity.ok(CILogs(events = logs))
+    }
+
+    override fun updateProjectSettings(
+        projectName: String,
+        updateProjectSettingsReq: UpdateProjectSettingsReq
+    ): ResponseEntity<ProjectSettings> {
+        val (_, organization, project) = checkRepoBelongsToOrg(projectName)
+        var domainName = updateProjectSettingsReq.associatedDomainName
+        if (urlValidator.isValid(domainName)) {
+            domainName = URL(domainName).host
+        } else if (!domainValidator.isValid(domainName) &&
+            // It's possible to associate wildcard domains of the form "*.mydomain.com", however DomainValidator doesn't
+            // recognize those a valid, so we check if the domain name starts with "*." and strip it and try to validate
+            // again.
+            !(domainName.startsWith("*.") && domainValidator.isValid(domainName.substring(2)))
+        ) {
+            throw ValidationException("Invalid domain name")
+        }
+        val certificateDetail = acmService.requestCertificate(
+            project = project,
+            domainName = domainName
+        )
+        project.certArn = certificateDetail.certificateArn()
+        projectDao.merge(project)
+        return ResponseEntity.ok(
+            ProjectSettings(
+                projectId = project.id!!,
+                associatedDomain = certificateDetailToAssociatedDomain.convert(certificateDetail)
+            )
+        )
+    }
+
+    override fun getProjectSettings(projectName: String): ResponseEntity<ProjectSettings> {
+        val (_, organization, project) = checkRepoBelongsToOrg(projectName)
+        if (project.certArn != null) {
+            val certificateDetail = acmService.getCertificateDetail(certificateArn = project.certArn!!)
+            return ResponseEntity.ok(
+                ProjectSettings(
+                    projectId = project.id!!,
+                    associatedDomain = certificateDetailToAssociatedDomain.convert(certificateDetail)
+                )
+            )
+        }
+        return ResponseEntity.ok(ProjectSettings(projectId = project.id!!))
     }
 
     private fun checkRepoBelongsToOrg(projectName: String): Triple<XtagesUser, Organization, ProjectPojo> {

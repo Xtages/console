@@ -100,6 +100,61 @@ paths:
           $ref: "#/components/responses/UnauthorizedError"
         default:
           $ref: "#/components/responses/DefaultError"
+  /project/{projectName}/settings:
+    get:
+      summary: Fetches the project's settings
+      operationId: getProjectSettings
+      tags:
+        - project
+      parameters:
+        - in: path
+          name: projectName
+          schema:
+            type: string
+            minLength: 1
+          required: true
+          description: Name of the project to fetch
+      responses:
+        '200':
+          description: Project's settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectSettings"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        default:
+          $ref: "#/components/responses/DefaultError"
+    put:
+      summary: Updates the settings of a project
+      operationId: updateProjectSettings
+      tags:
+        - project
+      parameters:
+        - in: path
+          name: projectName
+          schema:
+            type: string
+            minLength: 1
+          required: true
+          description: Name of the project to fetch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateProjectSettingsReq"
+      responses:
+        '200':
+          description: Project's settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectSettings"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        default:
+          $ref: "#/components/responses/DefaultError"
   /project/{projectName}/ci:
     post:
       summary: Run continuous integration for the project specified
@@ -438,6 +493,66 @@ components:
         - passCheckRuleEnabled
         - builds
         - deployments
+    ProjectSettings:
+      description: Xtages project's settings
+      properties:
+        projectId:
+          type: integer
+          minLength: 1
+        associatedDomain:
+          $ref: "#/components/schemas/AssociatedDomain"
+      required:
+        - projectId
+    AssociatedDomain:
+      description: An external domain pointing to a prod deployment of a Project
+      properties:
+        name:
+          type: string
+          description: FQDN
+        certificateStatus:
+          type: string
+          minLength: 1
+          enum:
+            - EXPIRED
+            - FAILED
+            - INACTIVE
+            - ISSUED
+            - PENDING_VALIDATION
+            - REVOKED
+            - VALIDATION_TIMED_OUT
+        validationRecord:
+          $ref: "#/components/schemas/DomainValidationRecord"
+      required:
+        - name
+        - certificateStatus
+        - validationRecord
+    DomainValidationRecord:
+      description: DNS record necessary to validate a domain belongs to the Organization
+      properties:
+        name:
+          type: string
+          minLength: 1
+        recordType:
+          type: string
+          minLength: 1
+          enum:
+            - CNAME
+        value:
+          type: string
+          minLength: 1
+      required:
+        - name
+        - recordType
+        - value
+    UpdateProjectSettingsReq:
+      description: Request to create or update a project's settings
+      properties:
+        associatedDomainName:
+          type: string
+          minLength: 3
+          description: FQDN
+      required:
+        - associatedDomainName
     CreateProjectReq:
       description: Request made to POST /project
       required:
