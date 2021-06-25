@@ -10,6 +10,7 @@ import xtages.console.controller.model.organizationPojoToOrganizationConverter
 import xtages.console.query.enums.OrganizationSubscriptionStatus
 import xtages.console.query.tables.daos.OrganizationDao
 import xtages.console.service.UserService
+import xtages.console.service.aws.RdsService
 import java.util.*
 import xtages.console.query.tables.pojos.Organization as OrganizationPojo
 
@@ -17,6 +18,7 @@ import xtages.console.query.tables.pojos.Organization as OrganizationPojo
 class OrganizationApiController(
     val organizationDao: OrganizationDao,
     val userService: UserService,
+    val rdsService: RdsService,
 ) :
     OrganizationApiControllerBase {
 
