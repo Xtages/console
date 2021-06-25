@@ -462,6 +462,7 @@ class ProjectApiController(
             domainName = domainName
         )
         project.certArn = certificateDetail.certificateArn()
+        project.associatedDomain = certificateDetail.domainName()
         projectDao.merge(project)
         return ResponseEntity.ok(
             ProjectSettings(
@@ -475,6 +476,11 @@ class ProjectApiController(
         val (_, organization, project) = checkRepoBelongsToOrg(projectName)
         if (project.certArn != null) {
             val certificateDetail = acmService.getCertificateDetail(certificateArn = project.certArn!!)
+            ensure.isTrue(
+                value = project.associatedDomain == certificateDetail.domainName(),
+                code = ExceptionCode.INVALID_DOMAIN,
+                message = "The project's associated domain and the project's certificate domain don't match"
+            )
             return ResponseEntity.ok(
                 ProjectSettings(
                     projectId = project.id!!,
