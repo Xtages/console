@@ -1,6 +1,5 @@
 package xtages.console.service.aws
 
-import com.amazonaws.arn.Arn
 import io.awspring.cloud.autoconfigure.context.properties.AwsRegionProperties
 import mu.KotlinLogging
 import org.apache.commons.lang3.RandomStringUtils
@@ -66,20 +65,15 @@ class RdsService(
             )
             .build()
         try {
-            rdsAsyncClient.createDBInstance(instanceRequest).get()
-            organization.rdsArn = Arn.builder()
-                .withPartition("aws")
-                .withService("rds")
-                .withRegion(awsRegionProperties.static)
-                .withAccountId(consoleProperties.aws.accountId)
-                .withResource("db:${organization.hash}")
-                .build().toString()
+            val result = rdsAsyncClient.createDBInstance(instanceRequest).get()
+            organization.rdsArn = result.dbInstance().dbInstanceArn()
             organizationDao.merge(organization)
         } catch (e: RdsException) {
             logger.error {
                 "There was an error while provisioning the DB for organization: ${organization.name}. Plan id used: ${plan.id}"
             }
             logger.error(e) {}
+            throw e;
         }
     }
 
