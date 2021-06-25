@@ -18,6 +18,8 @@ import software.amazon.awssdk.services.codestarnotifications.CodestarNotificatio
 import software.amazon.awssdk.services.cognitoidentity.CognitoIdentityAsyncClient
 import software.amazon.awssdk.services.cognitoidentityprovider.CognitoIdentityProviderAsyncClient
 import software.amazon.awssdk.services.ecr.EcrAsyncClient
+import software.amazon.awssdk.services.rds.RdsAsyncClient
+import software.amazon.awssdk.services.ssm.SsmAsyncClient
 
 @Configuration
 class AwsClientConfig {
@@ -71,4 +73,10 @@ class AwsClientConfig {
         converter.objectMapper = mapper
         return converter
     }
+
+    @Bean
+    fun rdsAsyncClient(): RdsAsyncClient = RdsAsyncClient.create()
+
+    @Bean
+    fun ssmAsyncClient(): SsmAsyncClient = SsmAsyncClient.create()
 }

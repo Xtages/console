@@ -245,6 +245,9 @@ class CodeBuildService(
                 .projectName(cbProjectName)
                 .environmentVariablesOverride(
                     listOf(
+                        buildEnvironmentVariable("XTAGES_DB_PASS", organization.ssmDbPassPath, EnvironmentVariableType.PARAMETER_STORE),
+                        buildEnvironmentVariable("XTAGES_DB_URL", organization.rdsEndpoint),
+                        buildEnvironmentVariable("XTAGES_DB_USER", organization.hash),
                         buildEnvironmentVariable("XTAGES_SCRIPT", scriptPath),
                         buildEnvironmentVariable("XTAGES_COMMIT", commitHash),
                         buildEnvironmentVariable("XTAGES_REPO", project.ghRepoFullName),
@@ -436,8 +439,12 @@ class CodeBuildService(
     }
 }
 
-private fun buildEnvironmentVariable(name: String, value: String? = null) = EnvironmentVariable.builder()
-    .type(EnvironmentVariableType.PLAINTEXT)
+private fun buildEnvironmentVariable(
+    name: String,
+    value: String? = null,
+    type: EnvironmentVariableType=EnvironmentVariableType.PLAINTEXT
+) = EnvironmentVariable.builder()
+    .type(type)
     .name(name)
     .value(value ?: "FILL_ME")
     .build()

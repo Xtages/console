@@ -14,6 +14,7 @@ import xtages.console.query.tables.daos.StripeCheckoutSessionDao
 import xtages.console.query.tables.pojos.StripeCheckoutSession
 import xtages.console.dao.fetchOneByCognitoUserId
 import xtages.console.exception.ExceptionCode.*
+import xtages.console.service.aws.RdsService
 import java.net.URI
 import com.stripe.model.billingportal.Session as PortalSession
 import com.stripe.model.checkout.Session as CheckoutSession
@@ -26,6 +27,7 @@ class StripeService(
     private val organizationDao: OrganizationDao,
     private val stripeCheckoutSessionDao: StripeCheckoutSessionDao,
     private val authenticationService: AuthenticationService,
+    private val rdsService: RdsService,
 ) {
     init {
         Stripe.apiKey = consoleProperties.stripe.apiKey;
@@ -128,6 +130,8 @@ class StripeService(
                 subscriptionStatus = ACTIVE
             )
         )
+
+        rdsService.provision(organization)
     }
 }
 
