@@ -27,6 +27,7 @@ repositories {
 dependencies {
     annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
     developmentOnly("org.springframework.boot:spring-boot-devtools")
+    implementation("commons-validator:commons-validator:1.7")
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jdk8")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
     implementation("com.jakewharton.byteunits:byteunits:0.9.1")
@@ -44,6 +45,7 @@ dependencies {
     implementation("org.kohsuke:github-api:1.127")
     implementation("org.liquibase:liquibase-core")
     implementation(platform("software.amazon.awssdk:bom:2.16.48"))
+    implementation("software.amazon.awssdk:acm")
     implementation("software.amazon.awssdk:cloudwatch")
     implementation("software.amazon.awssdk:cloudwatchlogs")
     implementation("software.amazon.awssdk:codebuild")

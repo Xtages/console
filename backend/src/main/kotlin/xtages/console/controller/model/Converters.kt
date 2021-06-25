@@ -1,6 +1,7 @@
 package xtages.console.controller.model
 
 import org.springframework.core.convert.converter.Converter
+import software.amazon.awssdk.services.acm.model.CertificateDetail
 import xtages.console.controller.api.model.*
 import xtages.console.query.enums.OrganizationSubscriptionStatus
 import xtages.console.query.enums.ProjectType
@@ -72,5 +73,22 @@ val usageDetailPojoToUsageDetail = Converter { source: UsageDetailPojo ->
         usage = usage,
         limit = limit,
         resetTimestampInMillis = source.resetDateTime?.toUtcMillis()
+    )
+}
+
+/**
+ * Extracts the [CertificateStatus] and first [ResourceRecord] (of [DomainValidation]) from [CertificateDetail] and
+ * converts it to an [AssociatedDomain].
+ */
+val certificateDetailToAssociatedDomain = Converter { source: CertificateDetail ->
+    val domainValidationRecord = source.domainValidationOptions().first().resourceRecord()
+    AssociatedDomain(
+        name = source.domainName(),
+        certificateStatus = AssociatedDomain.CertificateStatus.valueOf(source.status().name),
+        validationRecord = DomainValidationRecord(
+            name = domainValidationRecord.name(),
+            recordType = DomainValidationRecord.RecordType.valueOf(domainValidationRecord.type().name),
+            value = domainValidationRecord.value(),
+        )
     )
 }
