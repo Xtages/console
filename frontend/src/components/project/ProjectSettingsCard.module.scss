@@ -1,0 +1,18 @@
+.dnsRecordTable {
+  table-layout: fixed;
+  width: 100%;
+
+  th,
+  td {
+    width: 100%;
+    white-space: normal;
+  }
+
+  td.recordType,
+  th.recordType
+  {
+    width: 30%;
+    white-space: nowrap;
+    //width: 1%;
+  }
+}

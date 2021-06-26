@@ -1,75 +1,122 @@
-import React from 'react';
+import React, {ReactNode} from 'react';
 import {Card, Col, Container, OverlayTrigger, Row, Tooltip} from 'react-bootstrap';
 import {Link} from 'react-router-dom';
 import {Gauge} from '@ant-design/charts';
 import {GaugeConfig} from '@ant-design/charts/es/gauge';
+import {Settings} from 'react-feather';
 import colors from '../../assets/css/colors.module.scss';
 import {GitHubCommitLink, GitHubLink} from '../link/XtagesLink';
 import {Deployment, Project} from '../../gen/api';
 import {formatDateTimeFull} from '../../helpers/time';
 
-export interface ProjectDetailsCardProps {
+export interface SimpleProjectCardProps {
   project: Project;
+
+  children?: ReactNode | ReactNode[];
+
+  projectVitalsColWidth?: number;
+
+  showSettingsLink?: boolean;
 }
 
 /**
- * Renders some vitals about a [Project] and its last deployments.
+ * A simple {@link Project} card, containing the projects name, github link and optionally a link
+ * to the project's settings. Additionally it will render {@link children} next to the project
+ * "vitals" column.
  */
-export default function ProjectDetailsCard({project}: ProjectDetailsCardProps) {
-  const prodDeployment = project.deployments.find((deployment) => deployment.env === 'production');
-  const stagingDeployment = project.deployments.find((deployment) => deployment.env === 'staging');
+export function SimpleProjectCard({
+  children,
+  project,
+  projectVitalsColWidth = 3,
+  showSettingsLink = true,
+}
+: SimpleProjectCardProps) {
   return (
     <Card>
       <Card.Body>
         <Container>
           <Row>
-            <Col sm={3}>
+            <Col sm={projectVitalsColWidth}>
               <h2 className="mb-0 lh-100">
                 <Link to={`/project/${project.name}`}>{project.name}</Link>
               </h2>
               <div>
                 <GitHubLink href={project.ghRepoUrl}>See in GitHub</GitHubLink>
               </div>
+              {showSettingsLink && (
+              <div className="pt-2 text-sm">
+                <Link to={`/project/${project.name}/settings`}>
+                  <Settings size="1em" className="pr-1" />
+                  Project settings
+                </Link>
+              </div>
+              )}
             </Col>
-            <Col sm={7} className="text-sm">
-              <DeploymentDetailsRow
-                title="In production"
-                name="production"
-                projectName={project.name}
-                deployment={prodDeployment}
-              />
-              <Row>
-                <Col>
-                  <hr className="m-2" />
-                </Col>
-              </Row>
-              <DeploymentDetailsRow
-                title="In staging"
-                name="staging"
-                projectName={project.name}
-                deployment={stagingDeployment}
-              />
-            </Col>
-            <Col sm={2} className="p-0">
-              {project.percentageOfSuccessfulBuildsInTheLastMonth !== undefined
-                && (
-                <>
-                  <BuildSuccessRadialBarChart
-                    percentage={project.percentageOfSuccessfulBuildsInTheLastMonth}
-                  />
-                  <div className="text-center pt-1">
-                    <small>
-                      % of successful builds in the last
-                      month
-                    </small>
-                  </div>
-                </>
-                )}
-            </Col>
+            {children}
           </Row>
         </Container>
       </Card.Body>
     </Card>
+  );
+}
+
+/**
+ * Renders some vitals about a [Project] and its last deployments.
+ */
+export function ProjectDetailsCard({project}: SimpleProjectCardProps) {
+  return (
+    <SimpleProjectCard project={project}>
+      <DeploymentAndBuildDetails project={project} />
+    </SimpleProjectCard>
+  );
+}
+
+function DeploymentAndBuildDetails({project}: {project: Project}) {
+  const {
+    deployments,
+    name,
+    percentageOfSuccessfulBuildsInTheLastMonth,
+  } = project;
+  const prodDeployment = deployments.find((deployment) => deployment.env === 'production');
+  const stagingDeployment = deployments.find((deployment) => deployment.env === 'staging');
+  return (
+    <>
+      <Col sm={7} className="text-sm">
+        <DeploymentDetailsRow
+          title="In production"
+          name="production"
+          projectName={name}
+          deployment={prodDeployment}
+        />
+        <Row>
+          <Col>
+            <hr />
+          </Col>
+        </Row>
+        <DeploymentDetailsRow
+          title="In staging"
+          name="staging"
+          projectName={name}
+          deployment={stagingDeployment}
+        />
+      </Col>
+      <Col sm={2} className="p-0">
+        {percentageOfSuccessfulBuildsInTheLastMonth !== undefined
+          && (
+          <>
+            <BuildSuccessRadialBarChart
+              percentage={percentageOfSuccessfulBuildsInTheLastMonth}
+            />
+            <div className="text-center pt-1">
+              <small>
+                % of successful builds in the last
+                month
+              </small>
+            </div>
+          </>
+          )}
+      </Col>
+    </>
   );
 }
 
@@ -120,7 +167,7 @@ function DeploymentDetailsRow({
                   See build
                   details
                 </Tooltip>
-                            )}
+                  )}
               >
                 <Link
                   className="font-weight-bold"
