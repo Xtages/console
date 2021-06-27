@@ -44,9 +44,9 @@ import software.amazon.awssdk.services.codebuild.model.Tag as CodebuildTag
 private val xtagesCodeBuildTag = buildCodeBuildProjectTag(key = "XTAGES_CONSOLE_CREATED", value = "true")
 
 private val envVars = listOf(
-    buildEnvironmentVariable("XTAGES_COMMIT"),
-    buildEnvironmentVariable("XTAGES_REPO"),
-    buildEnvironmentVariable("XTAGES_GITHUB_TOKEN"),
+    buildEnvVar("XTAGES_COMMIT"),
+    buildEnvVar("XTAGES_REPO"),
+    buildEnvVar("XTAGES_GITHUB_TOKEN"),
 )
 
 private val eventTypeIds = listOf(
@@ -239,29 +239,36 @@ class CodeBuildService(
         val codeBuildClient = if (fromGitHubApp) codeBuildAsyncClient else userSessionCodeBuildClient()
 
         val scriptPath = getScriptPath(recipe, previousGitHubProjectTag, environment)
+        val isDeploy = environment == "production"
 
         val startBuildResponse = codeBuildClient.startBuild(
             StartBuildRequest.builder()
                 .projectName(cbProjectName)
                 .environmentVariablesOverride(
-                    listOf(
-                        buildEnvironmentVariable("XTAGES_DB_PASS", organization.ssmDbPassPath, EnvironmentVariableType.PARAMETER_STORE),
-                        buildEnvironmentVariable("XTAGES_DB_URL", organization.rdsEndpoint),
-                        buildEnvironmentVariable("XTAGES_DB_USER", organization.hash),
-                        buildEnvironmentVariable("XTAGES_SCRIPT", scriptPath),
-                        buildEnvironmentVariable("XTAGES_COMMIT", commitHash),
-                        buildEnvironmentVariable("XTAGES_REPO", project.ghRepoFullName),
-                        buildEnvironmentVariable("XTAGES_PROJECT", project.hash),
-                        buildEnvironmentVariable("XTAGES_GITHUB_TOKEN", gitHubAppToken),
-                        buildEnvironmentVariable("XTAGES_GH_PROJECT_TAG", gitHubProjectTag),
-                        buildEnvironmentVariable("XTAGES_APP_ENV", environment.toLowerCase()),
-                        buildEnvironmentVariable("XTAGES_PROJECT_TYPE", recipe.projectType?.name!!.toLowerCase()),
-                        buildEnvironmentVariable("XTAGES_ORG", organization.name),
-                        buildEnvironmentVariable("XTAGES_ORG_HASH", organization.hash),
-                        buildEnvironmentVariable("XTAGES_RECIPE_REPO", recipe.repository),
-                        buildEnvironmentVariable("XTAGES_GH_RECIPE_TAG", recipe.tag),
-                        buildEnvironmentVariable("XTAGES_NODE_VER", recipe.version),
-                        buildEnvironmentVariable("XTAGES_PREVIOUS_GH_PROJECT_TAG", previousGitHubProjectTag)
+                    listOfNotNull(
+                        buildEnvVar(
+                            "XTAGES_DB_PASS",
+                            organization.ssmDbPassPath,
+                            EnvironmentVariableType.PARAMETER_STORE
+                        ),
+                        buildEnvVar("XTAGES_DB_URL", organization.rdsEndpoint),
+                        buildEnvVar("XTAGES_DB_USER", organization.hash),
+                        buildEnvVar("XTAGES_SCRIPT", scriptPath),
+                        buildEnvVar("XTAGES_COMMIT", commitHash),
+                        buildEnvVar("XTAGES_REPO", project.ghRepoFullName),
+                        buildEnvVar("XTAGES_PROJECT", project.hash),
+                        buildEnvVar("XTAGES_GITHUB_TOKEN", gitHubAppToken),
+                        buildEnvVar("XTAGES_GH_PROJECT_TAG", gitHubProjectTag),
+                        buildEnvVar("XTAGES_APP_ENV", environment.toLowerCase()),
+                        buildEnvVar("XTAGES_PROJECT_TYPE", recipe.projectType?.name!!.toLowerCase()),
+                        buildEnvVar("XTAGES_ORG", organization.name),
+                        buildEnvVar("XTAGES_ORG_HASH", organization.hash),
+                        buildEnvVar("XTAGES_RECIPE_REPO", recipe.repository),
+                        buildEnvVar("XTAGES_GH_RECIPE_TAG", recipe.tag),
+                        buildEnvVar("XTAGES_NODE_VER", recipe.version),
+                        buildEnvVar("XTAGES_PREVIOUS_GH_PROJECT_TAG", previousGitHubProjectTag),
+                        conditionalEnvVar(isDeploy, "XTAGES_HOST_HEADER", project.associatedDomain),
+                        conditionalEnvVar(isDeploy, "XTAGES_CUSTOMER_DOMAIN", project.associatedDomain),
                     )
                 )
                 .build()
@@ -439,10 +446,17 @@ class CodeBuildService(
     }
 }
 
-private fun buildEnvironmentVariable(
+private fun conditionalEnvVar(
+    condition: Boolean,
     name: String,
     value: String? = null,
-    type: EnvironmentVariableType=EnvironmentVariableType.PLAINTEXT
+    type: EnvironmentVariableType = EnvironmentVariableType.PLAINTEXT
+) = if (condition == condition) buildEnvVar(name, value, type) else null
+
+private fun buildEnvVar(
+    name: String,
+    value: String? = null,
+    type: EnvironmentVariableType = EnvironmentVariableType.PLAINTEXT
 ) = EnvironmentVariable.builder()
     .type(type)
     .name(name)
