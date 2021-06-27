@@ -37,4 +37,5 @@
     <include file="changesets/fix-fill-build-number-trigger-function.postgresql.sql" relativeToChangelogFile="true" />
     <include file="changesets/add-db-to-plan.postgresql.sql" relativeToChangelogFile="true" />
     <include file="changesets/cert-arn-on-project-table.postgresql.sql" relativeToChangelogFile="true" />
+    <include file="changesets/product-id-on-plan-table.postgresql.sql" relativeToChangelogFile="true" />
 </databaseChangeLog>
