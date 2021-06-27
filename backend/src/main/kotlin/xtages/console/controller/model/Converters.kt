@@ -2,6 +2,7 @@ package xtages.console.controller.model
 
 import org.springframework.core.convert.converter.Converter
 import software.amazon.awssdk.services.acm.model.CertificateDetail
+import software.amazon.awssdk.services.cognitoidentityprovider.model.UserStatusType
 import xtages.console.controller.api.model.*
 import xtages.console.query.enums.OrganizationSubscriptionStatus
 import xtages.console.query.enums.ProjectType
@@ -90,5 +91,22 @@ val certificateDetailToAssociatedDomain = Converter { source: CertificateDetail 
             recordType = DomainValidationRecord.RecordType.valueOf(domainValidationRecord.type().name),
             value = domainValidationRecord.value(),
         )
+    )
+}
+
+/**
+ * Converts an [XtagesUserWithCognitoAttributes] into an [User].
+ */
+val xtagesUserWithCognitoAttributesToUser = Converter { source: XtagesUserWithCognitoAttributes ->
+    User(
+        id = source.user.id!!,
+        username = source.attrs["email"]!!,
+        name = source.attrs["name"]!!,
+        status = when(source.userStatus) {
+            UserStatusType.RESET_REQUIRED -> User.Status.EXPIRED
+            UserStatusType.FORCE_CHANGE_PASSWORD -> User.Status.INVITED
+            else -> User.Status.ACTIVE
+        },
+        isOwner = source.user.isOwner!!,
     )
 }
