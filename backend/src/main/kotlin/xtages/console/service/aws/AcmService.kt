@@ -37,23 +37,7 @@ class AcmService(private val acmClient: AcmAsyncClient) {
             .maxAttempts(10)
             .retryOn(InvalidCertificateDetail::class.java)
             .fixedBackoff(1000)
-            .withListener(object : RetryListenerSupport() {
-                override fun <T : Any?, E : Throwable?> close(
-                    context: RetryContext?,
-                    callback: RetryCallback<T, E>?,
-                    throwable: Throwable?
-                ) = logger.error {
-                    "Could not get the full CertificateDetails for [$certificateArn], no more retrying."
-                }
-
-                override fun <T : Any?, E : Throwable?> onError(
-                    context: RetryContext?,
-                    callback: RetryCallback<T, E>?,
-                    throwable: Throwable?
-                ) = logger.error {
-                    "ACM returned  partially-filled CertificateDetails for [$certificateArn], retrying."
-                }
-            })
+            .withListener(LoggingRetryListener(certificateArn))
             .build()
         return retry.execute<CertificateDetail, InvalidCertificateDetail> { context ->
             logger.debug { "Getting CertificateDetails for [$certificateArn]. Try [${context.retryCount}]." }
@@ -80,6 +64,20 @@ class AcmService(private val acmClient: AcmAsyncClient) {
         ).get()
         return response.certificate()
     }
+}
+
+private class LoggingRetryListener(private val certificateArn: String?) : RetryListenerSupport() {
+    override fun <T : Any?, E : Throwable?> close(
+        context: RetryContext?,
+        callback: RetryCallback<T, E>?,
+        throwable: Throwable?
+    ) = logger.error { "Could not get the full CertificateDetails for [$certificateArn], no more retrying." }
+
+    override fun <T : Any?, E : Throwable?> onError(
+        context: RetryContext?,
+        callback: RetryCallback<T, E>?,
+        throwable: Throwable?
+    ) = logger.error { "ACM returned  partially-filled CertificateDetails for [$certificateArn], retrying." }
 }
 
 private class InvalidCertificateDetail : Exception()
