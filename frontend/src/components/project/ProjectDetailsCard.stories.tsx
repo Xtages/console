@@ -1,15 +1,14 @@
 import React from 'react';
 import {Meta, Story} from '@storybook/react';
-import {MemoryRouter} from 'react-router-dom';
-import ProjectDetailsCard, {ProjectDetailsCardProps} from './ProjectDetailsCard';
-import {ProjectTypeEnum} from '../../gen/api';
+import {ProjectDetailsCard, SimpleProjectCardProps} from './ProjectDetailsCard';
+import {Project, ProjectTypeEnum} from '../../gen/api';
 
 export default {
   title: 'Xtages/Project/ProjectDetailsCard',
   component: ProjectDetailsCard,
 } as Meta;
 
-const projectData = {
+const projectData: Project = {
   id: 10,
   name: 'console',
   ghRepoUrl: 'https://github.com/Xtages/console',
@@ -21,7 +20,7 @@ const projectData = {
   deployments: [],
 };
 
-const Template: Story<ProjectDetailsCardProps> = (args) => <MemoryRouter><ProjectDetailsCard {...args} /></MemoryRouter>;
+const Template: Story<SimpleProjectCardProps> = (args) => <ProjectDetailsCard {...args} />;
 
 export const Primary = Template.bind({});
 Primary.args = {

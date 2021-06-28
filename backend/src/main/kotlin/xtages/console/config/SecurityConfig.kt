@@ -1,6 +1,7 @@
 package xtages.console.config
 
 import mu.KotlinLogging
+import org.slf4j.MDC
 import org.springframework.context.annotation.Configuration
 import org.springframework.core.env.Environment
 import org.springframework.http.HttpMethod.POST
@@ -132,6 +133,8 @@ class OrganizationInGoodStandingAccessDecisionVoter(val organizationDao: Organiz
             if (organization.name == organizationName &&
                 organization.subscriptionStatus in validOrgSubscriptionStatus
             ) {
+                MDC.put("cid", cognitoUserId.id)
+                MDC.put("org", organization.name)
                 return AccessDecisionVoter.ACCESS_GRANTED
             } else {
                 if (organization.name != organizationName) {
