@@ -253,6 +253,7 @@ class CodeBuildService(
                         ),
                         buildEnvVar("XTAGES_DB_URL", organization.rdsEndpoint),
                         buildEnvVar("XTAGES_DB_USER", organization.hash),
+                        buildEnvVar("XTAGES_DB_NAME", organization.hash),
                         buildEnvVar("XTAGES_SCRIPT", scriptPath),
                         buildEnvVar("XTAGES_COMMIT", commitHash),
                         buildEnvVar("XTAGES_REPO", project.ghRepoFullName),
