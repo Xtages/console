@@ -68,6 +68,8 @@ export function BuildRow(args: BuildRowProps) {
 
 export type BuildRowInnerProps = {
   collapsible?: boolean,
+
+  initiatorColWidth?: number,
 } & BuildRowProps;
 
 /** Render details of a [Build] (without wrapping it in a card). */
@@ -75,6 +77,7 @@ export function BuildRowInner({
   collapsible = false,
   project,
   build,
+  initiatorColWidth = 3,
 }: BuildRowInnerProps) {
   const [collapsed, setCollapsed] = useState(true);
   const toggleCollapsed = () => setCollapsed(!collapsed);
@@ -124,7 +127,7 @@ export function BuildRowInner({
           (#
           {build.buildNumber}
           )
-          <hr className="mt-2 mb-3" />
+          <hr />
         </div>
       </div>
       <div className="row">
@@ -138,7 +141,7 @@ export function BuildRowInner({
         <div className="col-1">
           <BuildStatusIcon status={build.status} showLabel />
         </div>
-        <div className="col-3">
+        <div className={`col-${initiatorColWidth}`}>
           <div className="media align-items-center pr-2">
             <div>
               <Avatar
@@ -166,6 +169,7 @@ export function BuildRowInner({
               {' '}
               <GitHubCommitLink
                 id="seeCommitInGhTooltip"
+                className="font-weight-bolder"
                 commitHash={build.commitHash}
                 gitHubCommitUrl={build.commitUrl}
               />
@@ -173,25 +177,23 @@ export function BuildRowInner({
             <div>
               started
               {' '}
-              <OverlayTrigger overlay={<Tooltip id="seeMoreBuildDetailsTooltip">See build details</Tooltip>}>
-                <Link className="font-weight-bold" to={`/project/${project.id}/build/${build.id}`}>
-                  {formatDateTimeRelativeToNow(build.startTimestampInMillis)}
-                </Link>
-              </OverlayTrigger>
+              <span className="font-weight-bolder">
+                {formatDateTimeRelativeToNow(build.startTimestampInMillis)}
+              </span>
             </div>
             {build.endTimestampInMillis
               ? (
                 <>
                   and took
                   {' '}
-                  <span className="font-weight-bold">
+                  <span className="font-weight-bolder">
                     {durationString({
                       startInMillis: build.startTimestampInMillis,
                       endInMillis: build.endTimestampInMillis!!,
                     })}
                   </span>
                   {' '}
-                  to finish
+                  to finish.
                 </>
               ) : <span>is still running</span>}
           </div>

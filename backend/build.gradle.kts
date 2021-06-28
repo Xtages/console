@@ -70,6 +70,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-security")
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-webflux")
+    implementation("org.springframework.retry:spring-retry:1.3.1")
     implementation("com.github.ben-manes.caffeine:caffeine:3.0.2")
     jooqGenerator("org.postgresql:postgresql")
     runtimeOnly("org.bouncycastle:bcpkix-jdk15to18:1.68")
