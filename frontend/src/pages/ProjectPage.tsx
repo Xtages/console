@@ -6,7 +6,7 @@ import {projectApi} from '../service/Services';
 import {LoadIndicatingSection} from '../components/layout/Section';
 import {BuildTable} from '../components/build/BuildTable';
 import Page from '../components/layout/Page';
-import ProjectDetailsCard from '../components/project/ProjectDetailsCard';
+import {ProjectDetailsCard} from '../components/project/ProjectDetailsCard';
 import UsageChecker from '../components/usage/UsageChecker';
 
 export default function ProjectPage() {
