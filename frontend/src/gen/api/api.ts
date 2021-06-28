@@ -22,6 +22,46 @@ import { DUMMY_BASE_URL, assertParamExists, setApiKeyToObject, setBasicAuthToObj
 import { BASE_PATH, COLLECTION_FORMATS, RequestArgs, BaseAPI, RequiredError } from './base';
 
 /**
+ * An external domain pointing to a prod deployment of a Project
+ * @export
+ * @interface AssociatedDomain
+ */
+export interface AssociatedDomain {
+    /**
+     * FQDN
+     * @type {string}
+     * @memberof AssociatedDomain
+     */
+    name: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof AssociatedDomain
+     */
+    certificateStatus: AssociatedDomainCertificateStatusEnum;
+    /**
+     * 
+     * @type {DomainValidationRecord}
+     * @memberof AssociatedDomain
+     */
+    validationRecord: DomainValidationRecord;
+}
+
+/**
+    * @export
+    * @enum {string}
+    */
+export enum AssociatedDomainCertificateStatusEnum {
+    Expired = 'EXPIRED',
+    Failed = 'FAILED',
+    Inactive = 'INACTIVE',
+    Issued = 'ISSUED',
+    PendingValidation = 'PENDING_VALIDATION',
+    Revoked = 'REVOKED',
+    ValidationTimedOut = 'VALIDATION_TIMED_OUT'
+}
+
+/**
  * A build (CI or CD) that ocurred
  * @export
  * @interface Build
@@ -377,6 +417,40 @@ export interface Deployment {
     serviceUrl: string;
 }
 /**
+ * DNS record necessary to validate a domain belongs to the Organization
+ * @export
+ * @interface DomainValidationRecord
+ */
+export interface DomainValidationRecord {
+    /**
+     * 
+     * @type {string}
+     * @memberof DomainValidationRecord
+     */
+    name: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof DomainValidationRecord
+     */
+    recordType: DomainValidationRecordRecordTypeEnum;
+    /**
+     * 
+     * @type {string}
+     * @memberof DomainValidationRecord
+     */
+    value: string;
+}
+
+/**
+    * @export
+    * @enum {string}
+    */
+export enum DomainValidationRecordRecordTypeEnum {
+    Cname = 'CNAME'
+}
+
+/**
  * General API error
  * @export
  * @interface ErrorDesc
@@ -523,6 +597,25 @@ export enum ProjectTypeEnum {
 }
 
 /**
+ * Xtages project\'s settings
+ * @export
+ * @interface ProjectSettings
+ */
+export interface ProjectSettings {
+    /**
+     * 
+     * @type {number}
+     * @memberof ProjectSettings
+     */
+    projectId: number;
+    /**
+     * 
+     * @type {AssociatedDomain}
+     * @memberof ProjectSettings
+     */
+    associatedDomain?: AssociatedDomain;
+}
+/**
  * Enum of resources
  * @export
  * @enum {string}
@@ -533,6 +626,19 @@ export enum ResourceType {
     MonthlyDataTransferGbs = 'MONTHLY_DATA_TRANSFER_GBS'
 }
 
+/**
+ * Request to create or update a project\'s settings
+ * @export
+ * @interface UpdateProjectSettingsReq
+ */
+export interface UpdateProjectSettingsReq {
+    /**
+     * FQDN
+     * @type {string}
+     * @memberof UpdateProjectSettingsReq
+     */
+    associatedDomainName: string;
+}
 /**
  * The usage for a certain resource
  * @export
@@ -1468,6 +1574,44 @@ export const ProjectApiAxiosParamCreator = function (configuration?: Configurati
         },
         /**
          * 
+         * @summary Fetches the project\'s settings
+         * @param {string} projectName Name of the project to fetch
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getProjectSettings: async (projectName: string, options: any = {}): Promise<RequestArgs> => {
+            // verify required parameter 'projectName' is not null or undefined
+            assertParamExists('getProjectSettings', 'projectName', projectName)
+            const localVarPath = `/project/{projectName}/settings`
+                .replace(`{${"projectName"}}`, encodeURIComponent(String(projectName)));
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            // authentication bearerAuth required
+            // http bearer authentication required
+            await setBearerAuthToObject(localVarHeaderParameter, configuration)
+
+
+    
+            setSearchParams(localVarUrlObj, localVarQueryParameter, options.query);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
+         * 
          * @summary Returns the list of projects for the user\'s organization
          * @param {boolean} [includeLastBuild] Whether to include data about the last Build executed for each Project.
          * @param {*} [options] Override http request option.
@@ -1499,6 +1643,50 @@ export const ProjectApiAxiosParamCreator = function (configuration?: Configurati
             setSearchParams(localVarUrlObj, localVarQueryParameter, options.query);
             let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
             localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
+         * 
+         * @summary Updates the settings of a project
+         * @param {string} projectName Name of the project to fetch
+         * @param {UpdateProjectSettingsReq} updateProjectSettingsReq 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        updateProjectSettings: async (projectName: string, updateProjectSettingsReq: UpdateProjectSettingsReq, options: any = {}): Promise<RequestArgs> => {
+            // verify required parameter 'projectName' is not null or undefined
+            assertParamExists('updateProjectSettings', 'projectName', projectName)
+            // verify required parameter 'updateProjectSettingsReq' is not null or undefined
+            assertParamExists('updateProjectSettings', 'updateProjectSettingsReq', updateProjectSettingsReq)
+            const localVarPath = `/project/{projectName}/settings`
+                .replace(`{${"projectName"}}`, encodeURIComponent(String(projectName)));
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'PUT', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            // authentication bearerAuth required
+            // http bearer authentication required
+            await setBearerAuthToObject(localVarHeaderParameter, configuration)
+
+
+    
+            localVarHeaderParameter['Content-Type'] = 'application/json';
+
+            setSearchParams(localVarUrlObj, localVarQueryParameter, options.query);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+            localVarRequestOptions.data = serializeDataIfNeeded(updateProjectSettingsReq, localVarRequestOptions, configuration)
 
             return {
                 url: toPathString(localVarUrlObj),
@@ -1542,6 +1730,17 @@ export const ProjectApiFp = function(configuration?: Configuration) {
         },
         /**
          * 
+         * @summary Fetches the project\'s settings
+         * @param {string} projectName Name of the project to fetch
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async getProjectSettings(projectName: string, options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<ProjectSettings>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.getProjectSettings(projectName, options);
+            return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
+        },
+        /**
+         * 
          * @summary Returns the list of projects for the user\'s organization
          * @param {boolean} [includeLastBuild] Whether to include data about the last Build executed for each Project.
          * @param {*} [options] Override http request option.
@@ -1549,6 +1748,18 @@ export const ProjectApiFp = function(configuration?: Configuration) {
          */
         async getProjects(includeLastBuild?: boolean, options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Array<Project>>> {
             const localVarAxiosArgs = await localVarAxiosParamCreator.getProjects(includeLastBuild, options);
+            return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
+        },
+        /**
+         * 
+         * @summary Updates the settings of a project
+         * @param {string} projectName Name of the project to fetch
+         * @param {UpdateProjectSettingsReq} updateProjectSettingsReq 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async updateProjectSettings(projectName: string, updateProjectSettingsReq: UpdateProjectSettingsReq, options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<ProjectSettings>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.updateProjectSettings(projectName, updateProjectSettingsReq, options);
             return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
         },
     }
@@ -1586,6 +1797,16 @@ export const ProjectApiFactory = function (configuration?: Configuration, basePa
         },
         /**
          * 
+         * @summary Fetches the project\'s settings
+         * @param {string} projectName Name of the project to fetch
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getProjectSettings(projectName: string, options?: any): AxiosPromise<ProjectSettings> {
+            return localVarFp.getProjectSettings(projectName, options).then((request) => request(axios, basePath));
+        },
+        /**
+         * 
          * @summary Returns the list of projects for the user\'s organization
          * @param {boolean} [includeLastBuild] Whether to include data about the last Build executed for each Project.
          * @param {*} [options] Override http request option.
@@ -1593,6 +1814,17 @@ export const ProjectApiFactory = function (configuration?: Configuration, basePa
          */
         getProjects(includeLastBuild?: boolean, options?: any): AxiosPromise<Array<Project>> {
             return localVarFp.getProjects(includeLastBuild, options).then((request) => request(axios, basePath));
+        },
+        /**
+         * 
+         * @summary Updates the settings of a project
+         * @param {string} projectName Name of the project to fetch
+         * @param {UpdateProjectSettingsReq} updateProjectSettingsReq 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        updateProjectSettings(projectName: string, updateProjectSettingsReq: UpdateProjectSettingsReq, options?: any): AxiosPromise<ProjectSettings> {
+            return localVarFp.updateProjectSettings(projectName, updateProjectSettingsReq, options).then((request) => request(axios, basePath));
         },
     };
 };
@@ -1633,6 +1865,18 @@ export class ProjectApi extends BaseAPI {
 
     /**
      * 
+     * @summary Fetches the project\'s settings
+     * @param {string} projectName Name of the project to fetch
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof ProjectApi
+     */
+    public getProjectSettings(projectName: string, options?: any) {
+        return ProjectApiFp(this.configuration).getProjectSettings(projectName, options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * 
      * @summary Returns the list of projects for the user\'s organization
      * @param {boolean} [includeLastBuild] Whether to include data about the last Build executed for each Project.
      * @param {*} [options] Override http request option.
@@ -1641,6 +1885,19 @@ export class ProjectApi extends BaseAPI {
      */
     public getProjects(includeLastBuild?: boolean, options?: any) {
         return ProjectApiFp(this.configuration).getProjects(includeLastBuild, options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * 
+     * @summary Updates the settings of a project
+     * @param {string} projectName Name of the project to fetch
+     * @param {UpdateProjectSettingsReq} updateProjectSettingsReq 
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof ProjectApi
+     */
+    public updateProjectSettings(projectName: string, updateProjectSettingsReq: UpdateProjectSettingsReq, options?: any) {
+        return ProjectApiFp(this.configuration).updateProjectSettings(projectName, updateProjectSettingsReq, options).then((request) => request(this.axios, this.basePath));
     }
 }
 

@@ -55,13 +55,12 @@ export function GitHubLink({
   );
 }
 
-interface GitHubCommitLinkProps {
+type GitHubCommitLinkProps = {
   id?: string | undefined,
   commitHash: string;
   gitHubCommitUrl: string;
   length?: number;
-  variant?: 'xs' | 'sm' | 'reg' | 'lg' | 'xl';
-}
+} & GitHubLinkProps;
 
 /**
  * A link to a GitHub commit URL. It will always be opened in a new tab. The content of link is
@@ -73,10 +72,12 @@ export function GitHubCommitLink({
   gitHubCommitUrl,
   length = 6,
   variant = 'reg',
+  ...props
 }: GitHubCommitLinkProps) {
   const commit = commitHash.substr(0, length);
   return (
     <GitHubLink
+      {...props}
       id={id}
       title="See commit in GitHub"
       href={gitHubCommitUrl}

@@ -3,7 +3,6 @@ import * as ReactIs from 'react-is';
 import {IconProps} from 'react-feather';
 import cx from 'classnames';
 import {UseQueryResult} from 'react-query/types/react/types';
-import {AxiosResponse} from 'axios';
 import {Spinner} from 'react-bootstrap';
 
 interface SectionTitleProps {
