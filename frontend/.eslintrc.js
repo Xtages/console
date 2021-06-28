@@ -34,5 +34,6 @@ module.exports = {
         devDependencies: ['**/*.stories.tsx'],
       },
     ],
+    'import/prefer-default-export': 'off',
   },
 };
