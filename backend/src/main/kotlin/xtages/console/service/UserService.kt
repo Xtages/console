@@ -7,15 +7,19 @@ import software.amazon.awssdk.services.cognitoidentity.CognitoIdentityAsyncClien
 import software.amazon.awssdk.services.cognitoidentity.model.GetIdRequest
 import software.amazon.awssdk.services.cognitoidentityprovider.CognitoIdentityProviderAsyncClient
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminGetUserRequest
-import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminGetUserResponse
+import software.amazon.awssdk.services.cognitoidentityprovider.model.AttributeType
 import software.amazon.awssdk.services.cognitoidentityprovider.model.UserNotFoundException
+import software.amazon.awssdk.services.cognitoidentityprovider.model.UserStatusType
 import xtages.console.config.ConsoleProperties
 import xtages.console.exception.ExceptionCode.USER_NOT_FOUND
 import xtages.console.exception.ensure
 import xtages.console.query.tables.daos.GithubUserDao
 import xtages.console.query.tables.daos.XtagesUserDao
 import xtages.console.query.tables.pojos.GithubUser
+import xtages.console.query.tables.pojos.Organization
 import xtages.console.query.tables.pojos.XtagesUser
+import xtages.console.query.tables.references.XTAGES_USER
+import xtages.console.service.aws.CognitoService
 import java.util.stream.Stream
 import kotlin.streams.toList
 
@@ -30,12 +34,31 @@ class UserService(
     private val anonymousCognitoIdentityClient: CognitoIdentityAsyncClient,
     private val cognitoIdentityProviderAsyncClient: CognitoIdentityProviderAsyncClient,
     private val authenticationService: AuthenticationService,
+    private val cognitoService: CognitoService,
 ) {
+
+    /**
+     * List all the users that are part of [organization].
+     */
+    fun listOrganizationUsers(organization: Organization): List<XtagesUserWithCognitoAttributes> {
+        val orgUsers = userDao.fetchByOrganizationName(organization.name!!)
+        val usersInGroup = cognitoService.getUsersInGroup(groupName = organization.name!!)
+        val cognitoUsersByCognitoId = usersInGroup.associateBy { user -> user.username() }
+        val orgUsersByCognitoId = orgUsers.associateBy { user -> user.cognitoUserId!! }
+        return orgUsersByCognitoId.map { (cognitoId, user) ->
+            val cognitoUser = cognitoUsersByCognitoId[cognitoId]!!
+            XtagesUserWithCognitoAttributes(
+                user = user,
+                attrs = extractCognitoUserAttributes(cognitoUser.attributes()),
+                userStatus = cognitoUser.userStatus(),
+            )
+        }
+    }
 
     /**
      * Creates new Xtages user and looks up it's Cognito Identity and stores it.
      */
-    fun createUser(cognitoUserId: String, organizationName: String, isOwner: Boolean = false) {
+    fun registerUserFromCognito(cognitoUserId: String, organization: Organization, isOwner: Boolean = false) {
         val idResponse = anonymousCognitoIdentityClient.getId(
             GetIdRequest.builder()
                 .identityPoolId(consoleProperties.aws.cognito.identityPoolId)
@@ -43,13 +66,34 @@ class UserService(
                 .accountId(consoleProperties.aws.accountId)
                 .build()
         ).get()
+        cognitoService.addUserToGroup(username = cognitoUserId, groupName = organization.name!!)
         val owner = XtagesUser(
             cognitoUserId = cognitoUserId,
             cognitoIdentityId = idResponse.identityId(),
-            organizationName = organizationName,
-            isOwner = true
+            organizationName = organization.name!!,
+            isOwner = isOwner
         )
         userDao.insert(owner)
+    }
+
+    /**
+     * Invites an user to be part of [organization]. Creates a new Cognito user, adds it to an organization group and
+     * saves the user data to the database.
+     */
+    fun inviteUser(username: String, name: String, organization: Organization): XtagesUserWithCognitoAttributes {
+        val cognitoUser = cognitoService.createCognitoUser(username = username, name = name, organization = organization)
+        val user = XtagesUser(
+            cognitoUserId = cognitoUser.username(),
+            organizationName = organization.name!!,
+            isOwner = false
+        )
+        val userRecord = userDao.ctx().newRecord(XTAGES_USER, user)
+        userRecord.store()
+        return XtagesUserWithCognitoAttributes(
+            user = userRecord.into(XtagesUser::class.java),
+            attrs = extractCognitoUserAttributes(cognitoUser.attributes()),
+            userStatus = cognitoUser.userStatus(),
+        )
     }
 
     /**
@@ -64,7 +108,7 @@ class UserService(
                     .username(email)
                     .build()
             ).get()
-            val cognitoUserAttributes = extractCognitoUserAttributes(cognitoUser)
+            val cognitoUserAttributes = extractCognitoUserAttributes(cognitoUser.userAttributes())
             val user = ensure.foundOne(
                 operation = { userDao.fetchOneByCognitoUserId(cognitoUser.username()) },
                 code = USER_NOT_FOUND,
@@ -76,6 +120,7 @@ class UserService(
                 user = user,
                 githubUser = githubUser,
                 attrs = cognitoUserAttributes,
+                userStatus = cognitoUser.userStatus(),
             )
         } catch (e: UserNotFoundException) {
             null
@@ -111,7 +156,7 @@ class UserService(
             .associateBy { response -> response.username() }
 
         val cognitoUserIdToAttributes = cognitoIdToCognitoUser.values.associate { cognitoUser ->
-            val attributes = extractCognitoUserAttributes(cognitoUser)
+            val attributes = extractCognitoUserAttributes(cognitoUser.userAttributes())
             Pair(cognitoUser.username(), attributes)
         }
 
@@ -127,28 +172,22 @@ class UserService(
                 user = user,
                 githubUser = githubUser,
                 attrs = attrs,
+                userStatus = cognitoIdToCognitoUser[user.cognitoUserId!!]!!.userStatus()
             )
         }
     }
 
-    private fun extractCognitoUserAttributes(cognitoUser: AdminGetUserResponse): Map<String, String> {
-        val attributes = cognitoUser.userAttributes().associate { attr -> Pair(attr.name(), attr.value()) }
-        ensure.notNull(
-            value = attributes["name"],
-            valueDesc = "cognitoUser.name",
-            message = cognitoUser.username()
-        )
-        ensure.notNull(
-            value = attributes["email"],
-            valueDesc = "cognitoUser.email",
-            message = cognitoUser.username()
-        )
+    private fun extractCognitoUserAttributes(attributeList: MutableList<AttributeType>): Map<String, String> {
+        val attributes = attributeList.associate { attr -> Pair(attr.name(), attr.value()) }
+        ensure.notNull(value = attributes["name"], valueDesc = "cognitoUser.name")
+        ensure.notNull(value = attributes["email"], valueDesc = "cognitoUser.email")
         return attributes
     }
 }
 
 data class XtagesUserWithCognitoAttributes(
     val user: XtagesUser,
-    val githubUser: GithubUser?,
+    val githubUser: GithubUser? = null,
     val attrs: Map<String, String>,
+    val userStatus: UserStatusType,
 )
