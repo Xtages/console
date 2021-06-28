@@ -70,7 +70,7 @@ export default function UsageChecker() {
   return (
     <div aria-live="polite" aria-atomic className={styles.usageCheckerToastArea}>
       <div className={styles.inner}>
-        {usageDetails.map((usage) => <UsageOverLimitToast usage={usage} />)}
+        {usageDetails.map((usage) => <UsageOverLimitToast key={usage.resourceType} usage={usage} />)}
       </div>
     </div>
   );

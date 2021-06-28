@@ -452,7 +452,13 @@ class ProjectApiController(
         updateProjectSettingsReq: UpdateProjectSettingsReq
     ): ResponseEntity<ProjectSettings> {
         val (_, organization, project) = checkRepoBelongsToOrg(projectName)
+        if (project.associatedDomain != null) {
+            return ResponseEntity(CONFLICT)
+        }
         var domainName = updateProjectSettingsReq.associatedDomainName
+        if (projectDao.fetchByAssociatedDomain(domainName).isNotEmpty()) {
+            throw ValidationException("Invalid domain name")
+        }
         if (urlValidator.isValid(domainName)) {
             domainName = URL(domainName).host
         } else if (!domainValidator.isValid(domainName) &&
@@ -469,7 +475,7 @@ class ProjectApiController(
         )
         project.certArn = certificateDetail.certificateArn()
         project.associatedDomain = certificateDetail.domainName()
-        projectDao.merge(project)
+        projectDao.update(project)
         return ResponseEntity.ok(
             ProjectSettings(
                 projectId = project.id!!,
