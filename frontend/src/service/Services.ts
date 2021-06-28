@@ -5,7 +5,8 @@ import {CdApi,
   LogsApi,
   OrganizationApi,
   ProjectApi,
-  UsageApi} from 'gen/api';
+  UsageApi,
+  UserApi} from 'gen/api';
 import {BaseAPI} from 'gen/api/base';
 
 function getBasePath() {
@@ -30,3 +31,4 @@ export const projectApi = buildAuthdApi<ProjectApi>(ProjectApi);
 export const logsApi = buildAuthdApi<LogsApi>(LogsApi);
 export const cdApi = buildAuthdApi<CdApi>(CdApi);
 export const usageApi = buildAuthdApi<UsageApi>(UsageApi);
+export const userApi = buildAuthdApi<UserApi>(UserApi);
