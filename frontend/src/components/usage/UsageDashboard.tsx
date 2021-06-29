@@ -80,33 +80,31 @@ function UsageCard({
           {' '}
           {title}
         </Card.Title>
-        <Card.Text>
-          <p>
-            Used:
-            {' '}
-            {usageDetails.usage}
-            {' '}
-            {unit}
-          </p>
-          <p>
-            Quota:
-            {' '}
-            {usageDetails.limit}
-            {' '}
-            {unit}
-          </p>
-          <p className="text-sm">
-            {resetsInDays ? (
-              <>
-                (Quota resets in
-                {' '}
-                {resetsInDays}
-                {' '}
-                days.)
-              </>
-            ) : <>&nbsp;</>}
-          </p>
-        </Card.Text>
+        <p>
+          Used:
+          {' '}
+          {usageDetails.usage}
+          {' '}
+          {unit}
+        </p>
+        <p>
+          Quota:
+          {' '}
+          {usageDetails.limit}
+          {' '}
+          {unit}
+        </p>
+        <p className="text-sm">
+          {resetsInDays ? (
+            <>
+              (Quota resets in
+              {' '}
+              {resetsInDays}
+              {' '}
+              days.)
+            </>
+          ) : <>&nbsp;</>}
+        </p>
         <ProgressBar
           variant={usageDetails.status === UsageDetailStatusEnum.OverLimit ? 'danger' : 'light-success'}
           now={(usageDetails.usage * 100) / usageDetails.limit}

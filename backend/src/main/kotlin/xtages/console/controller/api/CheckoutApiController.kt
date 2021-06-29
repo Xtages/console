@@ -3,6 +3,7 @@ package xtages.console.controller.api
 import com.stripe.exception.SignatureVerificationException
 import com.stripe.net.Webhook
 import mu.KotlinLogging
+import org.springframework.http.HttpStatus
 import org.springframework.http.HttpStatus.CREATED
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Controller
@@ -11,6 +12,8 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestHeader
 import xtages.console.config.ConsoleProperties
 import xtages.console.controller.api.model.CreateCheckoutSessionReq
+import xtages.console.query.tables.daos.XtagesUserDao
+import xtages.console.service.AuthenticationService
 import xtages.console.service.StripeService
 import java.net.URI
 
@@ -20,6 +23,8 @@ private val logger = KotlinLogging.logger { }
 
 @Controller
 class CheckoutApiController(
+    private val userDao: XtagesUserDao,
+    private val authenticationService: AuthenticationService,
     private val stripeService: StripeService,
     private val consoleProperties: ConsoleProperties,
 ) :
@@ -35,7 +40,11 @@ class CheckoutApiController(
     }
 
     override fun getCustomerPortalSession(): ResponseEntity<URI> {
-        return ResponseEntity.ok(stripeService.createCustomerPortalSession())
+        val user = userDao.fetchOneByCognitoUserId(authenticationService.currentCognitoUserId.id)
+        if (user!!.isOwner!!) {
+            return ResponseEntity.ok(stripeService.createCustomerPortalSession())
+        }
+        return ResponseEntity(HttpStatus.FORBIDDEN)
     }
 
     @PostMapping("/checkout/webhook")

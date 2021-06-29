@@ -1,13 +1,14 @@
-import {Field, GenericFieldHTMLAttributes} from 'formik';
+import {Field} from 'formik';
 import React, {ReactNode, useState} from 'react';
 import cx from 'classnames';
 
-export type LabeledFormFieldProps = GenericFieldHTMLAttributes & {
+export type LabeledFormFieldProps = JSX.IntrinsicElements['input'] & {
   name: string;
   addOn: ReactNode | undefined | null
   label: string | ReactNode;
   invalid?: boolean;
   validationFeedback?: string | undefined | null;
+  sizeVariant?: 'sm' | 'lg' | undefined;
 };
 
 /**
@@ -25,6 +26,7 @@ export default function LabeledFormField({
   label,
   invalid = false,
   validationFeedback,
+  sizeVariant = undefined,
   ...props
 }: LabeledFormFieldProps) {
   const [focused, setFocused] = useState(false);
@@ -40,6 +42,7 @@ export default function LabeledFormField({
       {labelEl}
       <div className={cx('input-group', {
         'input-group-merge': addOn,
+        [`input-group-${sizeVariant}`]: sizeVariant,
         'has-validation': validationFeedback,
       })}
       >
