@@ -1,77 +1,76 @@
 import React, {useState} from 'react';
-import {RouteComponentProps, useHistory} from 'react-router-dom';
-import {Form, Formik, FormikErrors} from 'formik';
-import {FormikHelpers} from 'formik/dist/types';
-import * as z from 'zod';
-import {useAuth} from 'hooks/useAuth';
-import CreateAccountLink from 'pages/authn/CreateAccountLink';
-import Logo from 'components/Logos';
 import {Alert, Col, Container, Row} from 'react-bootstrap';
+import Logo from 'components/Logos';
+import {Form, Formik, FormikErrors} from 'formik';
 import {EmailField, PasswordField} from 'components/user/AuthFields';
+import CreateAccountLink from 'pages/authn/CreateAccountLink';
+import * as z from 'zod';
+import {useHistory, useLocation} from 'react-router-dom';
+import {FormikHelpers} from 'formik/dist/types';
+import {Credentials, Principal, useAuth} from 'hooks/useAuth';
 import {CognitoUser} from 'amazon-cognito-identity-js';
 
-/** The properties that are available to the {@link LoginPage} component. */
-type LoginPageProps = RouteComponentProps<{}, {}, LocationState | null>;
-
-/** The state that is provided when redirecting to this component. */
-interface LocationState {
-  referrer: string;
-}
-
-const loginFormValuesSchema = z.object({
+const completePasswordFormValuesSchema = z.object({
   email: z.string()
+    .nonempty(),
+  oldPassword: z.string()
     .nonempty(),
   password: z.string()
     .nonempty(),
 });
 
-type LoginFormValues = z.infer<typeof loginFormValuesSchema>;
+type CompletePasswordFormValues = z.infer<typeof completePasswordFormValuesSchema>;
+
+type LocationState = {
+  referrer: string | undefined | null;
+} & Credentials;
 
 /**
- * Component that renders the login page.
- *
- * @param location - The {@link LocationState} passed to this component by
- *     the `react-router` {@link Router}.
+ * Renders a form to change the users password.
  */
-export default function LoginPage({location}: LoginPageProps) {
-  const initialValues: LoginFormValues = {
-    email: '',
+export default function ChangePasswordPage() {
+  const location = useLocation<LocationState>();
+  const email = new URLSearchParams(location.search).get('email');
+  const initialValues = {
+    email: email ?? location.state?.username ?? '',
+    oldPassword: location?.state?.password ?? '',
     password: '',
   };
-
   const auth = useAuth();
   const history = useHistory();
   const [errorOccurred, setErrorOccurred] = useState(false);
 
-  async function logIn(values: LoginFormValues, actions: FormikHelpers<LoginFormValues>) {
+  async function changePassword(values: CompletePasswordFormValues,
+    actions: FormikHelpers<CompletePasswordFormValues>) {
     setErrorOccurred(false);
     try {
       const result = await auth.logIn({
         username: values.email,
-        password: values.password,
+        password: values.oldPassword,
       });
       if (result instanceof CognitoUser && result.challengeName === 'NEW_PASSWORD_REQUIRED') {
-        actions.setSubmitting(false);
-        const queryParams = new URLSearchParams();
-        queryParams.set('email', values.email);
-        history.push(`/changePassword?${queryParams.toString()}`, {
-          ...location.state,
-          username: values.email,
+        await auth.completeNewPassword({
+          user: result as CognitoUser,
           password: values.password,
         });
-        return;
+        const redirectTo = location.state?.referrer || '/';
+        history.replace(redirectTo);
+      } else {
+        await auth.changePassword({
+          user: (result as Principal).cognitoUser,
+          oldPassword: values.oldPassword,
+          newPassword: values.password,
+        });
       }
-      const redirectTo = location.state?.referrer || '/';
-      history.replace(redirectTo);
     } catch (e) {
       setErrorOccurred(true);
     }
     actions.setSubmitting(false);
   }
 
-  function validate(values: LoginFormValues): FormikErrors<LoginFormValues> {
+  function validate(values: CompletePasswordFormValues): FormikErrors<CompletePasswordFormValues> {
     try {
-      loginFormValuesSchema.parse(values);
+      completePasswordFormValuesSchema.parse(values);
       return {};
     } catch (error) {
       return error.formErrors.fieldErrors;
@@ -85,13 +84,14 @@ export default function LoginPage({location}: LoginPageProps) {
           <Col sm={4} className="py-6 py-md-0">
             <div>
               <div className="mb-5 text-center">
-                <Logo size="sm" full={false} />
-                <h1 className="h3 mb-1">Sign in to Xtages</h1>
+                <Logo size="md" />
+                <p>
+                  Change your password
+                </p>
               </div>
-              <span className="clearfix" />
               <Formik
                 initialValues={initialValues}
-                onSubmit={logIn}
+                onSubmit={changePassword}
                 validate={validate}
                 validateOnBlur={false}
                 validateOnChange={false}
@@ -106,14 +106,19 @@ export default function LoginPage({location}: LoginPageProps) {
                     </Alert>
                     )}
                     <EmailField />
-                    <PasswordField placeholder="Password" />
+                    <PasswordField
+                      name="oldPassword"
+                      label="Previous password"
+                      placeholder="Password"
+                    />
+                    <PasswordField label="New password" placeholder="Password" showHelpTooltip />
                     <div className="mt-4">
                       <button
                         type="submit"
                         className="btn btn-block btn-primary"
                         disabled={isSubmitting}
                       >
-                        Sign in
+                        Confirm
                       </button>
                     </div>
                   </Form>

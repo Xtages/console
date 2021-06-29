@@ -5,7 +5,7 @@ import {Form, Formik, FormikErrors, useFormikContext} from 'formik';
 import {FormikHelpers} from 'formik/dist/types';
 import * as z from 'zod';
 import CreateAccountLink from 'pages/authn/CreateAccountLink';
-import {useAuth} from 'hooks/useAuth';
+import {Principal, useAuth} from 'hooks/useAuth';
 import redirectToStripeCheckoutSession from 'service/CheckoutService';
 import {organizationApi} from 'service/Services';
 import Logo from 'components/Logos';
@@ -122,17 +122,21 @@ export default function ConfirmSignUpPage({location}: ConfirmSignUpPageProps) {
       return;
     }
     const principal = await auth.logIn({
-      email: values.email,
+      username: values.email,
       password: values.password,
     });
-    await organizationApi.createOrganization({
-      organizationName: principal.org,
-      ownerCognitoUserId: principal.id,
-    });
-    await redirectToStripeCheckoutSession({
-      priceIds: ['price_1IdOOzIfxICi4AQgjta89k2Y'],
-      organizationName: principal.org,
-    });
+    if (principal instanceof Principal) {
+      await organizationApi.createOrganization({
+        organizationName: principal.org,
+        ownerCognitoUserId: principal.id,
+      });
+      await redirectToStripeCheckoutSession({
+        priceIds: ['price_1IdOOzIfxICi4AQgjta89k2Y'],
+        organizationName: principal.org,
+      });
+    } else {
+      setErrorOccurred(true);
+    }
     actions.setSubmitting(false);
   }
 

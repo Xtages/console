@@ -23,10 +23,14 @@ export function EmailField(props: Partial<LabeledFormFieldProps>) {
  * Password `formik` field.
  */
 export function PasswordField({
+  label = 'Password',
+  name = 'password',
   showHelpTooltip = false,
   placeholder = '********',
   ...props
 }: {
+  label?: string,
+  name?: string,
   showHelpTooltip?: boolean,
 } & Partial<LabeledFormFieldProps>) {
   const [showPassword, setShowPassword] = useState(false);
@@ -61,7 +65,7 @@ export function PasswordField({
         props
     }
       type={showPassword ? 'text' : 'password'}
-      name="password"
+      name={name}
       placeholder={placeholder}
       addOn={
         <Key size="1em" />
@@ -70,7 +74,7 @@ export function PasswordField({
         <div className="d-flex align-items-center justify-content-between">
           <div>
             <label className="form-control-label" htmlFor="password">
-              Password
+              {label}
               {helpTooltipFragment}
             </label>
           </div>

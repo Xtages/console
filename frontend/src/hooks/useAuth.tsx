@@ -26,21 +26,27 @@ export class Principal {
   /** User's organization */
   readonly org: string;
 
+  /** Cognito user */
+  readonly cognitoUser: CognitoUser;
+
   constructor({
     id,
     name,
     email,
     org,
+    cognitoUser,
   }: {
     id: string;
     name: string;
     email: string;
     org: string;
+    cognitoUser: CognitoUser;
   }) {
     this.id = id;
     this.name = name;
     this.email = email;
     this.org = org;
+    this.cognitoUser = cognitoUser;
   }
 
   /**
@@ -59,6 +65,7 @@ export class Principal {
       name: attrs.name,
       email: attrs.email,
       org: attrs['custom:organization'],
+      cognitoUser: user,
     });
   }
 }
@@ -94,6 +101,20 @@ export function useAuth() {
 
 type Auth = ReturnType<typeof useProvideAuth>;
 
+export type Credentials = {
+  username: string;
+  password: string;
+};
+
+type SignUpValues = {
+  name: string;
+  org: string;
+} & Credentials;
+
+type CognitoUserWithChallenge = CognitoUser & {
+  challengeName: any;
+};
+
 /**
  * Provider hook that creates {@link Auth} object and handles state of the {@link Principal}
  * and the authentication process.
@@ -107,11 +128,38 @@ function useProvideAuth() {
   const [inProgress, setInProgress] = useState(true);
 
   /** Sign-in using email and password. */
-  async function logIn({email, password}: {email: string; password: string}) {
-    const user: CognitoUser = await CognitoAuth.signIn(email, password);
+  async function logIn({
+    username,
+    password,
+  }: Credentials):
+    Promise<Principal | CognitoUserWithChallenge> {
+    const user: CognitoUserWithChallenge = await CognitoAuth.signIn(username, password);
+    if (user.challengeName) {
+      return user;
+    }
     const converted = await Principal.fromCognitoUser(user);
     setPrincipal(converted);
     return converted;
+  }
+
+  /** Complete login after invitation. The user will have to change their password. */
+  async function completeNewPassword({
+    user,
+    password,
+  }: {user: CognitoUser, password: string}) {
+    const loggedInUser = await CognitoAuth.completeNewPassword(user, password);
+    const converted = await Principal.fromCognitoUser(loggedInUser);
+    setPrincipal(converted);
+    return converted;
+  }
+
+  /** Changes the user's password */
+  async function changePassword({
+    user,
+    oldPassword,
+    newPassword,
+  }: {user: CognitoUser, oldPassword: string, newPassword: string}) {
+    await CognitoAuth.changePassword(user, oldPassword, newPassword);
   }
 
   /**
@@ -119,18 +167,13 @@ function useProvideAuth() {
    * a {@link Principal}, `null` otherwise.
    */
   async function signUp({
-    email,
+    username,
     password,
     name,
     org,
-  }: {
-    email: string;
-    password: string;
-    name: string;
-    org: string;
-  }) : Promise<NullablePrincipal> {
+  }: SignUpValues): Promise<NullablePrincipal> {
     const result = await CognitoAuth.signUp({
-      username: email,
+      username,
       password,
       attributes: {
         name,
@@ -237,6 +280,8 @@ function useProvideAuth() {
     inProgress,
     principal,
     logIn,
+    completeNewPassword,
+    changePassword,
     signUp,
     confirmSignUp,
     resendConfirmationCode,
