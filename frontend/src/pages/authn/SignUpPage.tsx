@@ -10,7 +10,7 @@ import redirectToStripeCheckoutSession from 'service/CheckoutService';
 import Logo from 'components/Logos';
 import LabeledFormField from 'components/form/LabeledFormField';
 import {Alert} from 'react-bootstrap';
-import {EmailField, PasswordField} from './AuthFields';
+import {EmailField, PasswordField} from 'components/user/AuthFields';
 
 const signUpFormValuesSchema = z.object({
   name: z.string()

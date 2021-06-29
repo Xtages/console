@@ -71,14 +71,14 @@ class CognitoService(
     fun createCognitoUser(username: String, name: String, organization: Organization): UserType {
         val response = cognitoIdentityProviderClient.adminCreateUser(
             AdminCreateUserRequest.builder()
+                .userPoolId(consoleProperties.aws.cognito.userPoolId)
                 .username(username)
                 .userAttributes(
                     buildAttribute(name = "email", value = username),
-                    buildAttribute(name = "name", value = username),
+                    buildAttribute(name = "name", value = name),
                     buildAttribute(name = "custom:organization", value = organization.name!!)
                 )
                 .desiredDeliveryMediums(DeliveryMediumType.EMAIL)
-                .messageAction(MessageActionType.RESEND)
                 .build()
         ).get()
         addUserToGroup(username = username, groupName = organization.name!!)

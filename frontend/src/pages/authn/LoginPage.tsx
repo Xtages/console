@@ -7,7 +7,7 @@ import {useAuth} from 'hooks/useAuth';
 import CreateAccountLink from 'pages/authn/CreateAccountLink';
 import Logo from 'components/Logos';
 import {Alert} from 'react-bootstrap';
-import {EmailField, PasswordField} from './AuthFields';
+import {EmailField, PasswordField} from 'components/user/AuthFields';
 
 /** The properties that are available to the {@link LoginPage} component. */
 type LoginPageProps = RouteComponentProps<{}, {}, LocationState | null>;

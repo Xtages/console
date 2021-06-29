@@ -11,7 +11,7 @@ import {organizationApi} from 'service/Services';
 import Logo from 'components/Logos';
 import LabeledFormField from 'components/form/LabeledFormField';
 import {Alert, Button} from 'react-bootstrap';
-import {EmailField, PasswordField} from './AuthFields';
+import {EmailField, PasswordField} from 'components/user/AuthFields';
 import {SignUpFormValues} from './SignUpPage';
 
 /** The properties that are available to the {@link ConfirmSignUpPage} component. */

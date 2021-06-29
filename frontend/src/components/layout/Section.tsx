@@ -93,8 +93,7 @@ export function Section({
   );
 }
 
-export type LoadIndicatingSectionProps<
-    TQueryFnData = unknown,
+export type LoadIndicatingSectionProps<TQueryFnData = unknown,
     TError = unknown,
     TData = TQueryFnData> = {
       /** The result from an {@link useQuery} call. */
@@ -105,18 +104,26 @@ export type LoadIndicatingSectionProps<
        * {@link ReactNode}>
        */
       children: ((axiosResponse: TData) => ReactNode);
+
+      /**
+       * A function that if passed, will return a {@link ReactNode} to replace the default error
+       * message rendered by {@link LoadingIndicatingSection}. If it returns `undefined` the default
+       * error will be rendered.
+       */
+      errorHandler?: ((error: TError) => ReactNode);
     } & SectionProps;
 
 /**
  * A {@link Section} that will take an {@link useQuery} result and consistently show a loading
  * indicator, or error message or finally call {@link children} with the result of the operation.
  */
-export function LoadIndicatingSection<
-    TQueryFnData = unknown,
+export function LoadIndicatingSection<TQueryFnData = unknown,
     TError = unknown,
     TData = TQueryFnData>({
   queryResult,
   children,
+  errorHandler = undefined,
+  last,
   ...props
 }: LoadIndicatingSectionProps<TQueryFnData, TError, TData>) {
   const {
@@ -124,6 +131,7 @@ export function LoadIndicatingSection<
     error,
   } = queryResult;
 
+  let errorHandled = false;
   let content: string | ReactNode;
   if (isLoading) {
     content = (
@@ -134,9 +142,18 @@ export function LoadIndicatingSection<
       </div>
     );
   } else if (error) {
-    content = `An error has occurred: ${error}`;
+    if (errorHandler) {
+      content = errorHandler(error);
+      if (content) {
+        errorHandled = true;
+      } else {
+        content = `An error has occurred: ${error}`;
+      }
+    } else {
+      content = `An error has occurred: ${error}`;
+    }
   } else {
     content = children(queryResult.data!!);
   }
-  return <Section {...props}>{content}</Section>;
+  return <Section last={errorHandled || last} {...props}>{content}</Section>;
 }
