@@ -25,7 +25,7 @@ export function UserTable({users}: UserTableProps) {
               <span className="h6 mb-0 text-sm">{user.name}</span>
             </th>
             <td>
-              <a href={`mailto:${user.username}`}>{user.username}</a>
+              <a href={`mailto:${user.username}`} target="_blank" rel="noreferrer">{user.username}</a>
             </td>
             <td className="text-capitalize">
               {user.status.toLowerCase()}

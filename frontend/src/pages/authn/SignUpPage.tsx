@@ -56,7 +56,7 @@ export default function SignUpPage() {
       principal = await auth.signUp({
         name: values.name,
         org: values.organizationName,
-        email: values.email,
+        username: values.email,
         password: values.password,
       });
     } catch (e) {

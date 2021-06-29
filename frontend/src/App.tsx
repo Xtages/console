@@ -10,6 +10,7 @@ import HomePage from 'pages/HomePage';
 import ConfirmSignUpPage from 'pages/authn/ConfirmSignUpPage';
 import AccountPage from 'pages/AccountPage';
 import ProjectSettingsPage from 'pages/ProjectSettingsPage';
+import ChangePasswordPage from 'pages/authn/ChangePasswordPage';
 import ProjectPage from './pages/ProjectPage';
 import CreateProjectPage from './pages/CreateProjectPage';
 
@@ -24,6 +25,9 @@ export default function App() {
             <UnauthdRoute path="/login" component={LoginPage} />
             <UnauthdRoute path="/signup">
               <SignUpPage />
+            </UnauthdRoute>
+            <UnauthdRoute path="/changePassword">
+              <ChangePasswordPage />
             </UnauthdRoute>
             <UnauthdRoute path="/confirm" component={ConfirmSignUpPage} />
             <AuthdRoute path="/account" component={AccountPage} />
