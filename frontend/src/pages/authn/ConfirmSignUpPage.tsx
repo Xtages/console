@@ -121,10 +121,11 @@ export default function ConfirmSignUpPage({location}: ConfirmSignUpPageProps) {
       actions.setSubmitting(false);
       return;
     }
-    const principal = await auth.logIn({
+    const principal = await auth.logInForOrgSignup({
       username: values.email,
       password: values.password,
     });
+    actions.setSubmitting(false);
     if (principal instanceof Principal) {
       await organizationApi.createOrganization({
         organizationName: principal.org,
@@ -137,7 +138,6 @@ export default function ConfirmSignUpPage({location}: ConfirmSignUpPageProps) {
     } else {
       setErrorOccurred(true);
     }
-    actions.setSubmitting(false);
   }
 
   function validate(values: FormValues): FormikErrors<FormValues> | void {
