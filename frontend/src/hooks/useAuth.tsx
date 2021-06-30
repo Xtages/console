@@ -177,7 +177,7 @@ function useProvideAuth() {
       password,
       attributes: {
         name,
-        'custom:org': org,
+        'custom:organization': org,
       },
     });
     if (result.user != null && result.userConfirmed) {
