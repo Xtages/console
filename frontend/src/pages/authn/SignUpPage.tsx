@@ -63,15 +63,15 @@ export default function SignUpPage() {
       setErrorOccurred(true);
       return;
     }
+    actions.setSubmitting(false);
     if (principal == null) {
-      history.replace('/confirm', values);
+      history.push('/confirm', values);
     } else {
       await redirectToStripeCheckoutSession({
         priceIds: ['price_1IdOOzIfxICi4AQgjta89k2Y'],
         organizationName: values.organizationName,
       });
     }
-    actions.setSubmitting(false);
   }
 
   function validate(values: SignUpFormValues): FormikErrors<SignUpFormValues> | void {
