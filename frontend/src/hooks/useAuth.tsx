@@ -127,6 +127,23 @@ function useProvideAuth() {
   const [principal, setPrincipal] = useState<NullablePrincipal>(null);
   const [inProgress, setInProgress] = useState(true);
 
+  /**
+   * Sign-in using email and password. This function will not update the {@link Principal} state,
+   * this is necessary so `<AuthdRoute>`s are not refreshed when the state is changed.
+   */
+  async function logInForOrgSignup({
+    username,
+    password,
+  }: Credentials):
+    Promise<Principal | CognitoUserWithChallenge> {
+    const user: CognitoUserWithChallenge = await CognitoAuth.signIn(username, password);
+    if (user.challengeName) {
+      return user;
+    }
+    const converted = await Principal.fromCognitoUser(user);
+    return converted;
+  }
+
   /** Sign-in using email and password. */
   async function logIn({
     username,
@@ -139,6 +156,7 @@ function useProvideAuth() {
     }
     const converted = await Principal.fromCognitoUser(user);
     setPrincipal(converted);
+    setInProgress(false);
     return converted;
   }
 
@@ -186,7 +204,6 @@ function useProvideAuth() {
       return converted;
     }
     setPrincipal(null);
-    setInProgress(false);
     return null;
   }
 
@@ -198,7 +215,10 @@ function useProvideAuth() {
    * @param email - The user's email that was used to sign up.
    * @param code - The emailed code.
    */
-  async function confirmSignUp({email, code} : {email: string, code: string}) {
+  async function confirmSignUp({
+    email,
+    code,
+  }: {email: string, code: string}) {
     return CognitoAuth.confirmSignUp(email, code);
   }
 
@@ -206,7 +226,7 @@ function useProvideAuth() {
    * Resends the confirmation code the user's email.
    * @param email - Where the confirmation code is sent.
    */
-  async function resendConfirmationCode({email} : {email: string}) {
+  async function resendConfirmationCode({email}: {email: string}) {
     return CognitoAuth.resendSignUp(email);
   }
 
@@ -222,9 +242,11 @@ function useProvideAuth() {
 
   async function getPrincipal() {
     try {
-      const user = await CognitoAuth.currentAuthenticatedUser();
-      setPrincipal(await Principal.fromCognitoUser(user));
-      setInProgress(false);
+      const user : CognitoUserWithChallenge = await CognitoAuth.currentAuthenticatedUser();
+      if (!user.challengeName) {
+        setPrincipal(await Principal.fromCognitoUser(user));
+        setInProgress(false);
+      }
     } catch (e) {
       setInProgress(false);
     }
@@ -239,12 +261,12 @@ function useProvideAuth() {
   useAsyncEffect(
     async (isMounted) => {
       if (isMounted()) {
-        getPrincipal();
+        await getPrincipal();
         listener = async (data) => {
           switch (data.payload.event) {
             case 'signIn': {
               const user = data.payload.data;
-              if (principal == null && user) {
+              if (principal == null && user && user.isConfirmed && !user.challengeName) {
                 setPrincipal(await Principal.fromCognitoUser(user));
               }
               break;
@@ -280,6 +302,7 @@ function useProvideAuth() {
     inProgress,
     principal,
     logIn,
+    logInForOrgSignup,
     completeNewPassword,
     changePassword,
     signUp,

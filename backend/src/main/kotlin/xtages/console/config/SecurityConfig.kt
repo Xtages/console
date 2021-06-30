@@ -4,6 +4,7 @@ import mu.KotlinLogging
 import org.slf4j.MDC
 import org.springframework.context.annotation.Configuration
 import org.springframework.core.env.Environment
+import org.springframework.http.HttpMethod
 import org.springframework.http.HttpMethod.POST
 import org.springframework.security.access.AccessDecisionVoter
 import org.springframework.security.access.ConfigAttribute
@@ -14,16 +15,17 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter
 import org.springframework.security.config.http.SessionCreationPolicy
+import org.springframework.security.config.web.servlet.invoke
 import org.springframework.security.core.Authentication
 import org.springframework.security.oauth2.jwt.Jwt
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken
+import org.springframework.security.web.FilterInvocation
 import org.springframework.security.web.access.expression.WebExpressionVoter
 import org.springframework.stereotype.Component
 import xtages.console.dao.fetchOneByCognitoUserId
 import xtages.console.exception.ensure
 import xtages.console.query.enums.OrganizationSubscriptionStatus
 import xtages.console.query.tables.daos.OrganizationDao
-import org.springframework.security.config.web.servlet.invoke
 
 private val logger = KotlinLogging.logger { }
 
@@ -113,17 +115,25 @@ private val validOrgSubscriptionStatus =
  * suspended or cancelled).
  */
 @Component
-class OrganizationInGoodStandingAccessDecisionVoter(val organizationDao: OrganizationDao) : AccessDecisionVoter<Any> {
+class OrganizationInGoodStandingAccessDecisionVoter(val organizationDao: OrganizationDao) : AccessDecisionVoter<FilterInvocation> {
     override fun supports(attribute: ConfigAttribute) = attribute.attribute == "authenticated"
 
     override fun supports(clazz: Class<*>?) = true
 
     override fun vote(
         authentication: Authentication?,
-        `object`: Any?,
+        invocation: FilterInvocation,
         attributes: MutableCollection<ConfigAttribute>?
     ): Int {
+        logger.debug { "Handling invocation [$invocation]" }
         if (authentication is JwtAuthenticationToken) {
+            // For POST /api/v1/organization we only require that the user has a valid JWT, because this endpoint is
+            // how the checkout flow creates an Organization and if we try validate that there's an Organization
+            // associated to the user then we run into a chicken & egg problem.
+            if (HttpMethod.resolve(invocation.request.method) == POST && invocation.requestUrl == "/api/v1/organization") {
+                logger.debug { "[$invocation] Attempting to create organization." }
+                return AccessDecisionVoter.ACCESS_ABSTAIN
+            }
             val organizationName = ensure.ofType<String>(
                 authentication.tokenAttributes["custom:organization"],
                 "organization"
@@ -139,12 +149,18 @@ class OrganizationInGoodStandingAccessDecisionVoter(val organizationDao: Organiz
             } else {
                 if (organization.name != organizationName) {
                     logger.warn {
-                        "User [${cognitoUserId.id}] tried to access organization [$organizationName](from JWT claim) but it's not an organization the user belongs to."
+                        "[$invocation] User [${cognitoUserId.id}] tried to access organization [$organizationName](from JWT claim) but it's not an organization the user belongs to."
                     }
                 }
                 if (organization.subscriptionStatus !in validOrgSubscriptionStatus) {
-                    logger.info {
-                        "User [${cognitoUserId.id}] tried to access organization [$organizationName](from JWT claim) but the organization's subscription status is [${organization.subscriptionStatus}]"
+                    // Allow for Organization that are not in good standing to create a Stripe CheckoutSession, so we
+                    // send them to the Stripe UI.
+                    if (HttpMethod.resolve(invocation.request.method) == POST && invocation.requestUrl == "/api/v1/checkout/session") {
+                        return AccessDecisionVoter.ACCESS_GRANTED
+                    } else {
+                        logger.info {
+                            "[$invocation] User [${cognitoUserId.id}] tried to access organization [$organizationName](from JWT claim) but the organization's subscription status is [${organization.subscriptionStatus}]"
+                        }
                     }
                 }
             }
