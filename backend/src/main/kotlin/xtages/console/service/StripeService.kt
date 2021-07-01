@@ -2,7 +2,12 @@ package xtages.console.service
 
 import com.stripe.Stripe
 import com.stripe.model.Event
+import com.stripe.model.Invoice
+import com.stripe.model.Subscription
+import com.stripe.model.SubscriptionCollection
 import com.stripe.param.checkout.SessionCreateParams
+import com.stripe.param.checkout.SessionCreateParams.SubscriptionData
+import mu.KotlinLogging
 import org.springframework.stereotype.Service
 import org.springframework.web.context.annotation.RequestScope
 import org.springframework.web.util.UriComponentsBuilder
@@ -12,10 +17,12 @@ import xtages.console.exception.ExceptionCode.CHECKOUT_SESSION_NOT_FOUND
 import xtages.console.exception.ExceptionCode.ORG_NOT_FOUND
 import xtages.console.exception.ensure
 import xtages.console.query.enums.OrganizationSubscriptionStatus.ACTIVE
+import xtages.console.query.enums.OrganizationSubscriptionStatus.SUSPENDED
 import xtages.console.query.tables.daos.OrganizationDao
 import xtages.console.query.tables.daos.OrganizationToPlanDao
 import xtages.console.query.tables.daos.PlanDao
 import xtages.console.query.tables.daos.StripeCheckoutSessionDao
+import xtages.console.query.tables.pojos.Organization
 import xtages.console.query.tables.pojos.OrganizationToPlan
 import xtages.console.query.tables.pojos.StripeCheckoutSession
 import xtages.console.service.aws.RdsService
@@ -24,6 +31,9 @@ import java.time.LocalDateTime
 import com.stripe.model.billingportal.Session as PortalSession
 import com.stripe.model.checkout.Session as CheckoutSession
 import com.stripe.param.billingportal.SessionCreateParams as CustomerPortalSessionCreateParams
+
+
+private val logger = KotlinLogging.logger { }
 
 @Service
 @RequestScope
@@ -54,11 +64,24 @@ class StripeService(
             .queryParam("session_id", "{CHECKOUT_SESSION_ID}")
         val cancelUrl = UriComponentsBuilder.fromUri(URI(consoleProperties.server.basename))
             .pathSegment("signup")
+        val isTrialProduct = priceIds.any {
+            consoleProperties.stripe.starterPriceIds.split(",").contains(it)
+        }
+
         val builder = SessionCreateParams.builder()
             .setSuccessUrl(successUrl.build(false).toString())
             .setCancelUrl(cancelUrl.toUriString())
             .addPaymentMethodType(SessionCreateParams.PaymentMethodType.CARD)
-            .setMode(SessionCreateParams.Mode.SUBSCRIPTION);
+            .setMode(SessionCreateParams.Mode.SUBSCRIPTION)
+            .setAllowPromotionCodes(true)
+
+        if (isTrialProduct) {
+            builder.setSubscriptionData(
+                SubscriptionData.builder()
+                    .setTrialPeriodDays(15)
+                    .build()
+            )
+        }
         priceIds.forEach { price ->
             builder.addLineItem(
                 SessionCreateParams.LineItem.builder()
@@ -68,6 +91,7 @@ class StripeService(
             )
         }
         val sessionParams = builder.build()
+
         val session = CheckoutSession.create(sessionParams)
         stripeCheckoutSessionDao.merge(
             StripeCheckoutSession(
@@ -81,7 +105,7 @@ class StripeService(
     /**
      * Creates a Stripe Customer Portal [com.stripe.model.billingportal.Session] and returns its [URI].
      *
-     * It's possible that this will fail if we haven't recieved the webhook request from Stripe confirming the
+     * It's possible that this will fail if we haven't received the webhook request from Stripe confirming the
      * checkout transaction.
      *
      * @return An [URI] pointing to the customer's Stripe portal.
@@ -106,9 +130,55 @@ class StripeService(
     fun handleWebhookRequest(event: Event) {
         when (StripeWebhookEventType.fromStripeEventName(event.type)) {
             StripeWebhookEventType.CHECKOUT_COMPLETED -> onCheckoutCompleted(event)
-            StripeWebhookEventType.INVOICE_PAID -> TODO()
-            StripeWebhookEventType.INVOICE_PAYMENT_FAILED -> TODO()
+            StripeWebhookEventType.INVOICE_PAYMENT_FAILED -> onInvoicePaymentFailed(event)
+            StripeWebhookEventType.INVOICE_PAID -> onInvoicePaid(event)
         }
+    }
+
+    /**
+     * Handles the `invoice.paid` webhook event
+     *
+     * The [Organization] changes its state to `ACTIVE`. In most cases the Organization will be `ACTIVE` but in case
+     * it's `SUSPENDED` will get access to the app again
+     */
+    private fun onInvoicePaid(event: Event) {
+        val organization = getOrganizationFromStripeId(event)
+        if (organization.subscriptionStatus != ACTIVE) {
+            organization.subscriptionStatus = ACTIVE
+            organizationDao.update(organization)
+            logger.info { "Organization ${organization.name} has transitioned to ACTIVE state" }
+        }
+    }
+
+    /**
+     * Handles the `invoice.payment_failed` webhook event
+     *
+     * The [Organization] changes its state to `SUSPENDED`
+     */
+    private fun onInvoicePaymentFailed(event: Event) {
+        val invoice = event.dataObjectDeserializer.`object`.get() as Invoice
+        val organization = getOrganizationFromStripeId(event)
+        organization.subscriptionStatus = SUSPENDED
+        organizationDao.update(organization)
+        logger.info { "Organization ${organization.name} has transitioned to SUSPENDED state" }
+    }
+
+    /**
+     * Returns an Organization based on the [Event.id]
+     */
+    private fun getOrganizationFromStripeId(event: Event): Organization {
+        val organizationName = ensure.foundOne(
+            operation = {
+                stripeCheckoutSessionDao.fetchByStripeCheckoutSessionId(event.id).single()
+            },
+            code = CHECKOUT_SESSION_NOT_FOUND,
+            message = "Checkout session not found"
+        ).organizationName!!
+        return ensure.foundOne(
+            operation = { organizationDao.fetchOneByName(organizationName) },
+            code = ORG_NOT_FOUND,
+            lazyMessage = { "Organization [$organizationName] not found" }
+        )
     }
 
     /**
@@ -119,28 +189,20 @@ class StripeService(
      */
     private fun onCheckoutCompleted(event: Event) {
         val checkout = event.dataObjectDeserializer.`object`.get() as CheckoutSession
-        val organizationName = ensure.foundOne(
-            operation = {
-                stripeCheckoutSessionDao.fetchByStripeCheckoutSessionId(checkout.id).single()
-            },
-            code = CHECKOUT_SESSION_NOT_FOUND,
-            message = "Checkout session not found"
-        ).organizationName!!
-        val organization = ensure.foundOne(
-            operation = { organizationDao.fetchOneByName(organizationName) },
-            code = ORG_NOT_FOUND,
-            lazyMessage = { "Organization [$organizationName] not found" }
-        )
+        val organization = getOrganizationFromStripeId(event)
         organizationDao.update(
             organization.copy(
                 stripeCustomerId = checkout.customer,
                 subscriptionStatus = ACTIVE
             )
         )
-        val plan = planDao.fetchByProductId(checkout.lineItems.data.single().price.product).single()
+
+        val subscription = Subscription.retrieve(checkout.subscription);
+        val plan = planDao.fetchByProductId(subscription.items.data.single().price.product).single()
+
         organizationToPlanDao.insert(
             OrganizationToPlan(
-                organizationName = organizationName,
+                organizationName = organization.name,
                 planId = plan.id,
                 startTime = LocalDateTime.now()
             )
