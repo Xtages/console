@@ -221,9 +221,9 @@ paths:
   /project/{projectName}/applogs:
     get:
       summary: Retrieve logs for an application that is running in our platform
-      operationId: app-logs
+      operationId: getAppLogs
       tags:
-        - logs
+        - project
       parameters:
         - in: path
           name: projectName
@@ -358,7 +358,7 @@ paths:
       summary: Returns the projects that satisfy the query
       operationId: query
       tags:
-        - organization
+        - project
       requestBody:
         required: true
         content:
@@ -714,15 +714,15 @@ components:
           type: string
           minLength: 1
           description: The environment where the application is/was deploy
-        startTime:
+        startTimeInMillis:
           type: string
           minLength: 1
-          format: date-time
+          format: int64
           description: Initial time to get the logs for the application
-        endTime:
+        endTimeInMillis:
           type: string
           minLength: 1
-          format: date-time
+          format: int64
           description: End time to get the logs for the application
         token:
           type: string
