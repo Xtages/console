@@ -1,6 +1,5 @@
 package xtages.console.service.aws
 
-import io.awspring.cloud.autoconfigure.context.properties.AwsRegionProperties
 import mu.KotlinLogging
 import org.apache.commons.lang3.RandomStringUtils
 import org.springframework.stereotype.Service
@@ -32,7 +31,6 @@ class RdsService(
     private val consoleProperties: ConsoleProperties,
     private val planDao: PlanDao,
     private val organizationDao: OrganizationDao,
-    private val awsRegionProperties: AwsRegionProperties,
 ) {
     /**
      * Async operation to not slow down the Organization setup
@@ -42,7 +40,7 @@ class RdsService(
         val password = createAndStorePassInSsm(organization)
 
         val instanceRequest = CreateDbInstanceRequest.builder()
-            .dbInstanceIdentifier(organization.hash)
+            .dbInstanceIdentifier("db-${organization.hash}")
             .masterUserPassword(password)
             .allocatedStorage(plan?.dbStorageGbs!!.toInt())
             .dbName(organization.name)
@@ -50,7 +48,7 @@ class RdsService(
             .dbInstanceClass(plan.dbInstance)
             .engineVersion(consoleProperties.aws.rds.engineVersion)
             .storageType(consoleProperties.aws.rds.storageType)
-            .masterUsername(organization.hash)
+            .masterUsername("u${organization.hash?.substring(IntRange(0,15))}")
             .vpcSecurityGroupIds(consoleProperties.aws.rds.dbSecurityGroup)
             .backupRetentionPeriod(consoleProperties.aws.rds.backupRetentionPeriod)
             .storageEncrypted(consoleProperties.aws.rds.storageEncrypted)
