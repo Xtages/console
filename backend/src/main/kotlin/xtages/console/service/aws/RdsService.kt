@@ -13,6 +13,8 @@ import software.amazon.awssdk.services.ssm.model.PutParameterRequest
 import software.amazon.awssdk.services.ssm.model.Tag
 import xtages.console.config.ConsoleProperties
 import xtages.console.dao.fetchLatestByOrganizationName
+import xtages.console.pojo.dbIdentifier
+import xtages.console.pojo.dbUsername
 import xtages.console.query.tables.daos.OrganizationDao
 import xtages.console.query.tables.daos.PlanDao
 import xtages.console.query.tables.pojos.Organization
@@ -40,7 +42,7 @@ class RdsService(
         val password = createAndStorePassInSsm(organization)
 
         val instanceRequest = CreateDbInstanceRequest.builder()
-            .dbInstanceIdentifier("db-${organization.hash}")
+            .dbInstanceIdentifier(organization.dbIdentifier())
             .masterUserPassword(password)
             .allocatedStorage(plan?.dbStorageGbs!!.toInt())
             .dbName(organization.name)
@@ -48,7 +50,7 @@ class RdsService(
             .dbInstanceClass(plan.dbInstance)
             .engineVersion(consoleProperties.aws.rds.engineVersion)
             .storageType(consoleProperties.aws.rds.storageType)
-            .masterUsername("u${organization.hash?.substring(IntRange(0,15))}")
+            .masterUsername(organization.dbUsername())
             .vpcSecurityGroupIds(consoleProperties.aws.rds.dbSecurityGroup)
             .backupRetentionPeriod(consoleProperties.aws.rds.backupRetentionPeriod)
             .storageEncrypted(consoleProperties.aws.rds.storageEncrypted)

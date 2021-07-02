@@ -252,8 +252,8 @@ class CodeBuildService(
                             EnvironmentVariableType.PARAMETER_STORE
                         ),
                         buildEnvVar("XTAGES_DB_URL", organization.rdsEndpoint),
-                        buildEnvVar("XTAGES_DB_USER", "u${organization.hash?.substring(IntRange(0,15))}"),
-                        buildEnvVar("XTAGES_DB_NAME", "db-${organization.hash}"),
+                        buildEnvVar("XTAGES_DB_USER", organization.dbUsername()),
+                        buildEnvVar("XTAGES_DB_NAME", organization.dbIdentifier()),
                         buildEnvVar("XTAGES_SCRIPT", scriptPath),
                         buildEnvVar("XTAGES_COMMIT", commitHash),
                         buildEnvVar("XTAGES_REPO", project.ghRepoFullName),
