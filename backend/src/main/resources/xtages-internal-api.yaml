@@ -375,7 +375,7 @@ paths:
           $ref: "#/components/responses/DefaultError"
   /organization/projects:
     get:
-      summary: Returns the projects that satisfy the query
+      summary: Returns the projects for the organization that have been deployed
       operationId: projectsDeployed
       tags:
         - organization
