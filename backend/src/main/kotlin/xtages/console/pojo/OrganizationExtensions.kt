@@ -12,3 +12,11 @@ fun Organization.codeBuildLogsGroupNameFor(codeBuildType: CodeBuildType): String
     val hash = ensure.notNull(value = hash, valueDesc = "organization.hash")
     return "${hash}_${codeBuildType.name}_logs".toLowerCase()
 }
+
+fun Organization.dbUsername(): String {
+    return "u${hash?.substring(0,15)}"
+}
+
+fun Organization.dbIdentifier(): String {
+    return "db-$hash"
+}
