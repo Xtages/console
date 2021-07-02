@@ -218,6 +218,37 @@ paths:
           $ref: "#/components/responses/UnauthorizedError"
         default:
           $ref: "#/components/responses/DefaultError"
+  /project/{projectName}/applogs:
+    get:
+      summary: Retrieve logs for an application that is running in our platform
+      operationId: app-logs
+      tags:
+        - logs
+      parameters:
+        - in: path
+          name: projectName
+          schema:
+            type: string
+            minLength: 1
+          required: true
+          description: Name of the project to get the logs from
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AppLogsReq"
+      responses:
+        "200":
+          description: Logs successfully returned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppLogs"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        default:
+          $ref: "#/components/responses/DefaultError"
   /project/{projectName}/deploy:
     post:
       summary: Deploy the project to staging
@@ -318,6 +349,29 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Organization"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        default:
+          $ref: "#/components/responses/DefaultError"
+  /organization/projects:
+    get:
+      summary: Returns the projects that satisfy the query
+      operationId: query
+      tags:
+        - organization
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QueryProjectReq"
+      responses:
+        '200':
+          description: Projects that satisfy the query
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
         "401":
           $ref: "#/components/responses/UnauthorizedError"
         default:
@@ -490,6 +544,20 @@ components:
         ownerCognitoUserId:
           type: string
           minLength: 1
+    QueryProjectReq:
+      description: Query to retrieve projects
+      properties:
+        deployed:
+          type: boolean
+      required:
+        - deployed
+    Projects:
+      description: List of projects
+      properties:
+        events:
+          type: array
+          items:
+            $ref: '#/components/schemas/Project'
     Project:
       description: An Xtages project
       properties:
@@ -632,6 +700,40 @@ components:
           minLength: 1
     CILogs:
       description: CI Logs
+      properties:
+        events:
+          type: array
+          items:
+            $ref: '#/components/schemas/LogEvent'
+      required:
+        - events
+    AppLogsReq:
+      description: App logs request payload definition
+      properties:
+        env:
+          type: string
+          minLength: 1
+          description: The environment where the application is/was deploy
+        startTime:
+          type: string
+          minLength: 1
+          format: date-time
+          description: Initial time to get the logs for the application
+        endTime:
+          type: string
+          minLength: 1
+          format: date-time
+          description: End time to get the logs for the application
+        token:
+          type: string
+          minLength: 1
+          description: Pagination token to iterate over the logs
+      required:
+        - env
+        - startTime
+        - endTime
+    AppLogs:
+      description: App logs
       properties:
         events:
           type: array
