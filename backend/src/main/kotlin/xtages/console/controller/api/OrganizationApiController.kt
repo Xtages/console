@@ -1,13 +1,19 @@
 package xtages.console.controller.api
 
 import org.springframework.http.HttpStatus.CREATED
+import org.springframework.http.HttpStatus.OK
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Controller
 import xtages.console.controller.api.model.*
 import xtages.console.controller.model.MD5
 import xtages.console.controller.model.organizationPojoToOrganizationConverter
+import xtages.console.dao.fetchAllDeployedProjectsIn
+import xtages.console.dao.fetchOneByCognitoUserId
+import xtages.console.exception.ExceptionCode
+import xtages.console.exception.ensure
 import xtages.console.query.enums.OrganizationSubscriptionStatus
 import xtages.console.query.tables.daos.OrganizationDao
+import xtages.console.service.AuthenticationService
 import xtages.console.service.UserService
 import xtages.console.service.aws.CognitoService
 import java.util.*
@@ -18,6 +24,7 @@ class OrganizationApiController(
     val organizationDao: OrganizationDao,
     val userService: UserService,
     val cognitoService: CognitoService,
+    val authenticationService: AuthenticationService,
 ) :
     OrganizationApiControllerBase {
 
