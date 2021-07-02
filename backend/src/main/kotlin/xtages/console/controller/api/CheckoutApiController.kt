@@ -33,8 +33,8 @@ class CheckoutApiController(
     override fun createCheckoutSession(createCheckoutSessionReq: CreateCheckoutSessionReq): ResponseEntity<String> {
         return ResponseEntity.status(CREATED).body(
             stripeService.createCheckoutSession(
-                createCheckoutSessionReq.priceIds,
-                createCheckoutSessionReq.organizationName
+                priceIds = createCheckoutSessionReq.priceIds,
+                organizationName = createCheckoutSessionReq.organizationName,
             )
         )
     }

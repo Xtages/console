@@ -7,7 +7,7 @@ import org.springframework.boot.context.properties.ConstructorBinding
 @ConfigurationProperties("xtages.console")
 data class ConsoleProperties(val stripe: Stripe, val server: Server, val gitHubApp: GitHubApp, val aws: Aws) {
 
-    data class Stripe(val apiKey: String, val webhookSecret: String)
+    data class Stripe(val apiKey: String, val webhookSecret: String, val starterPriceIds: String)
 
     data class Server(val basename: String)
 

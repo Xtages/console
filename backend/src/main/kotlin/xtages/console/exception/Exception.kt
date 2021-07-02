@@ -25,8 +25,6 @@ enum class ExceptionCode {
     BUILD_NOT_FOUND,
     RECIPE_NOT_FOUND,
     USAGE_OVER_LIMIT,
-    PLAN_NOT_FOUND,
-    DB_PROVISIONING_ERROR,
 }
 
 /**
