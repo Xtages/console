@@ -3,10 +3,7 @@ package xtages.console.controller.api
 import org.springframework.http.HttpStatus.CREATED
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Controller
-import xtages.console.controller.api.model.CreateOrgReq
-import xtages.console.controller.api.model.Organization
-import xtages.console.controller.api.model.Project
-import xtages.console.controller.api.model.QueryProjectReq
+import xtages.console.controller.api.model.*
 import xtages.console.controller.model.MD5
 import xtages.console.controller.model.organizationPojoToOrganizationConverter
 import xtages.console.query.enums.OrganizationSubscriptionStatus
@@ -41,7 +38,7 @@ class OrganizationApiController(
             .body(organizationPojoToOrganizationConverter.convert(organization))
     }
 
-    override fun query(queryProjectReq: QueryProjectReq): ResponseEntity<Project> {
-        return super.query(queryProjectReq)
+    override fun projectsDeployed(): ResponseEntity<Projects> {
+        return super.projectsDeployed()
     }
 }
