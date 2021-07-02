@@ -358,7 +358,7 @@ paths:
       summary: Returns the projects that satisfy the query
       operationId: query
       tags:
-        - project
+        - organization
       requestBody:
         required: true
         content:
