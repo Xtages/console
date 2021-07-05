@@ -66,40 +66,64 @@ export function SimpleProjectCard({
 export function ProjectDetailsCard({project}: SimpleProjectCardProps) {
   return (
     <SimpleProjectCard project={project}>
-      <DeploymentAndBuildDetails project={project} />
+      <DeploymentDetailsAndBuildChart project={project} />
     </SimpleProjectCard>
   );
 }
 
-function DeploymentAndBuildDetails({project}: {project: Project}) {
+export type DeploymentDetailsProps = {
+  project: Project;
+
+  colWidth?: number;
+
+  showDeploymentSectionIfEmpty?: boolean;
+};
+
+export function DeploymentDetails({
+  project,
+  colWidth = 7,
+  showDeploymentSectionIfEmpty = true,
+}: DeploymentDetailsProps) {
   const {
     deployments,
     name,
-    percentageOfSuccessfulBuildsInTheLastMonth,
   } = project;
-  const prodDeployment = deployments.find((deployment) => deployment.env === 'production');
-  const stagingDeployment = deployments.find((deployment) => deployment.env === 'staging');
+  const prodDeploy = deployments.find((deployment) => deployment.env === 'production');
+  const stagingDeploy = deployments.find((deployment) => deployment.env === 'staging');
   return (
-    <>
-      <Col sm={7} className="text-sm">
-        <DeploymentDetailsRow
-          title="In production"
-          name="production"
-          projectName={name}
-          deployment={prodDeployment}
-        />
-        <Row>
-          <Col>
-            <hr />
-          </Col>
-        </Row>
+    <Col sm={colWidth} className="text-sm">
+      {(prodDeploy || showDeploymentSectionIfEmpty) && (
+        <>
+          <DeploymentDetailsRow
+            title="In production"
+            name="production"
+            projectName={name}
+            deployment={prodDeploy}
+          />
+          <Row>
+            <Col>
+              <hr />
+            </Col>
+          </Row>
+        </>
+      )}
+      {(stagingDeploy || showDeploymentSectionIfEmpty) && (
         <DeploymentDetailsRow
           title="In staging"
           name="staging"
           projectName={name}
-          deployment={stagingDeployment}
+          deployment={stagingDeploy}
         />
-      </Col>
+      )}
+    </Col>
+  );
+}
+
+export function DeploymentDetailsAndBuildChart({project}: {project: Project}) {
+  const {percentageOfSuccessfulBuildsInTheLastMonth} = project;
+  return (
+    <>
+      <DeploymentDetails project={project} />
       <Col sm={2} className="p-0">
         {percentageOfSuccessfulBuildsInTheLastMonth !== undefined
           && (

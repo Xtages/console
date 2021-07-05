@@ -6,7 +6,7 @@ import {projectApi} from '../service/Services';
 import {LoadIndicatingSection} from '../components/layout/Section';
 import {BuildTable} from '../components/build/BuildTable';
 import Page from '../components/layout/Page';
-import {ProjectDetailsCard} from '../components/project/ProjectDetailsCard';
+import {DeploymentDetailsAndBuildChart, SimpleProjectCard} from '../components/project/ProjectDetailsCard';
 import UsageChecker from '../components/usage/UsageChecker';
 
 export default function ProjectPage() {
@@ -20,18 +20,23 @@ export default function ProjectPage() {
       <UsageChecker />
       <Page>
         <LoadIndicatingSection queryResult={getProjectQueryResult} last>
-          {((axiosResponse) => (
-            <>
-              <Container>
-                <Row>
-                  <Col sm={12} className="p-0">
-                    <ProjectDetailsCard project={axiosResponse.data} />
-                  </Col>
-                </Row>
-              </Container>
-              <BuildTable project={axiosResponse.data} />
-            </>
-          ))}
+          {(function render(axiosResponse) {
+            const project = axiosResponse.data;
+            return (
+              <>
+                <Container>
+                  <Row>
+                    <Col sm={12} className="p-0">
+                      <SimpleProjectCard project={project}>
+                        <DeploymentDetailsAndBuildChart project={project} />
+                      </SimpleProjectCard>
+                    </Col>
+                  </Row>
+                </Container>
+                <BuildTable project={project} />
+              </>
+            );
+          })}
         </LoadIndicatingSection>
       </Page>
     </>

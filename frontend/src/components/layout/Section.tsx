@@ -2,8 +2,7 @@ import React, {Children, FC, ReactNode} from 'react';
 import * as ReactIs from 'react-is';
 import {IconProps} from 'react-feather';
 import cx from 'classnames';
-import {UseQueryResult} from 'react-query/types/react/types';
-import {Spinner} from 'react-bootstrap';
+import {LoadIndicatingElement, LoadIndicatingElementProps} from 'components/layout/LoadIndicatingElement';
 
 interface SectionTitleProps {
   /** Optional Icon for the section */
@@ -93,67 +92,26 @@ export function Section({
   );
 }
 
-export type LoadIndicatingSectionProps<TQueryFnData = unknown,
-    TError = unknown,
-    TData = TQueryFnData> = {
-      /** The result from an {@link useQuery} call. */
-      queryResult: UseQueryResult<TData, TError>;
-
-      /**
-       * A function that takes {@link TData} (ie {@link AxiosResponse}) and returns a
-       * {@link ReactNode}>
-       */
-      children: ((axiosResponse: TData) => ReactNode);
-
-      /**
-       * A function that if passed, will return a {@link ReactNode} to replace the default error
-       * message rendered by {@link LoadingIndicatingSection}. If it returns `undefined` the default
-       * error will be rendered.
-       */
-      errorHandler?: ((error: TError) => ReactNode);
-    } & SectionProps;
+export type LoadIndicatingSectionProps<D = unknown, E = unknown> = {
+  children: ((axiosResponse: D) => ReactNode);
+} & Omit<LoadIndicatingElementProps<D, E>, 'children'> & SectionProps;
 
 /**
  * A {@link Section} that will take an {@link useQuery} result and consistently show a loading
  * indicator, or error message or finally call {@link children} with the result of the operation.
  */
-export function LoadIndicatingSection<TQueryFnData = unknown,
-    TError = unknown,
-    TData = TQueryFnData>({
+export function LoadIndicatingSection<D = unknown, E = unknown>({
   queryResult,
   children,
   errorHandler = undefined,
   last,
   ...props
-}: LoadIndicatingSectionProps<TQueryFnData, TError, TData>) {
-  const {
-    isLoading,
-    error,
-  } = queryResult;
-
-  let errorHandled = false;
-  let content: string | ReactNode;
-  if (isLoading) {
-    content = (
-      <div className="mx-auto py-5">
-        <Spinner animation="grow" role="status" variant="dark-secondary">
-          <span className="sr-only">Loading...</span>
-        </Spinner>
-      </div>
-    );
-  } else if (error) {
-    if (errorHandler) {
-      content = errorHandler(error);
-      if (content) {
-        errorHandled = true;
-      } else {
-        content = `An error has occurred: ${error}`;
-      }
-    } else {
-      content = `An error has occurred: ${error}`;
-    }
-  } else {
-    content = children(queryResult.data!!);
-  }
-  return <Section last={errorHandled || last} {...props}>{content}</Section>;
+}: LoadIndicatingSectionProps<D, E>) {
+  return (
+    <LoadIndicatingElement queryResult={queryResult} errorHandler={errorHandler}>
+      {(axiosResponse, errorHandled) => (
+        <Section last={errorHandled && last} {...props}>{children(axiosResponse)}</Section>
+      )}
+    </LoadIndicatingElement>
+  );
 }
