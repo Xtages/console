@@ -1,8 +1,9 @@
 @import "../variables";
 @import "../mixins";
 
-.btn-xs {
-  font-weight: $font-weight-bolder;
+.btn-xs,
+.btn-group-xs > .btn {
+  @include button-size($btn-padding-y-xs, $btn-padding-x-xs, $font-size-xs, $btn-line-height-xs, $btn-border-radius-xs);
 }
 
 .btn-grayish {

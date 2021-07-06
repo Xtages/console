@@ -11,6 +11,9 @@ $caret-spacing: 0.5em !default;
 
 $card-spacer-x:                     1rem !default;
 
+$input-btn-padding-y-xs:      .275rem;
+$input-btn-padding-x-xs:      .8rem;
+
 $font: "https://fonts.googleapis.com/css?family=Nunito+Sans:400,400i,600,700,800|Source+Code+Pro:400|Material+Icons&display=swap" !default;
 
 @import 'quick/scss/core/variables';
@@ -28,5 +31,13 @@ $btn-font-size-xs:            $input-btn-font-size-xs !default;
 $input-group-addon-invalid-color:               $danger !default;
 $input-group-addon-invalid-bg:                  $gray-200 !default;
 $input-group-addon-invalid-border-color:        $danger !default;
+
+$input-padding-y-xs:                    $input-btn-padding-y-xs;
+$input-padding-x-xs:                    $input-btn-padding-x-xs;
+$input-line-height-xs:                  $input-btn-line-height-xs;
+
+$input-height-xs:                       add($input-line-height-xs * 1em, add($input-padding-y-xs * 2, $input-height-border, false));
+$border-radius-xs:                      .1rem;
+$input-border-radius-xs:                $border-radius-xs;
 
 @import '~bootstrap/scss/variables';
