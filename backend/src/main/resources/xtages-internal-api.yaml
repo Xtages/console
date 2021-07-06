@@ -241,15 +241,13 @@ paths:
         - in: query
           name: startTimeInMillis
           schema:
-            type: string
-            minLength: 1
+            type: number
             format: int64
             description: Initial time to get the logs for the application
         - in: query
           name: endTimeInMillis
           schema:
-            type: string
-            minLength: 1
+            type: number
             format: int64
             description: End time to get the logs for the application
         - in: query
