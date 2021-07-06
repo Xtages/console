@@ -462,7 +462,7 @@ private fun buildEnvVar(
 ) = EnvironmentVariable.builder()
     .type(type)
     .name(name)
-    .value(value ?: "FILL_ME")
+    .value(value ?: "")
     .build()
 
 private fun buildCodeBuildProjectTag(key: String, value: String) =
