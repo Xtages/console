@@ -10,10 +10,7 @@ import xtages.console.query.enums.BuildType
 import xtages.console.query.tables.daos.OrganizationDao
 import xtages.console.query.tables.pojos.Organization
 import xtages.console.query.tables.pojos.Project
-import xtages.console.query.tables.references.BUILD
-import xtages.console.query.tables.references.ORGANIZATION
-import xtages.console.query.tables.references.PROJECT
-import xtages.console.query.tables.references.XTAGES_USER
+import xtages.console.query.tables.references.*
 
 /**
  * Finds an [Organization] by its owner's [CognitoUserId].
@@ -33,13 +30,17 @@ fun OrganizationDao.fetchOneByCognitoUserId(cognitoUserId: CognitoUserId): Organ
     )
 }
 
-fun OrganizationDao.fetchAllDeployedProjectsIn(organization: Organization): List<Project> {
+fun OrganizationDao.fetchAllProjectsDeployedIn(organization: Organization): List<Project> {
     return ctx().select(PROJECT.asterisk())
-            .from(PROJECT)
-            .join(BUILD).on(BUILD.PROJECT_ID.eq(PROJECT.ID))
-            .and(BUILD.STATUS.eq(BuildStatus.SUCCEEDED))
-            .and(BUILD.TYPE.eq(BuildType.CD))
-            .where(PROJECT.ORGANIZATION.eq(organization.name))
-            .groupBy(PROJECT.ID)
-            .fetchInto(Project::class.java)
+        .from(PROJECT)
+        .join(BUILD).on(BUILD.PROJECT_ID.eq(PROJECT.ID))
+        .where(
+            PROJECT.ORGANIZATION.eq(organization.name)
+                .and(
+                    BUILD.TYPE.eq(BuildType.CD)
+                        .and(BUILD.STATUS.eq(BuildStatus.SUCCEEDED))
+                )
+        )
+        .groupBy(PROJECT.ID)
+        .fetchInto(Project::class.java)
 }

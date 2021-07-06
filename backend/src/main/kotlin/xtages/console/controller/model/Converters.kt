@@ -10,7 +10,6 @@ import xtages.console.query.tables.pojos.BuildEvent
 import xtages.console.service.*
 import xtages.console.time.toUtcMillis
 import xtages.console.query.tables.pojos.Organization as OrganizationPojo
-import xtages.console.query.tables.pojos.Project as ProjectPojo
 import xtages.console.service.UsageDetail as UsageDetailPojo
 
 /**
@@ -111,23 +110,3 @@ val xtagesUserWithCognitoAttributesToUser = Converter { source: XtagesUserWithCo
         isOwner = source.user.isOwner!!,
     )
 }
-
-///**
-// * Convert an [xtages.console.query.tables.pojos.Project] to a [Project].
-// */
-//val projectPojoToProjectConverter =
-//    Converter { source: ProjectPojo ->
-//        Project(
-//            id = source.id!!,
-//            name = source.name!!,
-//            organization = source.organization!!,
-//            ghRepoUrl = source.ghRepoFullName!!,
-//            type = ,
-//            version = null,
-//            passCheckRuleEnabled = source.passCheckRuleEnabled,
-//            builds = null,
-//            deployments = "",
-//            percentageOfSuccessfulBuildsInTheLastMonth = null
-//            )
-//        )
-//    }
