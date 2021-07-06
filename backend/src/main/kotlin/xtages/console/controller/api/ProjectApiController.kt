@@ -7,10 +7,8 @@ import org.springframework.cache.annotation.Cacheable
 import org.springframework.http.HttpStatus.*
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Controller
-import xtages.console.controller.GitHubAvatarUrl
 import xtages.console.controller.GitHubUrl
 import xtages.console.controller.api.model.*
-import xtages.console.controller.api.model.Build.Status
 import xtages.console.controller.model.*
 import xtages.console.dao.*
 import xtages.console.exception.ExceptionCode
@@ -26,11 +24,8 @@ import xtages.console.query.tables.pojos.GithubUser
 import xtages.console.query.tables.pojos.Organization
 import xtages.console.query.tables.pojos.XtagesUser
 import xtages.console.service.*
-import xtages.console.service.aws.AcmService
-import xtages.console.service.aws.AwsService
-import xtages.console.service.aws.CodeBuildService
-import xtages.console.service.aws.RdsService
-import xtages.console.time.toUtcMillis
+import xtages.console.service.aws.*
+import java.math.BigDecimal
 import java.net.URL
 import java.util.*
 import javax.validation.ValidationException
@@ -60,6 +55,7 @@ class ProjectApiController(
     private val buildEventDao: BuildEventDao,
     private val recipeDao: RecipeDao,
     private val rdsService: RdsService,
+    val ecsService: EcsService,
 ) : ProjectApiControllerBase {
 
     override fun getProject(
@@ -82,15 +78,15 @@ class ProjectApiController(
             val comparator = BuildComparator.reversed()
             val buildPojos = buildDao.fetchByProjectId(project.id!!).sortedWith(comparator)
             val buildIdToBuild = buildPojos.associateBy { build -> build.id!! }
-            val usernameToGithubUser = getUsernameToGithubUserMap(*buildPojos.toTypedArray())
-            val idToXtagesUser = getUserIdToXtagesUserMap(*buildPojos.toTypedArray())
+            val usernameToGithubUser = githubUserDao.findFromBuilds(buildPojos)
+            val idToXtagesUser = userService.findFromBuilds(buildPojos)
             val buildIdToBuildEvents = buildEventDao
                 .fetchByBuildId(*buildIdToBuild.keys.toLongArray())
                 .groupBy { buildEvent -> buildEvent.buildId!! }
 
             val builds = when {
                 includeBuilds -> buildPojos.map { build ->
-                    val events = buildIdToBuildEvents[build.id]!!
+                    val events = buildIdToBuildEvents[build.id] ?: emptyList()
                     buildPojoToBuild(
                         organization = organization,
                         project = project,
@@ -138,8 +134,8 @@ class ProjectApiController(
             val projectIdToLatestBuild = buildDao
                 .fetchLatestByProject(projects)
                 .associateBy { build -> build.projectId!! }
-            val usernameToGithubUser = getUsernameToGithubUserMap(*projectIdToLatestBuild.values.toTypedArray())
-            val idToXtagesUser = getUserIdToXtagesUserMap(*projectIdToLatestBuild.values.toTypedArray())
+            val usernameToGithubUser = githubUserDao.findFromBuilds(projectIdToLatestBuild.values.toList())
+            val idToXtagesUser = userService.findFromBuilds(projectIdToLatestBuild.values.toList())
 
             val latestBuildEvents = buildEventDao
                 .fetchByBuildId(*projectIdToLatestBuild.values.mapNotNull { build -> build.id }.toLongArray())
@@ -179,54 +175,6 @@ class ProjectApiController(
         )
     }
 
-    private fun getUserIdToXtagesUserMap(vararg builds: BuildPojo): Map<Int, XtagesUserWithCognitoAttributes> {
-        val xtagesUserIds = builds.mapNotNull { build -> build.userId }
-        return when {
-            xtagesUserIds.isNotEmpty() -> userService.findCognitoUsersByXtagesUserId(*xtagesUserIds.toIntArray())
-                .associateBy { user -> user.user.id!! }
-            else -> emptyMap()
-        }
-    }
-
-    private fun getUsernameToGithubUserMap(vararg builds: BuildPojo): Map<String, GithubUser> {
-        val githubUserNames = builds.mapNotNull { build -> build.githubUserUsername }
-        return when {
-            githubUserNames.isNotEmpty() -> githubUserDao.fetchByEmail(*githubUserNames.toTypedArray())
-                .associateBy { githubUser -> githubUser.username!! }
-            else -> emptyMap()
-        }
-    }
-
-    private fun buildPojoToBuild(
-        organization: Organization,
-        project: ProjectPojo,
-        build: BuildPojo,
-        events: List<BuildEvent>,
-        usernameToGithubUser: Map<String, GithubUser>,
-        idToXtagesUser: Map<Int, XtagesUserWithCognitoAttributes>
-    ): Build {
-        val initiator = getBuildInitiator(build, usernameToGithubUser, idToXtagesUser)
-
-        return Build(
-            id = build.id!!,
-            buildNumber = build.buildNumber!!,
-            type = BuildType.valueOf(build.type!!.name),
-            status = Status.valueOf(build.status!!.name),
-            initiatorName = initiator.name,
-            initiatorEmail = initiator.email,
-            initiatorAvatarUrl = initiator.avatarUrl.toUriString(),
-            commitHash = build.commitHash!!,
-            commitUrl = GitHubUrl(
-                organizationName = organization.name!!,
-                repoName = project.name,
-                commitHash = build.commitHash
-            ).toUriString(),
-            startTimestampInMillis = build.startTime!!.toUtcMillis(),
-            endTimestampInMillis = build.endTime?.toUtcMillis(),
-            phases = events.mapNotNull(buildEventPojoToBuildPhaseConverter::convert)
-        )
-    }
-
     private fun findLatestDeployments(
         organization: Organization,
         project: ProjectPojo,
@@ -241,45 +189,15 @@ class ProjectApiController(
             build.type == BuildTypePojo.CD && build.status == BuildStatus.SUCCEEDED && build.environment == "staging"
         }
         return listOfNotNull(prodDeployment, stagingDeployment).map { build ->
-            val initiator = getBuildInitiator(build, usernameToGithubUser, idToXtagesUser)
-            Deployment(
-                id = build.id!!,
-                initiatorName = initiator.name,
-                initiatorEmail = initiator.email,
-                initiatorAvatarUrl = initiator.avatarUrl.toUriString(),
-                commitHash = build.commitHash!!,
-                commitUrl = GitHubUrl(
-                    organizationName = organization.name!!,
-                    repoName = project.name,
-                    commitHash = build.commitHash
-                ).toUriString(),
-                env = build.environment!!,
-                timestampInMillis = build.endTime!!.toUtcMillis(),
-                serviceUrl = "https://${build.environment}-${project.hash!!.substring(0, 12)}.xtages.dev",
+            buildPojoToDeployment(
+                source = build,
+                organization = organization,
+                project = project,
+                usernameToGithubUser = usernameToGithubUser,
+                idToXtagesUser = idToXtagesUser
             )
         }
     }
-
-    private fun getBuildInitiator(
-        build: BuildPojo,
-        usernameToGithubUser: Map<String, GithubUser>,
-        idToXtagesUser: Map<Int, XtagesUserWithCognitoAttributes>
-    ): Initiator {
-        val initiatorName = when (build.userId) {
-            null -> usernameToGithubUser[build.githubUserUsername!!]?.name
-            else -> idToXtagesUser[build.userId]?.attrs?.get("name")
-        } ?: "Unknown"
-        val initiatorEmail = when (build.userId) {
-            null -> usernameToGithubUser[build.githubUserUsername!!]?.email
-            else -> idToXtagesUser[build.userId]?.attrs?.get("email")
-        } ?: ""
-        val initiatorAvatarUrl = when (build.userId) {
-            null -> GitHubAvatarUrl(usernameToGithubUser[build.githubUserUsername!!]?.username)
-            else -> GitHubAvatarUrl.fromUriString(idToXtagesUser[build.userId]?.githubUser?.avatarUrl)
-        }
-        return Initiator(name = initiatorName, email = initiatorEmail, avatarUrl = initiatorAvatarUrl)
-    }
-
 
     override fun createProject(createProjectReq: CreateProjectReq): ResponseEntity<Project> {
         val organization = organizationDao.fetchOneByCognitoUserId(authenticationService.currentCognitoUserId)
@@ -434,7 +352,7 @@ class ProjectApiController(
      * Retrieve logs from CloudWatch given a [Project] an [BuildEvent] id and
      * an operation id ([CodeBuildType])
      */
-    override fun logs(projectName: String, buildId: Long): ResponseEntity<CILogs> {
+    override fun buildLogs(projectName: String, buildId: Long): ResponseEntity<Logs> {
         val (_, organization, project) = checkRepoBelongsToOrg(projectName)
         val build = ensure.foundOne(
             operation = { buildDao.fetchById(buildId).first() },
@@ -442,8 +360,33 @@ class ProjectApiController(
             lazyMessage = { "Build with id [$buildId] was not found" }
         )
 
-        val logs = codeBuildService.getLogsFor(CodeBuildType.valueOf(build.type!!.name), build, project, organization)
-        return ResponseEntity.ok(CILogs(events = logs))
+        val logs = codeBuildService.getLogsFor(
+            codeBuildType = CodeBuildType.valueOf(build.type!!.name),
+            build = build,
+            project = project,
+            organization = organization
+        )
+        return ResponseEntity.ok(logs)
+    }
+
+    override fun getDeployLogs(
+        projectName: String,
+        buildId: Long,
+        env: String,
+        startTimeInMillis: BigDecimal?,
+        endTimeInMillis: BigDecimal?,
+        token: String?
+    ): ResponseEntity<Logs> {
+        val (_, _, project) = checkRepoBelongsToOrg(projectName)
+        val logs = ecsService.getLogsFor(
+            env = env,
+            buildId = buildId,
+            project = project,
+            startTimeInMillis = startTimeInMillis?.toLong(),
+            endTimeInMillis = endTimeInMillis?.toLong(),
+            token = token,
+        )
+        return ResponseEntity.ok(logs)
     }
 
     override fun updateProjectSettings(
@@ -574,5 +517,3 @@ object BuildComparator : Comparator<BuildPojo> {
         }
     }
 }
-
-private data class Initiator(val name: String, val email: String, val avatarUrl: GitHubAvatarUrl)

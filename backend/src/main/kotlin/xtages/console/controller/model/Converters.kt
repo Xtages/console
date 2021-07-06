@@ -3,13 +3,18 @@ package xtages.console.controller.model
 import org.springframework.core.convert.converter.Converter
 import software.amazon.awssdk.services.acm.model.CertificateDetail
 import software.amazon.awssdk.services.cognitoidentityprovider.model.UserStatusType
+import xtages.console.controller.GitHubAvatarUrl
+import xtages.console.controller.GitHubUrl
 import xtages.console.controller.api.model.*
 import xtages.console.query.enums.OrganizationSubscriptionStatus
 import xtages.console.query.enums.ProjectType
 import xtages.console.query.tables.pojos.BuildEvent
+import xtages.console.query.tables.pojos.GithubUser
 import xtages.console.service.*
 import xtages.console.time.toUtcMillis
+import xtages.console.query.tables.pojos.Build as BuildPojo
 import xtages.console.query.tables.pojos.Organization as OrganizationPojo
+import xtages.console.query.tables.pojos.Project as ProjectPojo
 import xtages.console.service.UsageDetail as UsageDetailPojo
 
 /**
@@ -102,7 +107,7 @@ val xtagesUserWithCognitoAttributesToUser = Converter { source: XtagesUserWithCo
         id = source.user.id!!,
         username = source.attrs["email"]!!,
         name = source.attrs["name"]!!,
-        status = when(source.userStatus) {
+        status = when (source.userStatus) {
             UserStatusType.RESET_REQUIRED -> User.Status.EXPIRED
             UserStatusType.FORCE_CHANGE_PASSWORD -> User.Status.INVITED
             else -> User.Status.ACTIVE
@@ -110,3 +115,87 @@ val xtagesUserWithCognitoAttributesToUser = Converter { source: XtagesUserWithCo
         isOwner = source.user.isOwner!!,
     )
 }
+
+/**
+ * Converts a [BuildPojo] to a [Build]. This is not an instance of [Converter] since it requires more parameters
+ * to work.
+ */
+fun buildPojoToBuild(
+    organization: OrganizationPojo,
+    project: ProjectPojo,
+    build: BuildPojo,
+    events: List<BuildEvent>,
+    usernameToGithubUser: Map<String, GithubUser>,
+    idToXtagesUser: Map<Int, XtagesUserWithCognitoAttributes>
+): Build {
+    val initiator = getBuildInitiator(build, usernameToGithubUser, idToXtagesUser)
+    return Build(
+        id = build.id!!,
+        buildNumber = build.buildNumber!!,
+        type = BuildType.valueOf(build.type!!.name),
+        status = Build.Status.valueOf(build.status!!.name),
+        initiatorName = initiator.name,
+        initiatorEmail = initiator.email,
+        initiatorAvatarUrl = initiator.avatarUrl.toUriString(),
+        commitHash = build.commitHash!!,
+        commitUrl = GitHubUrl(
+            organizationName = organization.name!!,
+            repoName = project.name,
+            commitHash = build.commitHash
+        ).toUriString(),
+        startTimestampInMillis = build.startTime!!.toUtcMillis(),
+        endTimestampInMillis = build.endTime?.toUtcMillis(),
+        phases = events.mapNotNull(buildEventPojoToBuildPhaseConverter::convert)
+    )
+}
+
+/**
+ * Converts a [BuildPojo] to a [Deployment]. This is not an instance of [Converter] since it requires more parameters
+ * to work.
+ */
+fun buildPojoToDeployment(
+    source: BuildPojo,
+    organization: OrganizationPojo,
+    project: ProjectPojo,
+    usernameToGithubUser: Map<String, GithubUser>,
+    idToXtagesUser: Map<Int, XtagesUserWithCognitoAttributes>
+): Deployment {
+    val initiator = getBuildInitiator(source, usernameToGithubUser, idToXtagesUser)
+    return Deployment(
+        id = source.id!!,
+        initiatorName = initiator.name,
+        initiatorEmail = initiator.email,
+        initiatorAvatarUrl = initiator.avatarUrl.toUriString(),
+        commitHash = source.commitHash!!,
+        commitUrl = GitHubUrl(
+            organizationName = organization.name!!,
+            repoName = project.name,
+            commitHash = source.commitHash
+        ).toUriString(),
+        env = source.environment!!,
+        timestampInMillis = source.endTime!!.toUtcMillis(),
+        serviceUrl = "https://${source.environment}-${project.hash!!.substring(0, 12)}.xtages.dev",
+    )
+}
+
+private fun getBuildInitiator(
+    build: BuildPojo,
+    usernameToGithubUser: Map<String, GithubUser>,
+    idToXtagesUser: Map<Int, XtagesUserWithCognitoAttributes>
+): Initiator {
+    val initiatorName = when (build.userId) {
+        null -> usernameToGithubUser[build.githubUserUsername!!]?.name
+        else -> idToXtagesUser[build.userId]?.attrs?.get("name")
+    } ?: "Unknown"
+    val initiatorEmail = when (build.userId) {
+        null -> usernameToGithubUser[build.githubUserUsername!!]?.email
+        else -> idToXtagesUser[build.userId]?.attrs?.get("email")
+    } ?: ""
+    val initiatorAvatarUrl = when (build.userId) {
+        null -> GitHubAvatarUrl(usernameToGithubUser[build.githubUserUsername!!]?.username)
+        else -> GitHubAvatarUrl.fromUriString(idToXtagesUser[build.userId]?.githubUser?.avatarUrl)
+    }
+    return Initiator(name = initiatorName, email = initiatorEmail, avatarUrl = initiatorAvatarUrl)
+}
+
+private data class Initiator(val name: String, val email: String, val avatarUrl: GitHubAvatarUrl)

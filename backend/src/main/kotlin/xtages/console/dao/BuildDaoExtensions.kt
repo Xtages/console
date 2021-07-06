@@ -1,5 +1,7 @@
 package xtages.console.dao
 
+import org.jooq.impl.DSL.name
+import org.jooq.impl.DSL.select
 import xtages.console.query.enums.BuildStatus
 import xtages.console.query.enums.BuildType
 import xtages.console.query.tables.daos.BuildDao
@@ -17,7 +19,9 @@ import java.time.LocalDateTime
  */
 fun BuildDao.fetchLatestByProject(projects: List<Project>): List<Build> {
     val projectIds = projects.mapNotNull { project -> project.id }
-    return ctx().select(BUILD.asterisk()).distinctOn(BUILD.PROJECT_ID)
+    return ctx()
+        .select(BUILD.asterisk())
+        .distinctOn(BUILD.PROJECT_ID)
         .from(BUILD)
         .where(BUILD.PROJECT_ID.`in`(projectIds))
         .orderBy(
@@ -29,7 +33,9 @@ fun BuildDao.fetchLatestByProject(projects: List<Project>): List<Build> {
  * Returns the percentage of successful [Build]s in the last month.
  */
 fun BuildDao.findPercentageOfSuccessfulBuildsInMonth(organizationName: String, projectName: String): Double {
-    val stats = ctx().select(BUILD_STATS_PER_MONTH.asterisk()).from(BUILD_STATS_PER_MONTH)
+    val stats = ctx()
+        .select(BUILD_STATS_PER_MONTH.asterisk())
+        .from(BUILD_STATS_PER_MONTH)
         .where(
             BUILD_STATS_PER_MONTH.ORGANIZATION.eq(organizationName)
                 .and(
@@ -54,7 +60,7 @@ fun BuildDao.findPercentageOfSuccessfulBuildsInMonth(organizationName: String, p
  * @return `null` if there hasn't been a deploy yet.
  */
 fun BuildDao.findLatestDeploy(organizationName: String, projectName: String): Build? {
-    return findCdBuildsByOrganizationAndEnvironment(
+    return findCdBuildsByOrganizationAndProjectAndEnvironment(
         organizationName = organizationName,
         projectName = projectName,
         environment = "staging",
@@ -66,7 +72,7 @@ fun BuildDao.findLatestDeploy(organizationName: String, projectName: String): Bu
  * Finds the last 2 [Build]s that were promoted to `production` for [organizationName] and [projectName].
  */
 fun BuildDao.findLastTwoPreviousPromotions(organizationName: String, projectName: String): List<Build> {
-    return findCdBuildsByOrganizationAndEnvironment(
+    return findCdBuildsByOrganizationAndProjectAndEnvironment(
         organizationName = organizationName,
         projectName = projectName,
         environment = "production",
@@ -74,7 +80,7 @@ fun BuildDao.findLastTwoPreviousPromotions(organizationName: String, projectName
     )
 }
 
-private fun BuildDao.findCdBuildsByOrganizationAndEnvironment(
+private fun BuildDao.findCdBuildsByOrganizationAndProjectAndEnvironment(
     organizationName: String,
     projectName: String,
     environment: String,
@@ -116,5 +122,37 @@ fun BuildDao.fetchByOrganizationInDateRange(
                     .or(BUILD.END_TIME.between(dateRange.start, dateRange.endInclusive))
             )
         )
+        .fetchInto(Build::class.java)
+}
+
+/**
+ * Returns the latest CD [Build]s for an [organizationName]. The [Build]s returned will have the latest `staging` build
+ * and latest `production` build for each [Project] if there is one.
+ */
+fun BuildDao.findLatestCdBuilds(organizationName: String): List<Build> {
+    fun buildCdSelect(env: String) = select(BUILD.asterisk())
+        .from(BUILD)
+        .where(
+            BUILD.ENVIRONMENT.eq(env).and(
+                BUILD.TYPE.eq(BuildType.CD).and(
+                    BUILD.STATUS.eq(BuildStatus.SUCCEEDED)
+                )
+            )
+        )
+        .orderBy(BUILD.END_TIME.desc())
+        .limit(1)
+
+    val deploysCte = name("deploys")
+        .`as`(
+            buildCdSelect(env = "staging")
+                .union(buildCdSelect(env = "production"))
+        )
+    return ctx()
+        .with(deploysCte)
+        .select(deploysCte.asterisk())
+        .from(deploysCte)
+        .join(PROJECT).on(deploysCte.field("project_id", Int::class.java)!!.eq(PROJECT.ID))
+        .where(PROJECT.ORGANIZATION.eq(organizationName))
+        .orderBy(PROJECT.NAME, deploysCte.field("end_time")!!.desc())
         .fetchInto(Build::class.java)
 }

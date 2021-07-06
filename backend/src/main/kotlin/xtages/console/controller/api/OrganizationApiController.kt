@@ -5,14 +5,14 @@ import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Controller
 import xtages.console.controller.api.model.*
 import xtages.console.controller.model.MD5
+import xtages.console.controller.model.buildPojoToDeployment
 import xtages.console.controller.model.organizationPojoToOrganizationConverter
-import xtages.console.dao.fetchAllProjectsDeployedIn
+import xtages.console.controller.model.projectPojoTypeToProjectTypeConverter
 import xtages.console.dao.fetchOneByCognitoUserId
-import xtages.console.exception.ExceptionCode
-import xtages.console.exception.ensure
+import xtages.console.dao.findFromBuilds
+import xtages.console.dao.findLatestCdBuilds
 import xtages.console.query.enums.OrganizationSubscriptionStatus
-import xtages.console.query.tables.daos.OrganizationDao
-import xtages.console.query.tables.daos.RecipeDao
+import xtages.console.query.tables.daos.*
 import xtages.console.service.AuthenticationService
 import xtages.console.service.UserService
 import xtages.console.service.aws.CognitoService
@@ -26,6 +26,9 @@ class OrganizationApiController(
     val cognitoService: CognitoService,
     val authenticationService: AuthenticationService,
     val recipeDao: RecipeDao,
+    val buildDao: BuildDao,
+    val projectDao: ProjectDao,
+    val githubUserDao: GithubUserDao,
 ) :
     OrganizationApiControllerBase {
 
@@ -47,35 +50,42 @@ class OrganizationApiController(
     }
 
     override fun projectsDeployed(): ResponseEntity<Projects> {
-        val organization = ensure.foundOne(
-            operation = {organizationDao.fetchOneByCognitoUserId(authenticationService.currentCognitoUserId)},
-            code = ExceptionCode.ORG_NOT_FOUND,
-            lazyMessage = {"Organization not found"}
-        )
-        val projects = organizationDao.fetchAllProjectsDeployedIn(
-            organization = organization
-        )
+        val organization = organizationDao.fetchOneByCognitoUserId(authenticationService.currentCognitoUserId);
+        val latestCdBuilds = buildDao.findLatestCdBuilds(organizationName = organization.name!!)
+        val buildsPerProjectId = latestCdBuilds.groupBy { build -> build.projectId }
+        val projectPojos = projectDao.fetchById(*buildsPerProjectId.keys.filterNotNull().toIntArray())
+        val recipes = recipeDao.fetchById(*projectPojos.mapNotNull { project -> project.recipe }.toIntArray())
+        val recipesById = recipes.associateBy { recipe -> recipe.id }
+        val usernameToGithubUser = githubUserDao.findFromBuilds(latestCdBuilds)
+        val idToXtagesUser = userService.findFromBuilds(latestCdBuilds)
 
-        // Here I need to map the project to a model Project
-//        projects.map {
-//            val recipe = recipeDao.fetchById(it.recipe!!).single()
-//            Project(
-//                id = it.id!!,
-//                name = it.name!!,
-//                organization = it.organization!!,
-//                ghRepoUrl = it.ghRepoFullName!!,
-//                passCheckRuleEnabled = it.passCheckRuleEnabled!!,
-//                type = projectPojoTypeToProjectTypeConverter.convert(
-//                    recipe.projectType!!
-//                )!!,
-//                version = recipe.version!!,
-//                builds = null,
-//                deployments = "",
-//                percentageOfSuccessfulBuildsInTheLastMonth = null
-//            )
-//        }
+        val projects = projectPojos.map { project ->
+            val recipe = recipesById[project.recipe]!!
+            Project(
+                id = project.id!!,
+                name = project.name!!,
+                organization = project.organization!!,
+                ghRepoUrl = project.ghRepoFullName!!,
+                passCheckRuleEnabled = project.passCheckRuleEnabled!!,
+                type = projectPojoTypeToProjectTypeConverter.convert(
+                    recipe.projectType!!
+                )!!,
+                version = recipe.version!!,
+                builds = emptyList(),
+                deployments = buildsPerProjectId[project.id]?.map { build ->
+                    buildPojoToDeployment(
+                        source = build,
+                        organization = organization,
+                        project = project,
+                        usernameToGithubUser = usernameToGithubUser,
+                        idToXtagesUser = idToXtagesUser
+                    )
+                } ?: emptyList(),
+                percentageOfSuccessfulBuildsInTheLastMonth = null
+            )
+        }
 
-        return ResponseEntity.ok(Projects(listOf()))
+        return ResponseEntity.ok(Projects(projects))
     }
 }
 
