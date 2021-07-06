@@ -66,40 +66,70 @@ export function SimpleProjectCard({
 export function ProjectDetailsCard({project}: SimpleProjectCardProps) {
   return (
     <SimpleProjectCard project={project}>
-      <DeploymentAndBuildDetails project={project} />
+      <DeploymentDetailsAndBuildChart project={project} />
     </SimpleProjectCard>
   );
 }
 
-function DeploymentAndBuildDetails({project}: {project: Project}) {
+export type DeploymentDetailsProps = {
+  project: Project;
+
+  colWidth?: number;
+
+  showDeploymentSectionIfEmpty?: boolean;
+
+  showDeploymentLinkDetailsLink?: boolean;
+};
+
+export function DeploymentDetails({
+  project,
+  colWidth = 7,
+  showDeploymentSectionIfEmpty = true,
+  showDeploymentLinkDetailsLink = true,
+}: DeploymentDetailsProps) {
   const {
     deployments,
     name,
-    percentageOfSuccessfulBuildsInTheLastMonth,
   } = project;
-  const prodDeployment = deployments.find((deployment) => deployment.env === 'production');
-  const stagingDeployment = deployments.find((deployment) => deployment.env === 'staging');
+  const prodDeploy = deployments.find((deployment) => deployment.env === 'production');
+  const stagingDeploy = deployments.find((deployment) => deployment.env === 'staging');
+  const showDivider = (prodDeploy && stagingDeploy) || showDeploymentSectionIfEmpty;
   return (
-    <>
-      <Col sm={7} className="text-sm">
-        <DeploymentDetailsRow
-          title="In production"
-          name="production"
-          projectName={name}
-          deployment={prodDeployment}
-        />
-        <Row>
-          <Col>
-            <hr />
-          </Col>
-        </Row>
+    <Col sm={colWidth} className="text-sm">
+      {(prodDeploy || showDeploymentSectionIfEmpty) && (
+      <DeploymentDetailsRow
+        title="In production"
+        name="production"
+        projectName={name}
+        deployment={prodDeploy}
+        showDeploymentLinkDetailsLink={showDeploymentLinkDetailsLink}
+      />
+      )}
+      {showDivider && (
+      <Row>
+        <Col>
+          <hr />
+        </Col>
+      </Row>
+      )}
+      {(stagingDeploy || showDeploymentSectionIfEmpty) && (
         <DeploymentDetailsRow
           title="In staging"
           name="staging"
           projectName={name}
-          deployment={stagingDeployment}
+          deployment={stagingDeploy}
+          showDeploymentLinkDetailsLink={showDeploymentLinkDetailsLink}
         />
-      </Col>
+      )}
+    </Col>
+  );
+}
+
+export function DeploymentDetailsAndBuildChart({project}: {project: Project}) {
+  const {percentageOfSuccessfulBuildsInTheLastMonth} = project;
+  return (
+    <>
+      <DeploymentDetails project={project} />
       <Col sm={2} className="p-0">
         {percentageOfSuccessfulBuildsInTheLastMonth !== undefined
           && (
@@ -132,6 +162,8 @@ type DeploymentDetailsRowProps = {
 
   /** [Deployment] data */
   deployment: Deployment | undefined;
+
+  showDeploymentLinkDetailsLink: boolean;
 };
 
 /**
@@ -142,6 +174,7 @@ function DeploymentDetailsRow({
   name,
   projectName,
   deployment,
+  showDeploymentLinkDetailsLink,
 }: DeploymentDetailsRowProps) {
   return (
     <Row>
@@ -171,12 +204,29 @@ function DeploymentDetailsRow({
               >
                 <Link
                   className="font-weight-bold"
-                  to={`/project/${projectName}/build/${(deployment.id)}`}
+                  to={`/project/${projectName}/build/${deployment.id}`}
                 >
                   {formatDateTimeFull(deployment.timestampInMillis)}
                 </Link>
               </OverlayTrigger>
             </div>
+            {showDeploymentLinkDetailsLink && (
+            <div>
+              <OverlayTrigger overlay={(
+                <Tooltip id="seeDeployLogsTooltip">
+                  See deployment logs
+                </Tooltip>
+              )}
+              >
+                <Link
+                  className="font-weight-bold"
+                  to={`/deployments/${projectName}/${deployment.env}`}
+                >
+                  See deployment logs
+                </Link>
+              </OverlayTrigger>
+            </div>
+            )}
             <div>
               <a
                 href={deployment.serviceUrl}

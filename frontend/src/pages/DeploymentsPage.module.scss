@@ -1,0 +1,15 @@
+@import "src/assets/css/variables";
+@import "src/assets/css/mixins";
+
+.loadMoreButton {
+  .bg {
+    background-color: darken($dark, 5%);
+    height: 2.5em;
+    text-align: center;
+  }
+
+  .noMoreLogsMsg {
+    color: $light;
+    line-height: 2.5em;
+  }
+}

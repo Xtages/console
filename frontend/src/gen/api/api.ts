@@ -246,19 +246,6 @@ export interface CI {
     id?: number;
 }
 /**
- * CI Logs
- * @export
- * @interface CILogs
- */
-export interface CILogs {
-    /**
-     * 
-     * @type {Array<LogEvent>}
-     * @memberof CILogs
-     */
-    events: Array<LogEvent>;
-}
-/**
  * Request made to POST /ci
  * @export
  * @interface CIReq
@@ -489,6 +476,25 @@ export interface LogEvent {
     message: string;
 }
 /**
+ * Logs
+ * @export
+ * @interface Logs
+ */
+export interface Logs {
+    /**
+     * 
+     * @type {Array<LogEvent>}
+     * @memberof Logs
+     */
+    events: Array<LogEvent>;
+    /**
+     * 
+     * @type {string}
+     * @memberof Logs
+     */
+    nextToken?: string;
+}
+/**
  * An Organization
  * @export
  * @interface Organization
@@ -614,6 +620,32 @@ export interface ProjectSettings {
      * @memberof ProjectSettings
      */
     associatedDomain?: AssociatedDomain;
+}
+/**
+ * List of projects
+ * @export
+ * @interface Projects
+ */
+export interface Projects {
+    /**
+     * 
+     * @type {Array<Project>}
+     * @memberof Projects
+     */
+    projects?: Array<Project>;
+}
+/**
+ * Query to retrieve projects
+ * @export
+ * @interface QueryProjectReq
+ */
+export interface QueryProjectReq {
+    /**
+     * 
+     * @type {boolean}
+     * @memberof QueryProjectReq
+     */
+    deployed: boolean;
 }
 /**
  * Enum of resources
@@ -1324,13 +1356,14 @@ export const LogsApiAxiosParamCreator = function (configuration?: Configuration)
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        logs: async (projectName: string, buildId: number, options: any = {}): Promise<RequestArgs> => {
+        buildLogs: async (projectName: string, buildId: number, options: any = {}): Promise<RequestArgs> => {
             // verify required parameter 'projectName' is not null or undefined
-            assertParamExists('logs', 'projectName', projectName)
+            assertParamExists('buildLogs', 'projectName', projectName)
             // verify required parameter 'buildId' is not null or undefined
-            assertParamExists('logs', 'buildId', buildId)
-            const localVarPath = `/project/{projectName}/logs`
-                .replace(`{${"projectName"}}`, encodeURIComponent(String(projectName)));
+            assertParamExists('buildLogs', 'buildId', buildId)
+            const localVarPath = `/project/{projectName}/{buildId}/logs`
+                .replace(`{${"projectName"}}`, encodeURIComponent(String(projectName)))
+                .replace(`{${"buildId"}}`, encodeURIComponent(String(buildId)));
             // use dummy base URL string because the URL constructor only accepts absolute URLs.
             const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
             let baseOptions;
@@ -1345,10 +1378,6 @@ export const LogsApiAxiosParamCreator = function (configuration?: Configuration)
             // authentication bearerAuth required
             // http bearer authentication required
             await setBearerAuthToObject(localVarHeaderParameter, configuration)
-
-            if (buildId !== undefined) {
-                localVarQueryParameter['buildId'] = buildId;
-            }
 
 
     
@@ -1379,8 +1408,8 @@ export const LogsApiFp = function(configuration?: Configuration) {
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async logs(projectName: string, buildId: number, options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<CILogs>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.logs(projectName, buildId, options);
+        async buildLogs(projectName: string, buildId: number, options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Logs>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.buildLogs(projectName, buildId, options);
             return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
         },
     }
@@ -1401,8 +1430,8 @@ export const LogsApiFactory = function (configuration?: Configuration, basePath?
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        logs(projectName: string, buildId: number, options?: any): AxiosPromise<CILogs> {
-            return localVarFp.logs(projectName, buildId, options).then((request) => request(axios, basePath));
+        buildLogs(projectName: string, buildId: number, options?: any): AxiosPromise<Logs> {
+            return localVarFp.buildLogs(projectName, buildId, options).then((request) => request(axios, basePath));
         },
     };
 };
@@ -1423,8 +1452,8 @@ export class LogsApi extends BaseAPI {
      * @throws {RequiredError}
      * @memberof LogsApi
      */
-    public logs(projectName: string, buildId: number, options?: any) {
-        return LogsApiFp(this.configuration).logs(projectName, buildId, options).then((request) => request(this.axios, this.basePath));
+    public buildLogs(projectName: string, buildId: number, options?: any) {
+        return LogsApiFp(this.configuration).buildLogs(projectName, buildId, options).then((request) => request(this.axios, this.basePath));
     }
 }
 
@@ -1475,6 +1504,40 @@ export const OrganizationApiAxiosParamCreator = function (configuration?: Config
                 options: localVarRequestOptions,
             };
         },
+        /**
+         * 
+         * @summary Returns the projects for the organization that have been deployed
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        projectsDeployed: async (options: any = {}): Promise<RequestArgs> => {
+            const localVarPath = `/organization/projects/deployments`;
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            // authentication bearerAuth required
+            // http bearer authentication required
+            await setBearerAuthToObject(localVarHeaderParameter, configuration)
+
+
+    
+            setSearchParams(localVarUrlObj, localVarQueryParameter, options.query);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
     }
 };
 
@@ -1494,6 +1557,16 @@ export const OrganizationApiFp = function(configuration?: Configuration) {
          */
         async createOrganization(createOrgReq: CreateOrgReq, options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Organization>> {
             const localVarAxiosArgs = await localVarAxiosParamCreator.createOrganization(createOrgReq, options);
+            return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
+        },
+        /**
+         * 
+         * @summary Returns the projects for the organization that have been deployed
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async projectsDeployed(options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Projects>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.projectsDeployed(options);
             return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
         },
     }
@@ -1516,6 +1589,15 @@ export const OrganizationApiFactory = function (configuration?: Configuration, b
         createOrganization(createOrgReq: CreateOrgReq, options?: any): AxiosPromise<Organization> {
             return localVarFp.createOrganization(createOrgReq, options).then((request) => request(axios, basePath));
         },
+        /**
+         * 
+         * @summary Returns the projects for the organization that have been deployed
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        projectsDeployed(options?: any): AxiosPromise<Projects> {
+            return localVarFp.projectsDeployed(options).then((request) => request(axios, basePath));
+        },
     };
 };
 
@@ -1536,6 +1618,17 @@ export class OrganizationApi extends BaseAPI {
      */
     public createOrganization(createOrgReq: CreateOrgReq, options?: any) {
         return OrganizationApiFp(this.configuration).createOrganization(createOrgReq, options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * 
+     * @summary Returns the projects for the organization that have been deployed
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof OrganizationApi
+     */
+    public projectsDeployed(options?: any) {
+        return OrganizationApiFp(this.configuration).projectsDeployed(options).then((request) => request(this.axios, this.basePath));
     }
 }
 
@@ -1580,6 +1673,70 @@ export const ProjectApiAxiosParamCreator = function (configuration?: Configurati
             let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
             localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
             localVarRequestOptions.data = serializeDataIfNeeded(createProjectReq, localVarRequestOptions, configuration)
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
+         * 
+         * @summary Retrieve logs for an application that is running in our platform
+         * @param {string} projectName Name of the project to get the logs from
+         * @param {number} buildId The id of the build
+         * @param {string} env 
+         * @param {number} [startTimeInMillis] 
+         * @param {number} [endTimeInMillis] 
+         * @param {string} [token] 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getDeployLogs: async (projectName: string, buildId: number, env: string, startTimeInMillis?: number, endTimeInMillis?: number, token?: string, options: any = {}): Promise<RequestArgs> => {
+            // verify required parameter 'projectName' is not null or undefined
+            assertParamExists('getDeployLogs', 'projectName', projectName)
+            // verify required parameter 'buildId' is not null or undefined
+            assertParamExists('getDeployLogs', 'buildId', buildId)
+            // verify required parameter 'env' is not null or undefined
+            assertParamExists('getDeployLogs', 'env', env)
+            const localVarPath = `/project/{projectName}/deploy/{buildId}/logs`
+                .replace(`{${"projectName"}}`, encodeURIComponent(String(projectName)))
+                .replace(`{${"buildId"}}`, encodeURIComponent(String(buildId)));
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            // authentication bearerAuth required
+            // http bearer authentication required
+            await setBearerAuthToObject(localVarHeaderParameter, configuration)
+
+            if (env !== undefined) {
+                localVarQueryParameter['env'] = env;
+            }
+
+            if (startTimeInMillis !== undefined) {
+                localVarQueryParameter['startTimeInMillis'] = startTimeInMillis;
+            }
+
+            if (endTimeInMillis !== undefined) {
+                localVarQueryParameter['endTimeInMillis'] = endTimeInMillis;
+            }
+
+            if (token !== undefined) {
+                localVarQueryParameter['token'] = token;
+            }
+
+
+    
+            setSearchParams(localVarUrlObj, localVarQueryParameter, options.query);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
 
             return {
                 url: toPathString(localVarUrlObj),
@@ -1783,6 +1940,22 @@ export const ProjectApiFp = function(configuration?: Configuration) {
         },
         /**
          * 
+         * @summary Retrieve logs for an application that is running in our platform
+         * @param {string} projectName Name of the project to get the logs from
+         * @param {number} buildId The id of the build
+         * @param {string} env 
+         * @param {number} [startTimeInMillis] 
+         * @param {number} [endTimeInMillis] 
+         * @param {string} [token] 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async getDeployLogs(projectName: string, buildId: number, env: string, startTimeInMillis?: number, endTimeInMillis?: number, token?: string, options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Logs>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.getDeployLogs(projectName, buildId, env, startTimeInMillis, endTimeInMillis, token, options);
+            return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
+        },
+        /**
+         * 
          * @summary Returns the project details
          * @param {string} projectName Name of the project to fetch
          * @param {boolean} [includeBuilds] Whether to include data the Builds for the project
@@ -1851,6 +2024,21 @@ export const ProjectApiFactory = function (configuration?: Configuration, basePa
         },
         /**
          * 
+         * @summary Retrieve logs for an application that is running in our platform
+         * @param {string} projectName Name of the project to get the logs from
+         * @param {number} buildId The id of the build
+         * @param {string} env 
+         * @param {number} [startTimeInMillis] 
+         * @param {number} [endTimeInMillis] 
+         * @param {string} [token] 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getDeployLogs(projectName: string, buildId: number, env: string, startTimeInMillis?: number, endTimeInMillis?: number, token?: string, options?: any): AxiosPromise<Logs> {
+            return localVarFp.getDeployLogs(projectName, buildId, env, startTimeInMillis, endTimeInMillis, token, options).then((request) => request(axios, basePath));
+        },
+        /**
+         * 
          * @summary Returns the project details
          * @param {string} projectName Name of the project to fetch
          * @param {boolean} [includeBuilds] Whether to include data the Builds for the project
@@ -1913,6 +2101,23 @@ export class ProjectApi extends BaseAPI {
      */
     public createProject(createProjectReq: CreateProjectReq, options?: any) {
         return ProjectApiFp(this.configuration).createProject(createProjectReq, options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * 
+     * @summary Retrieve logs for an application that is running in our platform
+     * @param {string} projectName Name of the project to get the logs from
+     * @param {number} buildId The id of the build
+     * @param {string} env 
+     * @param {number} [startTimeInMillis] 
+     * @param {number} [endTimeInMillis] 
+     * @param {string} [token] 
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof ProjectApi
+     */
+    public getDeployLogs(projectName: string, buildId: number, env: string, startTimeInMillis?: number, endTimeInMillis?: number, token?: string, options?: any) {
+        return ProjectApiFp(this.configuration).getDeployLogs(projectName, buildId, env, startTimeInMillis, endTimeInMillis, token, options).then((request) => request(this.axios, this.basePath));
     }
 
     /**

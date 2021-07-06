@@ -12,7 +12,9 @@ const Template: Story<DateTimeRangePickerProps> = (args) => <DateTimeRangePicker
 
 export const Primary = Template.bind({});
 Primary.args = {
-  startDateTime: new Date(),
-  endDateTime: new Date(),
+  dateTimeRange: {
+    startDateTime: new Date(),
+    endDateTime: new Date(),
+  },
 };
 Primary.storyName = 'DateTimeRangePicker';
