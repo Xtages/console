@@ -37,6 +37,9 @@ class CloudWatchService(
             .startTime(since.atZone(ZoneOffset.UTC).toInstant())
             .endTime(OffsetDateTime.now(ZoneOffset.UTC).toInstant())
             .build()
+        // Edge case when the account is created, there are no projects.
+        if (request.metricDataQueries().size == 0) return 0L;
+
         return cloudWatchAsyncClient
             .getMetricData(request)
             .get()

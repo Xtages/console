@@ -268,6 +268,7 @@ class CodeBuildService(
                         buildEnvVar("XTAGES_GH_RECIPE_TAG", recipe.tag),
                         buildEnvVar("XTAGES_NODE_VER", recipe.version),
                         buildEnvVar("XTAGES_PREVIOUS_GH_PROJECT_TAG", previousGitHubProjectTag),
+                        buildEnvVar("XTAGES_BUILD_ID", buildRecord.id.toString()),
                         conditionalEnvVar(isDeploy, "XTAGES_HOST_HEADER", project.associatedDomain),
                         conditionalEnvVar(isDeploy, "XTAGES_CUSTOMER_DOMAIN", project.associatedDomain),
                     )
