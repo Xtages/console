@@ -77,15 +77,8 @@ class StripeService(
             .setMode(SessionCreateParams.Mode.SUBSCRIPTION)
             .setAllowPromotionCodes(true)
             .putAllMetadata(metadata)
+            .setSubscriptionData(buildSubscriptionData(isTrialProduct, metadata))
 
-        if (isTrialProduct) {
-            builder.setSubscriptionData(
-                SubscriptionData.builder()
-                    .setTrialPeriodDays(15)
-                    .putAllMetadata(metadata)
-                    .build()
-            )
-        }
         priceIds.forEach { price ->
             builder.addLineItem(
                 SessionCreateParams.LineItem.builder()
@@ -104,6 +97,16 @@ class StripeService(
             )
         )
         return session.id
+    }
+
+    private fun buildSubscriptionData(isTrialProduct: Boolean, metadata: Map<String, String>): SubscriptionData? {
+        val builder = SubscriptionData.builder()
+            .putAllMetadata(metadata)
+        if (isTrialProduct) {
+            builder.setTrialPeriodDays(consoleProperties.stripe.trialPeriod)
+        }
+        return builder.build()
+
     }
 
     /**

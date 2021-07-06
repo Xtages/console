@@ -277,8 +277,7 @@ class ProjectApiController(
             null -> GitHubAvatarUrl(usernameToGithubUser[build.githubUserUsername!!]?.username)
             else -> GitHubAvatarUrl.fromUriString(idToXtagesUser[build.userId]?.githubUser?.avatarUrl)
         }
-        val initiator = Initiator(name = initiatorName, email = initiatorEmail, avatarUrl = initiatorAvatarUrl)
-        return initiator
+        return Initiator(name = initiatorName, email = initiatorEmail, avatarUrl = initiatorAvatarUrl)
     }
 
 
@@ -451,7 +450,7 @@ class ProjectApiController(
         projectName: String,
         updateProjectSettingsReq: UpdateProjectSettingsReq
     ): ResponseEntity<ProjectSettings> {
-        val (_, organization, project) = checkRepoBelongsToOrg(projectName)
+        val (_, _, project) = checkRepoBelongsToOrg(projectName)
         if (project.associatedDomain != null) {
             return ResponseEntity(CONFLICT)
         }
@@ -485,7 +484,7 @@ class ProjectApiController(
     }
 
     override fun getProjectSettings(projectName: String): ResponseEntity<ProjectSettings> {
-        val (_, organization, project) = checkRepoBelongsToOrg(projectName)
+        val (_, _, project) = checkRepoBelongsToOrg(projectName)
         if (project.certArn != null) {
             val certificateDetail = acmService.getCertificateDetail(certificateArn = project.certArn!!)
             ensure.isTrue(
