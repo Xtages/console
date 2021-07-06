@@ -34,7 +34,6 @@ import com.stripe.param.billingportal.SessionCreateParams as CustomerPortalSessi
 
 private val logger = KotlinLogging.logger { }
 const val ORGANIZATION_NAME_PARAM = "organizationName"
-const val TRIAL_PERIOD_DAYS = 15L
 
 @Service
 @RequestScope
@@ -78,7 +77,7 @@ class StripeService(
             .setMode(SessionCreateParams.Mode.SUBSCRIPTION)
             .setAllowPromotionCodes(true)
             .putAllMetadata(metadata)
-            .setSubscriptionData(getSubscriptionData(isTrialProduct, metadata))
+            .setSubscriptionData(buildSubscriptionData(isTrialProduct, metadata))
 
         priceIds.forEach { price ->
             builder.addLineItem(
@@ -100,11 +99,11 @@ class StripeService(
         return session.id
     }
 
-    private fun getSubscriptionData(isTrialProduct: Boolean, metadata: Map<String, String>): SubscriptionData? {
+    private fun buildSubscriptionData(isTrialProduct: Boolean, metadata: Map<String, String>): SubscriptionData? {
         val builder = SubscriptionData.builder()
             .putAllMetadata(metadata)
         if (isTrialProduct) {
-            builder.setTrialPeriodDays(TRIAL_PERIOD_DAYS)
+            builder.setTrialPeriodDays(consoleProperties.stripe.trialPeriod)
         }
         return builder.build()
 
