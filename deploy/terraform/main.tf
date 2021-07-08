@@ -54,7 +54,7 @@ resource "aws_lb_target_group" "xtages_console" {
   name     = "xtages-console-tg"
   port     = 80
   protocol = "HTTP"
-  vpc_id   = data.terraform_remote_state.xtages.outputs.vpc_id
+  vpc_id   = data.terraform_remote_state.xtages_infra.outputs.vpc_id
 
   health_check {
     path                = "/"
@@ -67,11 +67,17 @@ resource "aws_lb_target_group" "xtages_console" {
 }
 
 resource "aws_ecs_service" "xtages_console_service" {
-  name            = "xtages-console"
-  cluster         = data.terraform_remote_state.xtages.outputs.xtages_ecs_cluster_id
-  task_definition = aws_ecs_task_definition.console_task_definition.arn
-  desired_count   = 1
-  iam_role        = data.terraform_remote_state.xtages.outputs.ecs_service_role_arn
+  name                = "xtages-console"
+  cluster             = data.terraform_remote_state.xtages_ecs.outputs.xtages_ecs_cluster_id
+  task_definition     = aws_ecs_task_definition.console_task_definition.arn
+  desired_count       = 1
+  iam_role            = data.terraform_remote_state.xtages_ecs.outputs.ecs_service_role_arn
+  scheduling_strategy = "REPLICA"
+
+  ordered_placement_strategy {
+    type  = "spread"
+    field = "attribute:ecs.availability-zone"
+  }
 
   load_balancer {
     target_group_arn = aws_lb_target_group.xtages_console.id
