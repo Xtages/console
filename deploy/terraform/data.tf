@@ -16,13 +16,22 @@ data "terraform_remote_state" "xtages_ecs" {
   }
 }
 
+data "terraform_remote_state" "xtages_lb" {
+  backend = "s3"
+  config = {
+    bucket = "xtages-tfstate"
+    key    = "tfstate/us-east-1/production/lbs/lb-tfstate"
+    region = "us-east-1"
+  }
+}
+
 data "aws_route53_zone" "xtages_zone" {
   name         = "xtages.com"
   private_zone = false
 }
 
 data "aws_lb" "xtages_console_lb" {
-  arn = data.terraform_remote_state.xtages_ecs.outputs.xtages_console_alb_arn
+  arn = data.terraform_remote_state.xtages_lb.outputs.xtages_console_alb_arn
 }
 
 data "aws_acm_certificate" "xtages_cert" {
