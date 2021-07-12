@@ -18,7 +18,7 @@ import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
 import software.amazon.awssdk.services.codebuild.CodeBuildAsyncClient
 import software.amazon.awssdk.services.codebuild.model.*
 import xtages.console.config.ConsoleProperties
-import xtages.console.controller.api.model.LogEvent
+import xtages.console.controller.api.model.Logs
 import xtages.console.controller.model.CodeBuildType
 import xtages.console.exception.ExceptionCode
 import xtages.console.exception.ExceptionCode.INVALID_ENVIRONMENT
@@ -313,7 +313,7 @@ class CodeBuildService(
         build: Build,
         project: Project,
         organization: Organization,
-    ): List<LogEvent> {
+    ): Logs {
         val logGroupName = organization.codeBuildLogsGroupNameFor(codeBuildType)
         val logStreamName =
             "${project.codeBuildLogsStreamNameFor(codeBuildType)}/${AmazonResourceName.fromString(build.buildArn).resourceName}"
