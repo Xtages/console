@@ -2,15 +2,15 @@
 @import "src/assets/css/mixins";
 
 .logViewer {
-    background-color: $dark;
-    color: $gray-400;
-    display: block;
-    font-family: 'Source Code Pro', monospace;
-    font-size: $font-size-sm;
-    max-width: fit-content;
-    overflow-x: scroll;
-    white-space: nowrap;
-    width: max-content;
+  background-color: $dark;
+  color: $gray-400;
+  display: block;
+  font-family: 'Source Code Pro', monospace;
+  font-size: $font-size-sm;
+  max-width: 100%;
+  overflow-x: scroll;
+  white-space: nowrap;
+  width: 100%;
 
   td {
     user-select: text;

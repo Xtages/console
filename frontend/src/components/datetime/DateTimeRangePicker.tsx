@@ -12,7 +12,8 @@ export type DateTimeRange = {
   endDateTime: Date,
 };
 
-export type DateTimeRangePickerProps = DateTimeRange & {
+export type DateTimeRangePickerProps = {
+  dateTimeRange: DateTimeRange,
   onDateTimeRangeChange?: (dateTimeRange: DateTimeRange) => void;
 };
 
@@ -22,16 +23,16 @@ export type DateTimeRangePickerProps = DateTimeRange & {
  * before `endDateTime`.
  */
 export function DateTimeRangePicker({
-  endDateTime,
-  startDateTime,
+  dateTimeRange,
   onDateTimeRangeChange,
 }: DateTimeRangePickerProps) {
-  const [dateRange, setDateRange] = useState<DateTimeRange>({startDateTime, endDateTime});
-  const [prevValue, setPrevValue] = useState<DateTimeRange>({startDateTime, endDateTime});
+  const [dateRange, setDateRange] = useState<DateTimeRange>(dateTimeRange);
+  const [prevValue, setPrevValue] = useState<DateTimeRange>(dateTimeRange);
 
-  if (prevValue.startDateTime !== startDateTime || prevValue.endDateTime !== endDateTime) {
-    setDateRange({startDateTime, endDateTime});
-    setPrevValue({startDateTime, endDateTime});
+  if (prevValue.startDateTime !== dateTimeRange.startDateTime
+      || prevValue.endDateTime !== dateTimeRange.endDateTime) {
+    setDateRange(dateTimeRange);
+    setPrevValue(dateTimeRange);
   }
 
   function handleStartDateChange(e: ChangeEvent<HTMLInputElement>) {
@@ -112,7 +113,6 @@ export function DateTimeRangePicker({
           type="date"
           name="endDate"
           value={formatDate(dateRange.endDateTime)}
-          max={formatDate(dateRange.endDateTime)}
           min={formatDate(dateRange.startDateTime)}
           onChange={handleEndDateChange}
         />

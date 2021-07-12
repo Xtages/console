@@ -1,5 +1,4 @@
 import React, {ReactNode, useState} from 'react';
-import {Link} from 'react-router-dom';
 import {ArrowUpCircle,
   Check,
   ChevronDown,
@@ -10,18 +9,16 @@ import {ArrowUpCircle,
   X} from 'react-feather';
 import cx from 'classnames';
 import {useQuery, useQueryClient} from 'react-query';
-import {Button,
+import {Button, Container,
   Dropdown,
   DropdownButton,
-  OverlayTrigger,
   Tab,
-  Tabs,
-  Tooltip} from 'react-bootstrap';
-import {Build, BuildPhase, BuildType, Project} from '../../gen/api';
+  Tabs} from 'react-bootstrap';
+import {Build, BuildPhase, BuildType, Project} from 'gen/api';
+import {durationString, formatDateTimeMed, formatDateTimeRelativeToNow} from 'helpers/time';
+import {cdApi, logsApi} from 'service/Services';
 import {BuildStatusIcon} from './BuildStatusIcon';
 import Avatar from '../avatar/Avatar';
-import {durationString, formatDateTimeMed, formatDateTimeRelativeToNow} from '../../helpers/time';
-import {cdApi, logsApi} from '../../service/Services';
 import {LogViewer} from '../logviewer/LogViewer';
 import {GitHubCommitLink} from '../link/XtagesLink';
 
@@ -233,7 +230,7 @@ function AdditionalInfoPane({
       data,
     } = useQuery(
       `project/${project.name}/${build.type}/${build.id}/logs`,
-      () => logsApi.logs(project.name, build.id),
+      () => logsApi.buildLogs(project.name, build.id),
     );
     let logs: string | ReactNode;
     if (isLoading) {
@@ -248,7 +245,9 @@ function AdditionalInfoPane({
     return (
       <Tabs defaultActiveKey="logs">
         <Tab eventKey="logs" title="Logs">
-          {logs}
+          <Container>
+            {logs}
+          </Container>
         </Tab>
         <Tab eventKey="phases" title="Phases">
           <BuildPhaseTable phases={build.phases} />

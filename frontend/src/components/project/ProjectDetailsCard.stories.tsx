@@ -1,11 +1,15 @@
 import React from 'react';
 import {Meta, Story} from '@storybook/react';
-import {ProjectDetailsCard, SimpleProjectCardProps} from './ProjectDetailsCard';
-import {Project, ProjectTypeEnum} from '../../gen/api';
+import {Project, ProjectTypeEnum} from 'gen/api';
+import {DeploymentDetails,
+  DeploymentDetailsAndBuildChart,
+  DeploymentDetailsProps,
+  SimpleProjectCard,
+  SimpleProjectCardProps} from './ProjectDetailsCard';
 
 export default {
-  title: 'Xtages/Project/ProjectDetailsCard',
-  component: ProjectDetailsCard,
+  title: 'Xtages/Project/SimpleProjectCard',
+  component: SimpleProjectCard,
 } as Meta;
 
 const projectData: Project = {
@@ -18,12 +22,30 @@ const projectData: Project = {
   passCheckRuleEnabled: false,
   builds: [],
   deployments: [],
+  percentageOfSuccessfulBuildsInTheLastMonth: 0.1,
 };
 
-const Template: Story<SimpleProjectCardProps> = (args) => <ProjectDetailsCard {...args} />;
+const TemplateWithDeploymentsAndBuildChart: Story<SimpleProjectCardProps> = (args) => (
+  <SimpleProjectCard {...args}>
+    <DeploymentDetailsAndBuildChart {...args} />
+  </SimpleProjectCard>
+);
 
-export const Primary = Template.bind({});
+export const Primary = TemplateWithDeploymentsAndBuildChart.bind({});
 Primary.args = {
   project: projectData,
 };
-Primary.storyName = 'ProjectDetailsCard';
+Primary.storyName = 'SimpleProjectCardWithDeploymentsAndBuildChart';
+
+const TemplateWithDeployments: Story<SimpleProjectCardProps & DeploymentDetailsProps> = (args) => (
+  <SimpleProjectCard {...args}>
+    <DeploymentDetails {...args} />
+  </SimpleProjectCard>
+);
+
+export const WithDeployments = TemplateWithDeployments.bind({});
+WithDeployments.args = {
+  project: projectData,
+  colWidth: 9,
+};
+WithDeployments.storyName = 'SimpleProjectCardWithDeployments';
