@@ -56,14 +56,15 @@ fun Project.codeBuildLogsStreamNameFor(codeBuildType: CodeBuildType): String {
  * Returns the name of the notifications rule to use in the CodeBuild CI project.
  */
 val Project.codeBuildCiNotificationRuleName: String
-    get() {
-        return "${codeBuildCiProjectName}_build_events_notif_rule"
-    }
+    get() = "${codeBuildCiProjectName}_build_events_notif_rule"
 
 /**
  * Returns the name of the notifications rule to use in the CodeBuild CD project.
  */
 val Project.codeBuildCdNotificationRuleName: String
-    get() {
-        return "${codeBuildCdProjectName}_build_events_notif_rule"
-    }
+    get() = "${codeBuildCdProjectName}_build_events_notif_rule"
+
+/**
+ * Returns the CloudWatch LogGroup name for this projec.
+ */
+fun Project.ecsLogGroupName(env: String) = "/ecs/$hash-$env"

@@ -186,10 +186,10 @@ paths:
           $ref: "#/components/responses/UnauthorizedError"
         default:
           $ref: "#/components/responses/DefaultError"
-  /project/{projectName}/logs:
+  /project/{projectName}/{buildId}/logs:
     get:
       summary: Retrieve logs for a given CI and certain project
-      operationId: logs
+      operationId: buildLogs
       tags:
         - logs
       parameters:
@@ -200,7 +200,7 @@ paths:
             minLength: 1
           required: true
           description: Name of the project to get the logs from
-        - in: query
+        - in: path
           name: buildId
           schema:
             type: integer
@@ -213,15 +213,15 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/CILogs"
+                $ref: "#/components/schemas/Logs"
         "401":
           $ref: "#/components/responses/UnauthorizedError"
         default:
           $ref: "#/components/responses/DefaultError"
-  /project/{projectName}/applogs:
+  /project/{projectName}/deploy/{buildId}/logs:
     get:
       summary: Retrieve logs for an application that is running in our platform
-      operationId: getAppLogs
+      operationId: getDeployLogs
       tags:
         - project
       parameters:
@@ -232,8 +232,16 @@ paths:
             minLength: 1
           required: true
           description: Name of the project to get the logs from
+        - in: path
+          name: buildId
+          schema:
+            type: integer
+            format: int64
+          required: true
+          description: The id of the build
         - in: query
           name: env
+          required: true
           schema:
             type: string
             minLength: 1
@@ -262,7 +270,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/AppLogs"
+                $ref: "#/components/schemas/Logs"
         "401":
           $ref: "#/components/responses/UnauthorizedError"
         default:
@@ -371,7 +379,7 @@ paths:
           $ref: "#/components/responses/UnauthorizedError"
         default:
           $ref: "#/components/responses/DefaultError"
-  /organization/projects:
+  /organization/projects/deployments:
     get:
       summary: Returns the projects for the organization that have been deployed
       operationId: projectsDeployed
@@ -379,7 +387,7 @@ paths:
         - organization
       responses:
         '200':
-          description: Projects that satisfy the query
+          description: Projects that have deployments
           content:
             application/json:
               schema:
@@ -710,22 +718,16 @@ components:
         commitHash:
           type: string
           minLength: 1
-    CILogs:
-      description: CI Logs
+    Logs:
+      description: Logs
       properties:
         events:
           type: array
           items:
             $ref: '#/components/schemas/LogEvent'
-      required:
-        - events
-    AppLogs:
-      description: App logs
-      properties:
-        events:
-          type: array
-          items:
-            $ref: '#/components/schemas/LogEvent'
+        nextToken:
+          type: string
+          minLength: 1
       required:
         - events
     CD:

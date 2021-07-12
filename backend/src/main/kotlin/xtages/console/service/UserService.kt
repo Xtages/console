@@ -15,6 +15,7 @@ import xtages.console.exception.ExceptionCode.USER_NOT_FOUND
 import xtages.console.exception.ensure
 import xtages.console.query.tables.daos.GithubUserDao
 import xtages.console.query.tables.daos.XtagesUserDao
+import xtages.console.query.tables.pojos.Build
 import xtages.console.query.tables.pojos.GithubUser
 import xtages.console.query.tables.pojos.Organization
 import xtages.console.query.tables.pojos.XtagesUser
@@ -174,6 +175,18 @@ class UserService(
                 attrs = attrs,
                 userStatus = cognitoIdToCognitoUser[user.cognitoUserId!!]!!.userStatus()
             )
+        }
+    }
+
+    /**
+     * Finds the [XtagesUserWithCognitoAttributes] from the [builds].
+     */
+    fun findFromBuilds(builds: List<Build>): Map<Int, XtagesUserWithCognitoAttributes> {
+        val xtagesUserIds = builds.mapNotNull { build -> build.userId }
+        return when {
+            xtagesUserIds.isNotEmpty() -> findCognitoUsersByXtagesUserId(*xtagesUserIds.toIntArray())
+                .associateBy { user -> user.user.id!! }
+            else -> emptyMap()
         }
     }
 
