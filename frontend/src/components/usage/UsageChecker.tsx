@@ -57,7 +57,11 @@ export default function UsageChecker() {
     data,
   } = useQuery(
     'usage',
-    () => usageApi.getAllUsageDetails(),
+    () => usageApi.getAllUsageDetails(), {
+      refetchOnWindowFocus: false,
+      refetchInterval: false,
+      refetchIntervalInBackground: false,
+    },
   );
   if (isLoading || error || !data) {
     return <></>;

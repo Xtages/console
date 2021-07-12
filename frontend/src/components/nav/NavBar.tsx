@@ -51,7 +51,7 @@ export default function NavBar() {
               <NavLink className="nav-link" to="/" exact>Projects</NavLink>
             </li>
             <li className="nav-item">
-              <NavLink className="nav-link" to="/deployment" exact>Deployments</NavLink>
+              <NavLink className="nav-link" to="/deployments/" exact>Deployments</NavLink>
             </li>
             <li className="nav-item">
               <a

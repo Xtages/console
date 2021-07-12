@@ -1,6 +1,7 @@
 import React from 'react';
 import cx from 'classnames';
 import {OverlayTrigger, Tooltip} from 'react-bootstrap';
+import styles from './XtagesLink.module.scss';
 
 type LinkWithTooltipProps = & JSX.IntrinsicElements['a'];
 
@@ -46,7 +47,7 @@ export function GitHubLink({
         'text-sm': variant === 'sm',
         'text-lg': variant === 'lg',
         'text-xl': variant === 'xl',
-      }, 'text-muted', 'text-underline--dashed', className)}
+      }, 'text-muted', 'text-underline--dashed', styles.gitHubLink, className)}
       target="_blank"
       rel="noreferrer"
     >

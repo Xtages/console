@@ -1,7 +1,8 @@
 import React from 'react';
-import {LogEvent} from '../../gen/api';
+import {Col, Row} from 'react-bootstrap';
+import {LogEvent} from 'gen/api';
+import {formatDateTimeMed} from 'helpers/time';
 import styles from './LogViewer.module.scss';
-import {formatDateTimeMed} from '../../helpers/time';
 
 const map = new WeakMap();
 let keyIndex = 0;
@@ -28,9 +29,15 @@ export interface LogViewerProps {
 
 export function LogViewer({logLines, maxWidth, maxHeight}: LogViewerProps) {
   return (
-    <div className="container">
-      <div className="row">
-        <table style={{maxWidth, maxHeight}} className={styles.logViewer}>
+    <Row>
+      <Col sm={12}>
+        <table
+          style={{
+            maxWidth,
+            maxHeight,
+          }}
+          className={styles.logViewer}
+        >
           <tbody>
             {logLines.map((logLine, index) => (
               <tr key={getLineKey(logLine)}>
@@ -45,7 +52,7 @@ export function LogViewer({logLines, maxWidth, maxHeight}: LogViewerProps) {
             ))}
           </tbody>
         </table>
-      </div>
-    </div>
+      </Col>
+    </Row>
   );
 }

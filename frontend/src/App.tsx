@@ -11,6 +11,7 @@ import ConfirmSignUpPage from 'pages/authn/ConfirmSignUpPage';
 import AccountPage from 'pages/AccountPage';
 import ProjectSettingsPage from 'pages/ProjectSettingsPage';
 import ChangePasswordPage from 'pages/authn/ChangePasswordPage';
+import {DeploymentsPage} from 'pages/DeploymentsPage';
 import ProjectPage from './pages/ProjectPage';
 import CreateProjectPage from './pages/CreateProjectPage';
 
@@ -36,6 +37,8 @@ export default function App() {
             <AuthdRoute path="/new/project">
               <CreateProjectPage />
             </AuthdRoute>
+            <AuthdRoute path="/deployments/:projectName/:env" component={DeploymentsPage} />
+            <AuthdRoute path="/deployments" component={DeploymentsPage} />
             <AuthdRoute path="/">
               <HomePage />
             </AuthdRoute>
