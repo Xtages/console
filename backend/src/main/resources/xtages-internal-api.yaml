@@ -357,6 +357,22 @@ paths:
         default:
           $ref: "#/components/responses/DefaultError"
   /organization:
+    get:
+      summary: Returns details about the organization associated with the currently logged in user.
+      operationId: getOrganization
+      tags:
+        - organization
+      responses:
+        '201':
+          description: Organization was created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Organization"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        default:
+          $ref: "#/components/responses/DefaultError"
     post:
       summary: Creates a new Organization beloging to a user, if the user doesn't exist then it's created also
       operationId: createOrganization
@@ -544,7 +560,7 @@ components:
         name:
           type: string
           minLength: 1
-        subscription_status:
+        subscriptionStatus:
           type: string
           enum:
             - UNCONFIRMED
@@ -552,6 +568,12 @@ components:
             - SUSPENDED
             - PENDING_CANCELLATION
             - CANCELLED
+        githubAppInstalled:
+          type: boolean
+      required:
+        - name
+        - subscriptionStatus
+        - githubAppInstalled
     CreateOrgReq:
       description: Request made to POST /organization
       required:

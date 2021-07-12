@@ -6,6 +6,7 @@ import software.amazon.awssdk.services.cognitoidentityprovider.model.UserStatusT
 import xtages.console.controller.GitHubAvatarUrl
 import xtages.console.controller.GitHubUrl
 import xtages.console.controller.api.model.*
+import xtages.console.query.enums.GithubAppInstallationStatus
 import xtages.console.query.enums.OrganizationSubscriptionStatus
 import xtages.console.query.enums.ProjectType
 import xtages.console.query.tables.pojos.BuildEvent
@@ -31,10 +32,12 @@ val organizationPojoSubscriptionStatusToOrganizationSubscriptionStatusConverter 
 val organizationPojoToOrganizationConverter =
     Converter { source: OrganizationPojo ->
         Organization(
-            name = source.name,
+            name = source.name!!,
             subscriptionStatus = organizationPojoSubscriptionStatusToOrganizationSubscriptionStatusConverter.convert(
                 source.subscriptionStatus!!
-            )
+            )!!,
+            githubAppInstalled = source.githubAppInstallationId != null
+                    && source.githubAppInstallationStatus == GithubAppInstallationStatus.ACTIVE
         )
     }
 
