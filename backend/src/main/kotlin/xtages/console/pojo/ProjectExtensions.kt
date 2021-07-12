@@ -67,5 +67,4 @@ val Project.codeBuildCdNotificationRuleName: String
 /**
  * Returns the CloudWatch LogGroup name for this projec.
  */
-val Project.ecsLogGroupName: String
-    get() = "/ecs/${hash}"
+fun Project.ecsLogGroupName(env: String) = "/ecs/$hash-$env"

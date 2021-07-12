@@ -24,7 +24,7 @@ class EcsService(private val cloudWatchLogsService: CloudWatchLogsService) {
         endTimeInMillis: Long?,
         token: String?
     ): Logs {
-        val logGroupName = project.ecsLogGroupName
+        val logGroupName = project.ecsLogGroupName(env)
         val logStreamPrefix = "$env-$buildId"
         val latestLogStream = cloudWatchLogsService
             .getLogStreamsByLogStreamPrefix(
