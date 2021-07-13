@@ -8,7 +8,7 @@ import {LoadIndicatingSection, Section, SectionTitle} from 'components/layout/Se
 import Page from 'components/layout/Page';
 import {useHistory} from 'react-router-dom';
 import UsageChecker from 'components/usage/UsageChecker';
-import {GitHubIntegrationAlert} from 'components/github/GitHubIntegrationAlert';
+import {GitHubIntegrationSection} from 'components/github/GitHubIntegrationSection';
 import {Col} from 'react-bootstrap';
 
 export default function HomePage() {
@@ -21,11 +21,7 @@ export default function HomePage() {
     <>
       <UsageChecker />
       <Page>
-        <Section>
-          <Col sm={12}>
-            <GitHubIntegrationAlert />
-          </Col>
-        </Section>
+        <GitHubIntegrationSection />
         <Section>
           <SectionTitle icon={Copy} title="Project templates" subtitle="Create new projects" />
           <Col sm={3} className="d-block">

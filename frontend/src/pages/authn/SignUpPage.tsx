@@ -117,7 +117,7 @@ export default function SignUpPage() {
                       type="text"
                       name="organizationName"
                       label="GitHub organization name"
-                      placeholder="North Pole"
+                      placeholder="NorthPole"
                       invalid={touched.organizationName && errors.organizationName != null}
                       validationFeedback="Please provide your GitHub organization name."
                       addOn={<Briefcase size="1em" />}
