@@ -1,6 +1,7 @@
 import React, {Children, ReactNode} from 'react';
 import ReactIs from 'react-is';
 import cx from 'classnames';
+import {GitHubIntegrationSection} from 'components/github/GitHubIntegrationSection';
 import {LoadIndicatingSection, Section} from './Section';
 import NavBar from '../nav/NavBar';
 
@@ -16,7 +17,10 @@ interface PageProps {
  */
 export default function Page({children, width = 'wide'} : PageProps) {
   Children.forEach(children, (child) => {
-    if (!ReactIs.isElement(child) || (child.type !== Section && child.type !== LoadIndicatingSection)) {
+    if (!ReactIs.isElement(child)
+        || (child.type !== Section
+            && child.type !== LoadIndicatingSection
+            && child.type !== GitHubIntegrationSection)) {
       throw Error('All children of Page must be Sections');
     }
   });
