@@ -7,7 +7,9 @@ import ProjectTemplateCard from 'components/project/ProjectTemplateCard';
 import {LoadIndicatingSection, Section, SectionTitle} from 'components/layout/Section';
 import Page from 'components/layout/Page';
 import {useHistory} from 'react-router-dom';
-import UsageChecker from '../components/usage/UsageChecker';
+import UsageChecker from 'components/usage/UsageChecker';
+import {GitHubIntegrationAlert} from 'components/github/GitHubIntegrationAlert';
+import {Col} from 'react-bootstrap';
 
 export default function HomePage() {
   const getProjectsQueryResult = useQuery(
@@ -20,8 +22,13 @@ export default function HomePage() {
       <UsageChecker />
       <Page>
         <Section>
+          <Col sm={12}>
+            <GitHubIntegrationAlert />
+          </Col>
+        </Section>
+        <Section>
           <SectionTitle icon={Copy} title="Project templates" subtitle="Create new projects" />
-          <div className="d-block col-md-3 col-sm-6">
+          <Col sm={3} className="d-block">
             <ProjectTemplateCard
               id="nodejs"
               title="Simple Node.js server"
@@ -29,7 +36,7 @@ export default function HomePage() {
               imageName="nodejs.svg"
               onClick={() => history.push('/new/project')}
             />
-          </div>
+          </Col>
         </Section>
         <LoadIndicatingSection queryResult={getProjectsQueryResult} last>
           {(axiosResponse) => (

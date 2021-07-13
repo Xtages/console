@@ -49,8 +49,13 @@ class OrganizationApiController(
             .body(organizationPojoToOrganizationConverter.convert(organization))
     }
 
+    override fun getOrganization(): ResponseEntity<Organization> {
+        val organization = organizationDao.fetchOneByCognitoUserId(authenticationService.currentCognitoUserId)
+        return ResponseEntity.ok(organizationPojoToOrganizationConverter.convert(organization))
+    }
+
     override fun projectsDeployed(): ResponseEntity<Projects> {
-        val organization = organizationDao.fetchOneByCognitoUserId(authenticationService.currentCognitoUserId);
+        val organization = organizationDao.fetchOneByCognitoUserId(authenticationService.currentCognitoUserId)
         val latestCdBuilds = buildDao.findLatestCdBuilds(organizationName = organization.name!!)
         val buildsPerProjectId = latestCdBuilds.groupBy { build -> build.projectId }
         val projectPojos = projectDao.fetchById(*buildsPerProjectId.keys.filterNotNull().toIntArray())

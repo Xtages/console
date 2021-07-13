@@ -94,16 +94,11 @@ export function DeploymentsPage() {
                 enabled: currentProject !== undefined && currentDeployment !== undefined,
                 getNextPageParam: (lastPage, pages) => {
                   if (pages.length > 1) {
-                    console.log('In length > 1');
-                    console.log(`lastPage.data.nextToken -> ${lastPage.data.nextToken}`);
-                    console.log(`pages[pages.length - 2].data.nextToken -> ${pages[pages.length - 2].data.nextToken}`);
                     if (lastPage.data.nextToken !== pages[pages.length - 2].data.nextToken) {
                       return lastPage.data.nextToken;
                     }
                     return undefined;
                   }
-                  console.log(`'Only one page' -> ${'Only one page'}`);
-                  console.log(`lastPage.data.nextToken -> ${lastPage.data.nextToken}`);
                   return lastPage.data.nextToken;
                 },
                 keepPreviousData: true,
