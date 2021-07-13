@@ -505,13 +505,19 @@ export interface Organization {
      * @type {string}
      * @memberof Organization
      */
-    name?: string;
+    name: string;
     /**
      * 
      * @type {string}
      * @memberof Organization
      */
-    subscription_status?: OrganizationSubscriptionStatusEnum;
+    subscriptionStatus: OrganizationSubscriptionStatusEnum;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof Organization
+     */
+    githubAppInstalled: boolean;
 }
 
 /**
@@ -1506,6 +1512,40 @@ export const OrganizationApiAxiosParamCreator = function (configuration?: Config
         },
         /**
          * 
+         * @summary Returns details about the organization associated with the currently logged in user.
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getOrganization: async (options: any = {}): Promise<RequestArgs> => {
+            const localVarPath = `/organization`;
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            // authentication bearerAuth required
+            // http bearer authentication required
+            await setBearerAuthToObject(localVarHeaderParameter, configuration)
+
+
+    
+            setSearchParams(localVarUrlObj, localVarQueryParameter, options.query);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
+         * 
          * @summary Returns the projects for the organization that have been deployed
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
@@ -1561,6 +1601,16 @@ export const OrganizationApiFp = function(configuration?: Configuration) {
         },
         /**
          * 
+         * @summary Returns details about the organization associated with the currently logged in user.
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async getOrganization(options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Organization>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.getOrganization(options);
+            return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
+        },
+        /**
+         * 
          * @summary Returns the projects for the organization that have been deployed
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
@@ -1591,6 +1641,15 @@ export const OrganizationApiFactory = function (configuration?: Configuration, b
         },
         /**
          * 
+         * @summary Returns details about the organization associated with the currently logged in user.
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getOrganization(options?: any): AxiosPromise<Organization> {
+            return localVarFp.getOrganization(options).then((request) => request(axios, basePath));
+        },
+        /**
+         * 
          * @summary Returns the projects for the organization that have been deployed
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
@@ -1618,6 +1677,17 @@ export class OrganizationApi extends BaseAPI {
      */
     public createOrganization(createOrgReq: CreateOrgReq, options?: any) {
         return OrganizationApiFp(this.configuration).createOrganization(createOrgReq, options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * 
+     * @summary Returns details about the organization associated with the currently logged in user.
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof OrganizationApi
+     */
+    public getOrganization(options?: any) {
+        return OrganizationApiFp(this.configuration).getOrganization(options).then((request) => request(this.axios, this.basePath));
     }
 
     /**
