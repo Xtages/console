@@ -908,6 +908,11 @@ components:
         serviceUrl:
           type: string
           minLength: 1
+        status:
+          type: string
+          enum:
+            - RUNNING
+            - STOPPED
       required:
         - id
         - initiatorEmail

@@ -55,7 +55,7 @@ class ProjectApiController(
     private val buildEventDao: BuildEventDao,
     private val recipeDao: RecipeDao,
     private val rdsService: RdsService,
-    val ecsService: EcsService,
+    private val ecsService: EcsService,
 ) : ProjectApiControllerBase {
 
     override fun getProject(

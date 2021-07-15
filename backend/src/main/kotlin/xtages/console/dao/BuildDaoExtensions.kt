@@ -1,7 +1,8 @@
 package xtages.console.dao
 
-import org.jooq.impl.DSL.name
-import org.jooq.impl.DSL.select
+import org.jooq.impl.DSL
+import org.jooq.impl.DSL.*
+import org.springframework.cache.annotation.CacheEvict
 import xtages.console.query.enums.BuildStatus
 import xtages.console.query.enums.BuildType
 import xtages.console.query.tables.daos.BuildDao
@@ -155,4 +156,28 @@ fun BuildDao.findLatestCdBuilds(organizationName: String): List<Build> {
         .where(PROJECT.ORGANIZATION.eq(organizationName))
         .orderBy(PROJECT.NAME, deploysCte.field("end_time")!!.desc())
         .fetchInto(Build::class.java)
+}
+
+fun BuildDao.fetchAllBuildsWithId(ids: List<String>) : List<Build> {
+    return ctx()
+        .select(BUILD.asterisk())
+        .from(BUILD)
+        .where(BUILD.ID.`in`(ids))
+        .fetchInto(Build::class.java)
+}
+
+/**
+ * Returns the latest [Build] with [buildStatus] and [projectId]
+ */
+fun BuildDao.findLatestBuildWithStatusFor(projectId: Int, buildStatus: BuildStatus): Build? {
+    return ctx()
+        .select(BUILD.asterisk())
+        .from(BUILD)
+        .where(
+            BUILD.PROJECT_ID.eq(projectId)
+                .and(BUILD.STATUS.eq(buildStatus))
+        )
+        .orderBy(BUILD.END_TIME.desc())
+        .limit(1)
+        .fetchOneInto(Build::class.java)
 }
