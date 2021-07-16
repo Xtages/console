@@ -36,7 +36,6 @@ data class ConsoleProperties(val stripe: Stripe, val server: Server, val gitHubA
         val codeBuild: CodeBuild,
         val cloudWatch: CloudWatch,
         val rds: Rds,
-        val ecs: Ecs,
     )
 
     data class Rds(
@@ -54,7 +53,4 @@ data class ConsoleProperties(val stripe: Stripe, val server: Server, val gitHubA
         val dbSubnetGroupName: String,
     )
 
-    data class Ecs(
-        val stagingDeployDuration: Long
-    )
 }
