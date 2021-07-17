@@ -1,13 +1,15 @@
 import React, {ReactNode} from 'react';
 import {Card, Col, Container, OverlayTrigger, Row, Tooltip} from 'react-bootstrap';
 import {Link} from 'react-router-dom';
-import {Gauge} from '@ant-design/charts';
 import {GaugeConfig} from '@ant-design/charts/es/gauge';
 import {Settings} from 'react-feather';
-import colors from '../../assets/css/colors.module.scss';
+import {Deployment, Project} from 'gen/api';
+import {formatDateTimeFull} from 'helpers/time';
+import colors from 'assets/css/colors.module.scss';
+import loadable from '@loadable/component';
 import {GitHubCommitLink, GitHubLink} from '../link/XtagesLink';
-import {Deployment, Project} from '../../gen/api';
-import {formatDateTimeFull} from '../../helpers/time';
+
+const LoadableGauge = loadable.lib(() => import('@ant-design/charts/es/gauge'));
 
 export interface SimpleProjectCardProps {
   project: Project;
@@ -299,5 +301,11 @@ function BuildSuccessRadialBarChart({percentage}: {percentage: number}) {
       },
     },
   };
-  return <Gauge {...config} />;
+  return (
+    <LoadableGauge>
+      {function render({default: GaugeChart}) {
+        return <GaugeChart {...config} />;
+      }}
+    </LoadableGauge>
+  );
 }
