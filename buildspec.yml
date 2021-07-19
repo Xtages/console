@@ -8,6 +8,7 @@ env:
     ENV: prod
   parameter-store:
     DB_PASS: "/config/xtages_console_dev/spring.datasource.password"
+    REACT_APP_STRIPE_PUBLISHABLE_KEY: "/config/xtages_console_prod/xtages.console.stripe.publicApiKey"
 
 phases:
   pre_build:
