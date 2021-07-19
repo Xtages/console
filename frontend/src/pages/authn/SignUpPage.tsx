@@ -1,5 +1,5 @@
 import React, {useState} from 'react';
-import {Link, useHistory} from 'react-router-dom';
+import {Link, useHistory, useLocation} from 'react-router-dom';
 import {Field, Form, Formik, FormikErrors} from 'formik';
 import {FormikHelpers} from 'formik/dist/types';
 import {Briefcase, User} from 'react-feather';
@@ -47,6 +47,7 @@ export default function SignUpPage() {
   };
   const auth = useAuth();
   const history = useHistory();
+  const location = useLocation();
   const [errorOccurred, setErrorOccurred] = useState(false);
 
   async function signUp(values: SignUpFormValues, actions: FormikHelpers<SignUpFormValues>) {
@@ -67,8 +68,9 @@ export default function SignUpPage() {
     if (principal == null) {
       history.push('/confirm', values);
     } else {
+      const params = new URLSearchParams(location.search);
       await redirectToStripeCheckoutSession({
-        priceIds: ['price_1IdOOzIfxICi4AQgjta89k2Y'],
+        priceIds: [params.get('priceId')!],
         organizationName: values.organizationName,
       });
     }
