@@ -16,7 +16,7 @@ import {UseInfiniteQueryResult} from 'react-query/types/react/types';
 import {AxiosResponse} from 'axios';
 import styles from './DeploymentsPage.module.scss';
 
-export function DeploymentsPage() {
+export default function DeploymentsPage() {
   const {
     projectName,
     env,
