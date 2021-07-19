@@ -39,4 +39,5 @@
     <include file="changesets/cert-arn-on-project-table.postgresql.sql" relativeToChangelogFile="true" />
     <include file="changesets/product-id-on-plan-table.postgresql.sql" relativeToChangelogFile="true" />
     <include file="changesets/add-plans.postgresql.sql" relativeToChangelogFile="true" />
+    <include file="changesets/check-build-has-user-or-github-user.postgresql.sql" relativeToChangelogFile="true" />
 </databaseChangeLog>
