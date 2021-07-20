@@ -246,11 +246,12 @@ class CodeBuildService(
                 .projectName(cbProjectName)
                 .environmentVariablesOverride(
                     listOfNotNull(
-                        buildEnvVar(
-                            "XTAGES_DB_PASS",
-                            organization.ssmDbPassPath,
-                            EnvironmentVariableType.PARAMETER_STORE
-                        ),
+//                        buildEnvVar(
+//                            "XTAGES_DB_PASS",
+//                            organization.ssmDbPassPath,
+//                            EnvironmentVariableType.PARAMETER_STORE
+//                        ),
+                        buildEnvVar("XTAGES_DB_PASS", "secret"),
                         buildEnvVar("XTAGES_DB_URL", organization.rdsEndpoint),
                         buildEnvVar("XTAGES_DB_USER", organization.dbUsername()),
                         buildEnvVar("XTAGES_DB_NAME", organization.dbIdentifier()),

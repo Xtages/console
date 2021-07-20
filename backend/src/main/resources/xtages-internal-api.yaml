@@ -819,6 +819,8 @@ components:
             - FAILED
             - IN_PROGRESS
             - UNKNOWN
+            - DEPLOYED
+            - UNDEPLOYED
         initiatorEmail:
           type: string
           minLength: 1

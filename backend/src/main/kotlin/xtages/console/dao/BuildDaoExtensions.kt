@@ -157,3 +157,16 @@ fun BuildDao.findLatestCdBuilds(organizationName: String): List<Build> {
         .orderBy(PROJECT.NAME, deploysCte.field("end_time")!!.desc())
         .fetchInto(Build::class.java)
 }
+
+fun BuildDao.fetchMostRecentStatusByProject(projectHash: String, env: String, status: BuildStatus): Build? {
+    return ctx()
+        .select(BUILD.asterisk())
+        .from(BUILD)
+        .join(PROJECT).on(BUILD.PROJECT_ID.eq(PROJECT.ID))
+        .where(PROJECT.HASH.eq(projectHash)
+            .and(BUILD.ENVIRONMENT.eq(env))
+            .and(BUILD.STATUS.eq(status)))
+        .orderBy(BUILD.END_TIME.desc())
+        .limit(1)
+        .fetchOneInto(Build::class.java)
+}

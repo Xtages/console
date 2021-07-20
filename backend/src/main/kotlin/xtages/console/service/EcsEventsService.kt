@@ -2,25 +2,22 @@ package xtages.console.service
 
 import com.amazonaws.services.sns.message.SnsMessageManager
 import com.amazonaws.services.sns.message.SnsNotification
-import com.fasterxml.jackson.core.JsonParser
-import com.fasterxml.jackson.databind.DeserializationContext
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.deser.std.StdDeserializer
 import io.awspring.cloud.messaging.listener.SqsMessageDeletionPolicy
 import io.awspring.cloud.messaging.listener.annotation.SqsListener
 import mu.KotlinLogging
 import org.springframework.stereotype.Service
-import xtages.console.config.ConsoleProperties
+import xtages.console.dao.fetchMostRecentStatusByProject
+import xtages.console.exception.ExceptionCode
 import xtages.console.exception.ensure
 import xtages.console.query.enums.BuildStatus
 import xtages.console.query.enums.BuildType
 import xtages.console.query.tables.daos.BuildDao
 import xtages.console.query.tables.pojos.Build
+import xtages.console.service.Environment.PRODUCTION
+import xtages.console.service.Environment.STAGING
 import xtages.console.time.toUtcLocalDateTime
-import java.time.Duration
 import java.time.Instant
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 
 private val logger = KotlinLogging.logger { }
 
@@ -32,6 +29,10 @@ class EscEventsService(
 
     private val snsMessageManager = SnsMessageManager()
 
+    /**
+     * Listen to events related to scale-in for staging. When an instance goes down after a period of time a new [Build]
+     * is added to note that the project is in [BuildStatus.UNDEPLOYED]
+     */
     @SqsListener("scalein-staging-updates-queue", deletionPolicy = SqsMessageDeletionPolicy.ON_SUCCESS)
     fun scaleInStagingEvent(eventStr: String) {
         val notification = ensure.ofType<SnsNotification>(
@@ -41,14 +42,35 @@ class EscEventsService(
         logger.info { "Processing SNS Notification for Scale-in in Staging with id [${notification.messageId}]" }
         logger.info { notification.message }
 
-        val event = objectMapper.readValue(notification.message, CloudTrailEvent::class.java)
-        val buildIds = listOf(event.detail.requestParameters.service.substringAfterLast("-", "").toLong())
-        insertBuildWith(
-            buildIds = buildIds,
-            buildStatus = BuildStatus.UNDEPLOYED,
+        val event = EventFactory.createEvent(
+            eventStr = notification.message,
+            objectMapper = objectMapper,
+        )
+        val previousBuild = lookupPreviousBuild(
+            serviceName = event.serviceName(),
+            environment = event.environment(),
+            buildStatus = BuildStatus.DEPLOYED,
+        )
+        val build = buildBuildObject(previousBuild, BuildStatus.UNDEPLOYED)
+        buildDao.insert(build)
+    }
+
+    private fun lookupPreviousBuild(serviceName: String, environment: Environment, buildStatus: BuildStatus): Build {
+        return ensure.foundOne(
+            operation = {
+                buildDao.fetchMostRecentStatusByProject(
+                    projectHash = serviceName,
+                    env = environment.name.toLowerCase(),
+                    status = buildStatus,
+                )
+            },
+            code = ExceptionCode.BUILD_NOT_FOUND
         )
     }
 
+    /**
+     * Listen to deploy events in ECS to mark the project with a new [Build] with status [BuildStatus.DEPLOYED]
+     */
     @SqsListener("deployment-updates-queue", deletionPolicy = SqsMessageDeletionPolicy.ON_SUCCESS)
     fun deployCompletedEvent(eventStr: String) {
         val notification = ensure.ofType<SnsNotification>(
@@ -58,64 +80,98 @@ class EscEventsService(
         logger.info { "Processing SNS Notification for deployment updates with id [${notification.messageId}]" }
         logger.info { notification.message }
 
-        val event = objectMapper.readValue(notification.message, EcsEvent::class.java)
-        val buildIds = event.resources.map { it.substringAfterLast("-", "").toLong() }
-        insertBuildWith(
-            buildIds = buildIds,
-            buildStatus = BuildStatus.DEPLOYED,
+        val event = EventFactory.createEvent(
+            eventStr = notification.message,
+            objectMapper = objectMapper,
+            deployment_update = true,
+        )
+
+        val previousBuild = lookupPreviousBuild(
+            serviceName = event.serviceName(),
+            environment = event.environment(),
+            buildStatus = BuildStatus.SUCCEEDED
+        )
+
+        val build = buildBuildObject(previousBuild, BuildStatus.DEPLOYED)
+        buildDao.insert(build)
+    }
+
+    private fun buildBuildObject(build: Build, buildStatus: BuildStatus): Build {
+        return  Build(
+            projectId = build.projectId!!,
+            type = BuildType.CD,
+            environment = build.environment,
+            status = buildStatus,
+            startTime = Instant.now().toUtcLocalDateTime(),
+            endTime = Instant.now().toUtcLocalDateTime(),
+            commitHash = build.commitHash,
+            githubUserUsername = build.githubUserUsername,
+            userId = build.userId,
+            tag = build.tag,
         )
     }
 
-    /**
-     * Adds a [Build] to the DB with the [BuildStatus.DEPLOYED] if and only if
-     * the previous build was a [BuildStatus.SUCCEEDED]
-     */
-    private fun insertBuildWith(buildIds: List<Long>, buildStatus: BuildStatus) {
-        val builds = buildDao.fetchById(*buildIds.toLongArray())
-        builds.forEach {
-            val build = Build(
-                projectId = it.projectId!!,
-                type = BuildType.CD,
-                environment = it.environment,
-                status = buildStatus,
-                startTime = Instant.now().toUtcLocalDateTime(),
-                endTime = Instant.now().toUtcLocalDateTime(),
-                commitHash = it.commitHash
-            )
-            when (buildStatus) {
-                BuildStatus.DEPLOYED -> {
-                    if (it.status == BuildStatus.SUCCEEDED) buildDao.insert(build)
-                }
-                BuildStatus.UNDEPLOYED -> buildDao.insert(build)
-                else -> {
-                }
+}
+
+enum class Environment {
+    STAGING,
+    PRODUCTION
+}
+
+private class EventFactory{
+
+    companion object {
+        fun createEvent(
+            eventStr: String,
+            objectMapper: ObjectMapper,
+            deployment_update: Boolean = false
+        ): GenericEvent {
+            return when {
+                eventStr.contains("ECS Deployment State Change") -> objectMapper.readValue(eventStr, EcsEvent::class.java)
+                deployment_update -> objectMapper.readValue(eventStr, CloudTrailDeployEvent::class.java)
+                else -> objectMapper.readValue(eventStr, CloudTrailAutoScalingEvent::class.java)
             }
         }
     }
-
-//    /**
-//     * Adds the undeployed status if the time of the event is between the duration that the deploys in staging last
-//     * plus an error
-//     */
-//    private fun addUndeployedStatus(build: Build) {
-//        val deployedBuild = buildDao.findLatestBuildWithStatusFor(build.projectId!!, BuildStatus.DEPLOYED)
-//        val nowTime = Instant.now()
-//        if (deployedBuild != null) {
-//            val timeInStagingRunning = Duration.between(deployedBuild.startTime?.toUtcInstant(), nowTime).toMinutes()
-//            if (timeInStagingRunning <= upperBoundDeployDuration && lowerBoundDeployDuration < timeInStagingRunning) {
-//                buildDao.insert(build)
-//            }
-//        }
-//    }
 }
 
-private data class CloudTrailEvent(
-    val account: String,
-    val region: String,
-    val time: Instant,
-    val id: String?,
-    val detail: CloudTrailDetail,
-)
+private abstract class GenericEvent {
+    abstract fun environment(): Environment
+    abstract fun serviceName(): String
+}
+
+private open class CloudTrailAutoScalingEvent(
+    open val account: String,
+    open val region: String,
+    open val time: Instant,
+    open val id: String?,
+    open val detail: CloudTrailDetail,
+) : GenericEvent() {
+    override fun environment(): Environment {
+        return if (detail.requestParameters.cluster.contains(STAGING.name,true))
+            STAGING
+        else
+            PRODUCTION
+    }
+
+    override fun serviceName(): String {
+        return detail.requestParameters.service
+    }
+}
+
+private data class CloudTrailDeployEvent(
+    override val account: String,
+    override val region: String,
+    override val time: Instant,
+    override val id: String?,
+    override val detail: CloudTrailDetail
+) : CloudTrailAutoScalingEvent(
+    account, region, time, id, detail
+) {
+    override fun serviceName(): String {
+        return detail.requestParameters.service.substringAfterLast("/")
+    }
+}
 
 private data class CloudTrailDetail(
     val eventName: String,
@@ -134,4 +190,15 @@ private data class EcsEvent(
     val time: Instant,
     val id: String?,
     val resources: List<String>,
-)
+) : GenericEvent() {
+    override fun environment(): Environment {
+        return if (resources.none { it.contains(STAGING.name, true) })
+            PRODUCTION
+        else
+            STAGING
+    }
+
+    override fun serviceName(): String {
+        return resources.singleOrNull()?.substringAfterLast("/")!!
+    }
+}
