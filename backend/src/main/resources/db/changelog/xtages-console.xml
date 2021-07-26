@@ -41,5 +41,5 @@
     <include file="changesets/add-plans.postgresql.sql" relativeToChangelogFile="true" />
     <include file="changesets/check-build-has-user-or-github-user.postgresql.sql" relativeToChangelogFile="true" />
     <include file="changesets/update-plan-product-ids.postgresql.sql" relativeToChangelogFile="true" />
-    <include file="changesets/deployed-undeployed-build-status.postgresql.sql" relativeToChangelogFile="true" />
+    <include file="changesets/deployed-drained-project-status.postgresql.sql" relativeToChangelogFile="true" />
 </databaseChangeLog>

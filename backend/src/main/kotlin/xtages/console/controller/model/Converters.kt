@@ -6,7 +6,7 @@ import software.amazon.awssdk.services.cognitoidentityprovider.model.UserStatusT
 import xtages.console.controller.GitHubAvatarUrl
 import xtages.console.controller.GitHubUrl
 import xtages.console.controller.api.model.*
-import xtages.console.query.enums.BuildStatus
+import xtages.console.query.enums.DeployStatus
 import xtages.console.query.enums.GithubAppInstallationStatus
 import xtages.console.query.enums.OrganizationSubscriptionStatus
 import xtages.console.query.enums.ProjectType
@@ -179,16 +179,8 @@ fun buildPojoToDeployment(
         env = source.environment!!,
         timestampInMillis = source.endTime!!.toUtcMillis(),
         serviceUrl = "https://${source.environment}-${project.hash!!.substring(0, 12)}.xtages.dev",
-        status = buildDeploymentStatus(source.status)
-    )
-}
 
-fun buildDeploymentStatus(status: BuildStatus?): Deployment.Status? {
-    return when(status) {
-        BuildStatus.DEPLOYED -> Deployment.Status.RUNNING
-        BuildStatus.UNDEPLOYED -> Deployment.Status.STOPPED
-        else -> Deployment.Status.STOPPED
-    }
+    )
 }
 
 private fun getBuildInitiator(

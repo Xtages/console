@@ -25,7 +25,6 @@ import xtages.console.query.tables.pojos.Organization
 import xtages.console.query.tables.pojos.XtagesUser
 import xtages.console.service.*
 import xtages.console.service.aws.*
-import java.math.BigDecimal
 import java.net.URL
 import java.util.*
 import javax.validation.ValidationException
@@ -373,8 +372,8 @@ class ProjectApiController(
         projectName: String,
         buildId: Long,
         env: String,
-        startTimeInMillis: BigDecimal?,
-        endTimeInMillis: BigDecimal?,
+        startTimeInMillis: Long?,
+        endTimeInMillis: Long?,
         token: String?
     ): ResponseEntity<Logs> {
         val (_, _, project) = checkRepoBelongsToOrg(projectName)
@@ -382,8 +381,8 @@ class ProjectApiController(
             env = env,
             buildId = buildId,
             project = project,
-            startTimeInMillis = startTimeInMillis?.toLong(),
-            endTimeInMillis = endTimeInMillis?.toLong(),
+            startTimeInMillis = startTimeInMillis,
+            endTimeInMillis = endTimeInMillis,
             token = token,
         )
         return ResponseEntity.ok(logs)
