@@ -55,6 +55,7 @@ class ProjectApiController(
     private val recipeDao: RecipeDao,
     private val rdsService: RdsService,
     private val ecsService: EcsService,
+    private val projectDeploymentDao: ProjectDeploymentDao,
 ) : ProjectApiControllerBase {
 
     override fun getProject(
@@ -187,13 +188,18 @@ class ProjectApiController(
         val stagingDeployment = builds.firstOrNull { build ->
             build.type == BuildTypePojo.CD && build.status == BuildStatus.SUCCEEDED && build.environment == "staging"
         }
-        return listOfNotNull(prodDeployment, stagingDeployment).map { build ->
+        val projectDeploymentStatus = projectDeploymentDao.fetchByLatestBuild(
+            listOfNotNull(prodDeployment, stagingDeployment)
+        )
+
+        return (listOfNotNull(prodDeployment, stagingDeployment) zip projectDeploymentStatus).map { tuple ->
             buildPojoToDeployment(
-                source = build,
+                source = tuple.first,
                 organization = organization,
                 project = project,
                 usernameToGithubUser = usernameToGithubUser,
-                idToXtagesUser = idToXtagesUser
+                idToXtagesUser = idToXtagesUser,
+                projectDeploymentStatus = tuple.second.status
             )
         }
     }

@@ -6,12 +6,16 @@ import software.amazon.awssdk.services.cognitoidentityprovider.model.UserStatusT
 import xtages.console.controller.GitHubAvatarUrl
 import xtages.console.controller.GitHubUrl
 import xtages.console.controller.api.model.*
+import xtages.console.controller.api.model.Deployment.Status.RUNNING
+import xtages.console.controller.api.model.Deployment.Status.STOPPED
 import xtages.console.query.enums.DeployStatus
 import xtages.console.query.enums.GithubAppInstallationStatus
 import xtages.console.query.enums.OrganizationSubscriptionStatus
 import xtages.console.query.enums.ProjectType
 import xtages.console.query.tables.pojos.BuildEvent
 import xtages.console.query.tables.pojos.GithubUser
+import xtages.console.query.tables.pojos.ProjectDeployment
+import xtages.console.query.tables.references.PROJECT_DEPLOYMENT
 import xtages.console.service.*
 import xtages.console.time.toUtcMillis
 import xtages.console.query.tables.pojos.Build as BuildPojo
@@ -162,9 +166,11 @@ fun buildPojoToDeployment(
     organization: OrganizationPojo,
     project: ProjectPojo,
     usernameToGithubUser: Map<String, GithubUser>,
-    idToXtagesUser: Map<Int, XtagesUserWithCognitoAttributes>
+    idToXtagesUser: Map<Int, XtagesUserWithCognitoAttributes>,
+    projectDeploymentStatus: DeployStatus? = null,
 ): Deployment {
     val initiator = getBuildInitiator(source, usernameToGithubUser, idToXtagesUser)
+
     return Deployment(
         id = source.id!!,
         initiatorName = initiator.name,
@@ -179,7 +185,7 @@ fun buildPojoToDeployment(
         env = source.environment!!,
         timestampInMillis = source.endTime!!.toUtcMillis(),
         serviceUrl = "https://${source.environment}-${project.hash!!.substring(0, 12)}.xtages.dev",
-
+        status = if (projectDeploymentStatus == DeployStatus.DEPLOYED) RUNNING else STOPPED,
     )
 }
 

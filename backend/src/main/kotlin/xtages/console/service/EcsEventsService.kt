@@ -46,20 +46,22 @@ class EcsEventsService(
         val event = objectMapper.readValue(notification.message, EcsEvent::class.java)
 
         val latestProjectDeployment = projectDeploymentDao.fetchLatestDeploymentStatus(
-            projectName = event.serviceName(),
+            projectHash = event.serviceName(),
             environment = event.environment(),
         )
 
-        val status =
-            if (latestProjectDeployment.status == DeployStatus.PROVISIONING) DeployStatus.DEPLOYED else DeployStatus.DRAINED
+        if (latestProjectDeployment.status != DeployStatus.DRAINED && latestProjectDeployment.status != DeployStatus.DEPLOYED) {
+            val status =
+                if (latestProjectDeployment.status == DeployStatus.PROVISIONING) DeployStatus.DEPLOYED else DeployStatus.DRAINED
 
-        projectDeploymentDao.insert(
-            ProjectDeployment(
-                projectId = latestProjectDeployment.projectId,
-                buildId = latestProjectDeployment.buildId,
-                status = status
+            projectDeploymentDao.insert(
+                ProjectDeployment(
+                    projectId = latestProjectDeployment.projectId,
+                    buildId = latestProjectDeployment.buildId,
+                    status = status
+                )
             )
-        )
+        }
 
     }
 
