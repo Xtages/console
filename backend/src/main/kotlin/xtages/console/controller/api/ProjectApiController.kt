@@ -25,7 +25,6 @@ import xtages.console.query.tables.pojos.Organization
 import xtages.console.query.tables.pojos.XtagesUser
 import xtages.console.service.*
 import xtages.console.service.aws.*
-import java.math.BigDecimal
 import java.net.URL
 import java.util.*
 import javax.validation.ValidationException
@@ -55,7 +54,8 @@ class ProjectApiController(
     private val buildEventDao: BuildEventDao,
     private val recipeDao: RecipeDao,
     private val rdsService: RdsService,
-    val ecsService: EcsService,
+    private val ecsService: EcsService,
+    private val projectDeploymentDao: ProjectDeploymentDao,
 ) : ProjectApiControllerBase {
 
     override fun getProject(
@@ -188,13 +188,17 @@ class ProjectApiController(
         val stagingDeployment = builds.firstOrNull { build ->
             build.type == BuildTypePojo.CD && build.status == BuildStatus.SUCCEEDED && build.environment == "staging"
         }
-        return listOfNotNull(prodDeployment, stagingDeployment).map { build ->
+        val deploymentBuilds = listOfNotNull(prodDeployment, stagingDeployment)
+        val projectDeploymentStatus = projectDeploymentDao.fetchLatestByBuilds(deploymentBuilds)
+
+        return (deploymentBuilds zip projectDeploymentStatus).map { tuple ->
             buildPojoToDeployment(
-                source = build,
+                source = tuple.first,
                 organization = organization,
                 project = project,
                 usernameToGithubUser = usernameToGithubUser,
-                idToXtagesUser = idToXtagesUser
+                idToXtagesUser = idToXtagesUser,
+                projectDeploymentStatus = tuple.second.status
             )
         }
     }
@@ -373,8 +377,8 @@ class ProjectApiController(
         projectName: String,
         buildId: Long,
         env: String,
-        startTimeInMillis: BigDecimal?,
-        endTimeInMillis: BigDecimal?,
+        startTimeInMillis: Long?,
+        endTimeInMillis: Long?,
         token: String?
     ): ResponseEntity<Logs> {
         val (_, _, project) = checkRepoBelongsToOrg(projectName)
@@ -382,8 +386,8 @@ class ProjectApiController(
             env = env,
             buildId = buildId,
             project = project,
-            startTimeInMillis = startTimeInMillis?.toLong(),
-            endTimeInMillis = endTimeInMillis?.toLong(),
+            startTimeInMillis = startTimeInMillis,
+            endTimeInMillis = endTimeInMillis,
             token = token,
         )
         return ResponseEntity.ok(logs)

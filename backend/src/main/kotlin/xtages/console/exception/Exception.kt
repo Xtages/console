@@ -11,7 +11,6 @@ import xtages.console.service.UsageOverLimitWithDetails
 
 enum class ExceptionCode {
     ORG_NOT_FOUND,
-    CHECKOUT_SESSION_NOT_FOUND,
     GH_APP_NOT_ALL_REPOSITORIES_SELECTED,
     NULL_VALUE,
     INVALID_TYPE,
@@ -25,6 +24,7 @@ enum class ExceptionCode {
     BUILD_NOT_FOUND,
     RECIPE_NOT_FOUND,
     USAGE_OVER_LIMIT,
+    PROJECT_DEPLOYMENT_NOT_FOUND,
 }
 
 /**

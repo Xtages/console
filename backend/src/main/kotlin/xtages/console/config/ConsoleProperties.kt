@@ -52,4 +52,5 @@ data class ConsoleProperties(val stripe: Stripe, val server: Server, val gitHubA
         val ssmPrefix: String,
         val dbSubnetGroupName: String,
     )
+
 }
