@@ -122,7 +122,7 @@ class EcsEventsService(
             valueDesc = "received message"
         )
         logger.info { "Processing SNS Notification for ECS events with id [${notification.messageId}]" }
-        logger.info { notification.message }
+        logger.debug { notification.message }
         return notification
     }
 

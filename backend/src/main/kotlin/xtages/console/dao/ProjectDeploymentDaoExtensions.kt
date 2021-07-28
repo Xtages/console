@@ -1,5 +1,6 @@
 package xtages.console.dao
 
+import org.jooq.impl.DSL.max
 import xtages.console.controller.model.Environment
 import xtages.console.query.tables.daos.ProjectDeploymentDao
 import xtages.console.query.tables.pojos.Build
@@ -7,6 +8,7 @@ import xtages.console.query.tables.pojos.ProjectDeployment
 import xtages.console.query.tables.references.BUILD
 import xtages.console.query.tables.references.PROJECT
 import xtages.console.query.tables.references.PROJECT_DEPLOYMENT
+import java.time.LocalDateTime
 
 /***
  * Returns the lastest [ProjectDeployment] based on the [projectHash]
@@ -34,20 +36,23 @@ fun ProjectDeploymentDao.fetchLatestDeploymentStatus(
  * Returns the latest [ProjectDeployment] based on the [builds] list
  */
 fun ProjectDeploymentDao.fetchByLatestBuild(builds: List<Build>): List<ProjectDeployment> {
-    return ctx()
+    val latestDeployments = ctx()
         .select(
-            PROJECT_DEPLOYMENT.BUILD_ID, PROJECT_DEPLOYMENT.START_TIME,
-            PROJECT_DEPLOYMENT.STATUS, PROJECT_DEPLOYMENT.ID
+            PROJECT_DEPLOYMENT.BUILD_ID,
+            max(PROJECT_DEPLOYMENT.START_TIME).`as`("latest_time")
         )
         .from(PROJECT_DEPLOYMENT)
-        .where(
-            PROJECT_DEPLOYMENT.BUILD_ID.`in`(builds)
+        .where(PROJECT_DEPLOYMENT.BUILD_ID.`in`(builds.map { it.id }))
+        .groupBy(PROJECT_DEPLOYMENT.BUILD_ID).asTable("latest_build")
+    return ctx()
+        .select(
+            PROJECT_DEPLOYMENT.asterisk()
         )
-        .groupBy(
-            PROJECT_DEPLOYMENT.BUILD_ID, PROJECT_DEPLOYMENT.START_TIME,
-            PROJECT_DEPLOYMENT.STATUS, PROJECT_DEPLOYMENT.ID
+        .from(
+            latestDeployments
         )
-        .orderBy(PROJECT_DEPLOYMENT.START_TIME.desc())
+        .join(PROJECT_DEPLOYMENT)
+        .on(PROJECT_DEPLOYMENT.START_TIME.eq(latestDeployments.field("latest_time", LocalDateTime::class.java)))
         .fetchInto(ProjectDeployment::class.java)
 
 }
