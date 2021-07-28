@@ -24,6 +24,17 @@ import java.time.Instant
 
 private val logger = KotlinLogging.logger { }
 
+/***
+ * This service receives notifications from ECS related to scale-in, steady-state and deploy/re-deploy events
+ * for customers clusters.
+ *
+ * The way we infer the status of the service when we receive the events is a best effort based on the information that
+ * we have received. However, there could be problems, for example if more than one deploy happens in a short period of time
+ * that could end up displaying information that is not accurate.
+ *
+ * To fix those problems instead of inferring the state of the deploy, whenever we receive an event we should query ECS
+ * to know the status of it. ECS is the source of truth.
+ */
 @Service
 class EcsEventsService(
     private val objectMapper: ObjectMapper,
@@ -33,7 +44,7 @@ class EcsEventsService(
     private val snsMessageManager = SnsMessageManager()
 
     /**
-     * Listen to ECS events that resulted in steady state. Depending on the previous [DeployStatus] in the [Project]
+     * Listen to ECS events that resulted in steady state. Depending on the previous [DeployStatus] in the Project
      * the [DeployStatus] will be updated:
      * If the previous [DeployStatus] was [DeployStatus.PROVISIONING] then it will transition to [DeployStatus.DEPLOYED]
      * If the previous [DeployStatus] was [DeployStatus.DRAINING] then it will transition to [DeployStatus.DRAINED]
@@ -45,9 +56,15 @@ class EcsEventsService(
         val notification = checkNotification(eventStr)
         val event = objectMapper.readValue(notification.message, EcsEvent::class.java)
 
-        val latestProjectDeployment = projectDeploymentDao.fetchLatestDeploymentStatus(
-            projectHash = event.serviceName(),
-            environment = event.environment(),
+        val latestProjectDeployment = ensure.foundOne(
+            operation = {
+                projectDeploymentDao.fetchLatestDeploymentStatus(
+                    projectHash = event.serviceName(),
+                    environment = event.environment(),
+                )
+            },
+            code = ExceptionCode.PROJECT_DEPLOYMENT_NOT_FOUND,
+            message = "Project deployment not found",
         )
 
         if (latestProjectDeployment.status != DeployStatus.DRAINED && latestProjectDeployment.status != DeployStatus.DEPLOYED) {
@@ -84,7 +101,7 @@ class EcsEventsService(
     }
 
     /**
-     * Listen to deploy events in ECS to mark the [Project]'s  [DeployStatus] with status [DeployStatus.PROVISIONING]
+     * Listen to deploy events in ECS to mark the Project's  [DeployStatus] with status [DeployStatus.PROVISIONING]
      */
     @SqsListener("deployment-updates-queue", deletionPolicy = SqsMessageDeletionPolicy.ON_SUCCESS)
     fun deployCompletedEvent(eventStr: String) {
@@ -160,7 +177,7 @@ private abstract class CloudTrailEvent(
     }
 }
 
-private enum class ECS_OPERATION {
+private enum class EcsOperation {
     UPDATESERVICE,
     CREATESERVICE,
 }
@@ -202,7 +219,7 @@ private data class CloudTrailDeployEvent(
     }
 
     override fun serviceName(): String {
-        if (detail.eventName.toUpperCase() == ECS_OPERATION.UPDATESERVICE.name)
+        if (detail.eventName.toUpperCase() == EcsOperation.UPDATESERVICE.name)
             return detail.requestParameters.service!!.substringAfterLast("/")
         else
             return detail.requestParameters.serviceName!!.substringAfterLast("/")

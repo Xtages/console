@@ -17,7 +17,7 @@ import java.time.LocalDateTime
 fun ProjectDeploymentDao.fetchLatestDeploymentStatus(
     projectHash: String,
     environment: Environment
-): ProjectDeployment {
+): ProjectDeployment? {
     return ctx()
         .select(PROJECT_DEPLOYMENT.asterisk())
         .from(PROJECT_DEPLOYMENT)
@@ -29,13 +29,13 @@ fun ProjectDeploymentDao.fetchLatestDeploymentStatus(
         )
         .orderBy(PROJECT_DEPLOYMENT.START_TIME.desc())
         .limit(1)
-        .fetchOneInto(ProjectDeployment::class.java)!!
+        .fetchOneInto(ProjectDeployment::class.java)
 }
 
 /***
  * Returns the latest [ProjectDeployment] based on the [builds] list
  */
-fun ProjectDeploymentDao.fetchByLatestBuild(builds: List<Build>): List<ProjectDeployment> {
+fun ProjectDeploymentDao.fetchLatestByBuilds(builds: List<Build>): List<ProjectDeployment> {
     val latestDeployments = ctx()
         .select(
             PROJECT_DEPLOYMENT.BUILD_ID,

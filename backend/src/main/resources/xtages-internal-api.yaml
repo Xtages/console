@@ -910,6 +910,7 @@ components:
           minLength: 1
         status:
           type: string
+          minLength: 1
           enum:
             - RUNNING
             - STOPPED

@@ -188,11 +188,10 @@ class ProjectApiController(
         val stagingDeployment = builds.firstOrNull { build ->
             build.type == BuildTypePojo.CD && build.status == BuildStatus.SUCCEEDED && build.environment == "staging"
         }
-        val projectDeploymentStatus = projectDeploymentDao.fetchByLatestBuild(
-            listOfNotNull(prodDeployment, stagingDeployment)
-        )
+        val deploymentBuilds = listOfNotNull(prodDeployment, stagingDeployment)
+        val projectDeploymentStatus = projectDeploymentDao.fetchLatestByBuilds(deploymentBuilds)
 
-        return (listOfNotNull(prodDeployment, stagingDeployment) zip projectDeploymentStatus).map { tuple ->
+        return (deploymentBuilds zip projectDeploymentStatus).map { tuple ->
             buildPojoToDeployment(
                 source = tuple.first,
                 organization = organization,
