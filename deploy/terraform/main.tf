@@ -74,6 +74,12 @@ resource "aws_ecs_service" "xtages_console_service" {
   iam_role            = data.terraform_remote_state.xtages_ecs.outputs.ecs_service_role_arn
   scheduling_strategy = "REPLICA"
 
+  capacity_provider_strategy {
+    capacity_provider = data.terraform_remote_state.xtages_ecs.outputs.ecs_capacity_provider_name
+    weight            = 1
+    base              = 0
+  }
+
   ordered_placement_strategy {
     type  = "spread"
     field = "attribute:ecs.availability-zone"
