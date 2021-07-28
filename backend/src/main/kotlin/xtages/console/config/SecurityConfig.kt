@@ -70,13 +70,6 @@ class SecurityConfig(
                 // Allow all access to POSTs made to webhook paths because those will be cryptographically authenticated
                 // via signature
                 .mvcMatchers(POST, "/api/v1/*/webhook").permitAll()
-            // Only allow access to actuator paths in "dev"
-            if (Profiles.DEV.name in environment.activeProfiles) {
-                authorize.mvcMatchers("/actuator/**").permitAll()
-            } else {
-                // Deny access to actuator paths otherwise
-                authorize.mvcMatchers("/actuator/**").denyAll()
-            }
         }
     }
 
