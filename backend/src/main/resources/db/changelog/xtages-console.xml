@@ -43,4 +43,5 @@
     <include file="changesets/update-plan-product-ids.postgresql.sql" relativeToChangelogFile="true" />
     <include file="changesets/deployed-drained-project-status.postgresql.sql" relativeToChangelogFile="true" />
     <include file="changesets/recipe-updates.postgresql.sql" relativeToChangelogFile="true" />
+    <include file="changesets/clean-up-github-user.postgresql.sql" relativeToChangelogFile="true" />
 </databaseChangeLog>
