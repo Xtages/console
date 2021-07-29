@@ -1,4 +1,4 @@
-import {RouteComponentProps} from 'react-router-dom';
+import {useLocation} from 'react-router-dom';
 import React, {useState} from 'react';
 import {Zap} from 'react-feather';
 import {Form, Formik, FormikErrors, useFormikContext} from 'formik';
@@ -13,9 +13,6 @@ import LabeledFormField from 'components/form/LabeledFormField';
 import {Alert, Button} from 'react-bootstrap';
 import {EmailField, PasswordField} from 'components/user/AuthFields';
 import {SignUpFormValues} from './SignUpPage';
-
-/** The properties that are available to the {@link ConfirmSignUpPage} component. */
-type ConfirmSignUpPageProps = RouteComponentProps<{}, {}, SignUpFormValues | null>;
 
 const formValuesSchema = z.object({
   email: z.string()
@@ -86,9 +83,13 @@ function ResendCodeButton({state}: {state: SignUpFormValues | null | undefined})
 
 /**
  * A full page to confirm a user's signup by providing a code that was emailed to the user.
- * @param location - Location information for the {@link Route}.
  */
-export default function ConfirmSignUpPage({location}: ConfirmSignUpPageProps) {
+export default function ConfirmSignUpPage() {
+  const location = useLocation<SignUpFormValues>();
+  const initialValues = buildFormValues();
+  const auth = useAuth();
+  const [errorOccurred, setErrorOccurred] = useState(false);
+
   function buildFormValues(): FormValues {
     const {state} = location;
     if (state != null) {
@@ -104,10 +105,6 @@ export default function ConfirmSignUpPage({location}: ConfirmSignUpPageProps) {
       code: '',
     };
   }
-
-  const initialValues = buildFormValues();
-  const auth = useAuth();
-  const [errorOccurred, setErrorOccurred] = useState(false);
 
   async function confirm(values: FormValues, actions: FormikHelpers<FormValues>) {
     setErrorOccurred(false);
@@ -131,8 +128,9 @@ export default function ConfirmSignUpPage({location}: ConfirmSignUpPageProps) {
         organizationName: principal.org,
         ownerCognitoUserId: principal.id,
       });
+      const params = new URLSearchParams(location.search);
       await redirectToStripeCheckoutSession({
-        priceIds: ['price_1IdOOzIfxICi4AQgjta89k2Y'],
+        priceIds: [params.get('priceId')!],
         organizationName: principal.org,
       });
     } else {
