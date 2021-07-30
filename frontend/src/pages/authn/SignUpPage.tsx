@@ -65,10 +65,10 @@ export default function SignUpPage() {
       return;
     }
     actions.setSubmitting(false);
+    const params = new URLSearchParams(location.search);
     if (principal == null) {
-      history.push('/confirm', values);
+      history.push(`/confirm?priceId=${params.get('priceId')}`, values);
     } else {
-      const params = new URLSearchParams(location.search);
       await redirectToStripeCheckoutSession({
         priceIds: [params.get('priceId')!],
         organizationName: values.organizationName,
