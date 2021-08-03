@@ -32,15 +32,6 @@ export function BuildTable({
 }: BuildTableProps) {
   return (
     <>
-      <div className="container">
-        <div className="row p-3">
-          <div className="col-1" />
-          <div className="col-1">Status</div>
-          <div className="col-3">Started by</div>
-          <div className="col">Info</div>
-          <div className="col-2" />
-        </div>
-      </div>
       {project.builds.map((build) => (
         <BuildRow key={build.id} project={project} build={build} />))}
     </>

@@ -196,10 +196,12 @@ export default function ConfirmSignUpPage() {
                         <EmailField
                           invalid={touched.email && errors.email != null}
                           validationFeedback="Please provide your email address."
+                          autoComplete="username"
                         />
                         <PasswordField
                           invalid={touched.password && errors.password != null}
                           validationFeedback="Invalid password."
+                          autoComplete="current-password"
                         />
                       </>
                       )}

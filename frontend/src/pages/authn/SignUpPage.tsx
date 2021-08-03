@@ -134,10 +134,12 @@ export default function SignUpPage() {
                     <EmailField
                       invalid={touched.email && errors.email != null}
                       validationFeedback="Please provide a valid email address."
+                      autoComplete="username"
                     />
                     <PasswordField
                       invalid={touched.password && errors.password != null}
                       validationFeedback="Invalid password."
+                      autoComplete="new-password"
                       showHelpTooltip
                     />
                     <div className="my-4">
