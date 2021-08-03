@@ -18,7 +18,7 @@ export function ProjectTable({projects}: ProjectTableProps) {
     <div className={styles.projectTable}>
       <div className="container">
         <div className="row px-3">
-          <div className={`col-2 ${styles.head}`}>Project</div>
+          <div className={`col-3 ${styles.head}`}>Project</div>
           <div className={`col ${styles.head}`}>Last build</div>
         </div>
       </div>
