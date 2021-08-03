@@ -1,6 +1,6 @@
 import React, {useState} from 'react';
 import {Link, useHistory, useLocation} from 'react-router-dom';
-import {Field, Form, Formik, FormikErrors} from 'formik';
+import {Field, Form, Formik} from 'formik';
 import {FormikHelpers} from 'formik/dist/types';
 import {Briefcase, User} from 'react-feather';
 import * as z from 'zod';
@@ -11,6 +11,8 @@ import Logo from 'components/Logos';
 import LabeledFormField from 'components/form/LabeledFormField';
 import {Alert} from 'react-bootstrap';
 import {EmailField, PasswordField} from 'components/user/AuthFields';
+import {useTracking} from 'hooks/useTracking';
+import {getFormValidator} from 'helpers/form';
 
 const signUpFormValuesSchema = z.object({
   name: z.string()
@@ -48,10 +50,16 @@ export default function SignUpPage() {
   const auth = useAuth();
   const history = useHistory();
   const location = useLocation();
+  const {
+    identifyPrincipal,
+    trackComponentApiError,
+    trackComponentEvent,
+  } = useTracking();
   const [errorOccurred, setErrorOccurred] = useState(false);
 
   async function signUp(values: SignUpFormValues, actions: FormikHelpers<SignUpFormValues>) {
     setErrorOccurred(false);
+    const params = new URLSearchParams(location.search);
     let principal: NullablePrincipal;
     try {
       principal = await auth.signUp({
@@ -60,15 +68,21 @@ export default function SignUpPage() {
         username: values.email,
         password: values.password,
       });
+      trackComponentEvent('SignUpPage', 'Signed Up', {
+        priceId: params.get('priceId'),
+      });
     } catch (e) {
       setErrorOccurred(true);
+      trackComponentApiError('SignUpPage', 'signUp', e);
       return;
     }
     actions.setSubmitting(false);
-    const params = new URLSearchParams(location.search);
     if (principal == null) {
+      trackComponentEvent('SignUpPage', 'User Confirmation Required');
       history.push(`/confirm?priceId=${params.get('priceId')}`, values);
     } else {
+      trackComponentEvent('SignUpPage', 'Signed Up');
+      identifyPrincipal(principal);
       await redirectToStripeCheckoutSession({
         priceIds: [params.get('priceId')!],
         organizationName: values.organizationName,
@@ -76,14 +90,7 @@ export default function SignUpPage() {
     }
   }
 
-  function validate(values: SignUpFormValues): FormikErrors<SignUpFormValues> | void {
-    try {
-      signUpFormValuesSchema.parse(values);
-      return {};
-    } catch (error) {
-      return error.formErrors.fieldErrors;
-    }
-  }
+  const validate = getFormValidator('SignUpPage', signUpFormValuesSchema);
 
   return (
     <section>

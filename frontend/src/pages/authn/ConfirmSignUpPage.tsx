@@ -1,7 +1,7 @@
 import {useLocation} from 'react-router-dom';
 import React, {useState} from 'react';
 import {Zap} from 'react-feather';
-import {Form, Formik, FormikErrors, useFormikContext} from 'formik';
+import {Form, Formik, useFormikContext} from 'formik';
 import {FormikHelpers} from 'formik/dist/types';
 import * as z from 'zod';
 import CreateAccountLink from 'pages/authn/CreateAccountLink';
@@ -12,6 +12,8 @@ import Logo from 'components/Logos';
 import LabeledFormField from 'components/form/LabeledFormField';
 import {Alert, Button} from 'react-bootstrap';
 import {EmailField, PasswordField} from 'components/user/AuthFields';
+import {getFormValidator} from 'helpers/form';
+import {useTracking} from 'hooks/useTracking';
 import {SignUpFormValues} from './SignUpPage';
 
 const formValuesSchema = z.object({
@@ -86,7 +88,11 @@ function ResendCodeButton({state}: {state: SignUpFormValues | null | undefined})
  */
 export default function ConfirmSignUpPage() {
   const location = useLocation<SignUpFormValues>();
-  const initialValues = buildFormValues();
+  const {
+    identifyPrincipal,
+    trackComponentApiError,
+    trackComponentEvent,
+  } = useTracking();
   const auth = useAuth();
   const [errorOccurred, setErrorOccurred] = useState(false);
 
@@ -106,14 +112,21 @@ export default function ConfirmSignUpPage() {
     };
   }
 
+  const initialValues = buildFormValues();
+
   async function confirm(values: FormValues, actions: FormikHelpers<FormValues>) {
     setErrorOccurred(false);
+    const params = new URLSearchParams(location.search);
     try {
       await auth.confirmSignUp({
         email: values.email,
         code: values.code,
       });
+      trackComponentEvent('ConfirmSignUpPage', 'Signed Up', {
+        priceId: params.get('priceId'),
+      });
     } catch (e) {
+      trackComponentApiError('ConfirmSignUpPage', 'confirmSignUp', e);
       setErrorOccurred(true);
       actions.setSubmitting(false);
       return;
@@ -124,11 +137,14 @@ export default function ConfirmSignUpPage() {
     });
     actions.setSubmitting(false);
     if (principal instanceof Principal) {
+      identifyPrincipal(principal);
       await organizationApi.createOrganization({
         organizationName: principal.org,
         ownerCognitoUserId: principal.id,
       });
-      const params = new URLSearchParams(location.search);
+      trackComponentEvent('ConfirmSignUpPage', 'Org Created', {
+        org: principal.org,
+      });
       await redirectToStripeCheckoutSession({
         priceIds: [params.get('priceId')!],
         organizationName: principal.org,
@@ -138,14 +154,7 @@ export default function ConfirmSignUpPage() {
     }
   }
 
-  function validate(values: FormValues): FormikErrors<FormValues> | void {
-    try {
-      formValuesSchema.parse(values);
-      return {};
-    } catch (error) {
-      return error.formErrors.fieldErrors;
-    }
-  }
+  const validate = getFormValidator('ConfirmSignUpPage', formValuesSchema);
 
   return (
     <section>

@@ -1,7 +1,7 @@
 import React, {useState} from 'react';
 import {Alert, Col, Container, Row} from 'react-bootstrap';
 import Logo from 'components/Logos';
-import {Form, Formik, FormikErrors} from 'formik';
+import {Form, Formik} from 'formik';
 import {EmailField, PasswordField} from 'components/user/AuthFields';
 import CreateAccountLink from 'pages/authn/CreateAccountLink';
 import * as z from 'zod';
@@ -9,6 +9,8 @@ import {useHistory, useLocation} from 'react-router-dom';
 import {FormikHelpers} from 'formik/dist/types';
 import {Credentials, Principal, useAuth} from 'hooks/useAuth';
 import {CognitoUser} from 'amazon-cognito-identity-js';
+import {useTracking} from 'hooks/useTracking';
+import {getFormValidator} from 'helpers/form';
 
 const completePasswordFormValuesSchema = z.object({
   email: z.string()
@@ -38,6 +40,10 @@ export default function ChangePasswordPage() {
   };
   const auth = useAuth();
   const history = useHistory();
+  const {
+    trackComponentEvent,
+    trackComponentApiError,
+  } = useTracking();
   const [errorOccurred, setErrorOccurred] = useState(false);
 
   async function changePassword(values: CompletePasswordFormValues,
@@ -53,6 +59,7 @@ export default function ChangePasswordPage() {
           user: result as CognitoUser,
           password: values.password,
         });
+        trackComponentEvent('ChangePasswordPage', 'New Password Completed');
         const redirectTo = location.state?.referrer || '/';
         history.replace(redirectTo);
       } else {
@@ -61,21 +68,19 @@ export default function ChangePasswordPage() {
           oldPassword: values.oldPassword,
           newPassword: values.password,
         });
+        trackComponentEvent('ChangePasswordPage', 'New Password Set');
       }
     } catch (e) {
+      trackComponentApiError('ChangePasswordPage', 'changePassword', e);
       setErrorOccurred(true);
     }
     actions.setSubmitting(false);
   }
 
-  function validate(values: CompletePasswordFormValues): FormikErrors<CompletePasswordFormValues> {
-    try {
-      completePasswordFormValuesSchema.parse(values);
-      return {};
-    } catch (error) {
-      return error.formErrors.fieldErrors;
-    }
-  }
+  const validate = getFormValidator(
+    'ChangePasswordPage',
+    completePasswordFormValuesSchema,
+  );
 
   return (
     <section>
