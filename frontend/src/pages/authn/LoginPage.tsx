@@ -1,14 +1,16 @@
 import React, {useState} from 'react';
 import {RouteComponentProps, useHistory} from 'react-router-dom';
-import {Form, Formik, FormikErrors} from 'formik';
+import {Form, Formik} from 'formik';
 import {FormikHelpers} from 'formik/dist/types';
 import * as z from 'zod';
-import {useAuth} from 'hooks/useAuth';
+import {Principal, useAuth} from 'hooks/useAuth';
 import CreateAccountLink from 'pages/authn/CreateAccountLink';
 import Logo from 'components/Logos';
 import {Alert, Col, Container, Row} from 'react-bootstrap';
 import {EmailField, PasswordField} from 'components/user/AuthFields';
 import {CognitoUser} from 'amazon-cognito-identity-js';
+import {getFormValidator} from 'helpers/form';
+import {useTracking} from 'hooks/useTracking';
 
 /** The properties that are available to the {@link LoginPage} component. */
 type LoginPageProps = RouteComponentProps<{}, {}, LocationState | null>;
@@ -41,6 +43,11 @@ export default function LoginPage({location}: LoginPageProps) {
 
   const auth = useAuth();
   const history = useHistory();
+  const {
+    identifyPrincipal,
+    trackComponentApiError,
+    trackComponentEvent,
+  } = useTracking();
   const [errorOccurred, setErrorOccurred] = useState(false);
 
   async function logIn(values: LoginFormValues, actions: FormikHelpers<LoginFormValues>) {
@@ -51,6 +58,7 @@ export default function LoginPage({location}: LoginPageProps) {
         password: values.password,
       });
       if (result instanceof CognitoUser && result.challengeName === 'NEW_PASSWORD_REQUIRED') {
+        trackComponentEvent('LoginPage', 'New Password Required');
         actions.setSubmitting(false);
         const queryParams = new URLSearchParams();
         queryParams.set('email', values.email);
@@ -61,22 +69,21 @@ export default function LoginPage({location}: LoginPageProps) {
         });
         return;
       }
+      if (result instanceof Principal) {
+        trackComponentEvent('LoginPage', 'Logged In');
+        identifyPrincipal(result);
+      }
+
       const redirectTo = location.state?.referrer || '/';
       history.replace(redirectTo);
     } catch (e) {
+      trackComponentApiError('LoginPage', 'logIn', e);
       setErrorOccurred(true);
     }
     actions.setSubmitting(false);
   }
 
-  function validate(values: LoginFormValues): FormikErrors<LoginFormValues> {
-    try {
-      loginFormValuesSchema.parse(values);
-      return {};
-    } catch (error) {
-      return error.formErrors.fieldErrors;
-    }
-  }
+  const validate = getFormValidator('LoginPage', loginFormValuesSchema);
 
   return (
     <section>
