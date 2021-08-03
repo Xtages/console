@@ -105,13 +105,19 @@ export default function ChangePasswordPage() {
                       </div>
                     </Alert>
                     )}
-                    <EmailField />
+                    <EmailField autoComplete="username" />
                     <PasswordField
                       name="oldPassword"
                       label="Previous password"
                       placeholder="Password"
+                      autoComplete="current-password"
                     />
-                    <PasswordField label="New password" placeholder="Password" showHelpTooltip />
+                    <PasswordField
+                      label="New password"
+                      placeholder="Password"
+                      showHelpTooltip
+                      autoComplete="new-password"
+                    />
                     <div className="mt-4">
                       <button
                         type="submit"
