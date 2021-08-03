@@ -158,7 +158,7 @@ export default function SignUpPage() {
                         >
                           I agree to the
                           {' '}
-                          <a href="../../pages/utility/terms.html">
+                          <a href="https://www.xtages.com/terms.html">
                             terms and conditions
                           </a>
                         </label>
