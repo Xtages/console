@@ -2,6 +2,7 @@ import React from 'react';
 import {Link, NavLink, useHistory} from 'react-router-dom';
 import {useAuth} from 'hooks/useAuth';
 import {Dropdown} from 'react-bootstrap';
+import {useTracking} from 'hooks/useTracking';
 import Logo from '../Logos';
 import Avatar from '../avatar/Avatar';
 
@@ -29,6 +30,7 @@ const AvatarDropdownToggle = React.forwardRef<HTMLButtonElement, React.Component
 export default function NavBar() {
   const auth = useAuth();
   const history = useHistory();
+  const {reset} = useTracking();
 
   function goToAccount() {
     history.push('/account');
@@ -36,6 +38,7 @@ export default function NavBar() {
 
   async function signOut() {
     await auth.logOut();
+    reset();
     history.push('/login');
   }
 
