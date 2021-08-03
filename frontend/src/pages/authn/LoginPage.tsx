@@ -105,8 +105,8 @@ export default function LoginPage({location}: LoginPageProps) {
                       </div>
                     </Alert>
                     )}
-                    <EmailField />
-                    <PasswordField placeholder="Password" />
+                    <EmailField autoComplete="username" />
+                    <PasswordField placeholder="Password" autoComplete="current-password" />
                     <div className="mt-4">
                       <button
                         type="submit"
