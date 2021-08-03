@@ -41,3 +41,12 @@ $border-radius-xs:                      .1rem;
 $input-border-radius-xs:                $border-radius-xs;
 
 @import '~bootstrap/scss/variables';
+
+/* New breakpoints */
+$grid-breakpoints: map-merge($grid-breakpoints, (
+        xxl: 1366px,
+));
+
+$container-max-widths: map-merge($container-max-widths, (
+        xxl: 1366px,
+));
