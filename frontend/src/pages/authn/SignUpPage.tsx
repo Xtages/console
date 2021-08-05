@@ -1,5 +1,5 @@
 import React, {useState} from 'react';
-import {Link, useHistory, useLocation} from 'react-router-dom';
+import {Link, useHistory} from 'react-router-dom';
 import {Field, Form, Formik} from 'formik';
 import {FormikHelpers} from 'formik/dist/types';
 import {Briefcase, User} from 'react-feather';
@@ -13,6 +13,7 @@ import {Alert} from 'react-bootstrap';
 import {EmailField, PasswordField} from 'components/user/AuthFields';
 import {useTracking} from 'hooks/useTracking';
 import {getFormValidator} from 'helpers/form';
+import {usePriceId} from 'hooks/usePriceId';
 
 const signUpFormValuesSchema = z.object({
   name: z.string()
@@ -49,7 +50,7 @@ export default function SignUpPage() {
   };
   const auth = useAuth();
   const history = useHistory();
-  const location = useLocation();
+  const {priceId} = usePriceId();
   const {
     identifyPrincipal,
     trackComponentApiError,
@@ -59,7 +60,6 @@ export default function SignUpPage() {
 
   async function signUp(values: SignUpFormValues, actions: FormikHelpers<SignUpFormValues>) {
     setErrorOccurred(false);
-    const params = new URLSearchParams(location.search);
     let principal: NullablePrincipal;
     try {
       principal = await auth.signUp({
@@ -69,7 +69,7 @@ export default function SignUpPage() {
         password: values.password,
       });
       trackComponentEvent('SignUpPage', 'Signed Up', {
-        priceId: params.get('priceId'),
+        priceId,
       });
     } catch (e) {
       setErrorOccurred(true);
@@ -79,12 +79,12 @@ export default function SignUpPage() {
     actions.setSubmitting(false);
     if (principal == null) {
       trackComponentEvent('SignUpPage', 'User Confirmation Required');
-      history.push(`/confirm?priceId=${params.get('priceId')}`, values);
+      history.push('/confirm', values);
     } else {
       trackComponentEvent('SignUpPage', 'Signed Up');
       identifyPrincipal(principal);
       await redirectToStripeCheckoutSession({
-        priceIds: [params.get('priceId')!],
+        priceIds: [priceId!],
         organizationName: values.organizationName,
       });
     }
@@ -110,6 +110,19 @@ export default function SignUpPage() {
                     <Alert className="alert-outline-danger">
                       <div className="d-flex justify-content-center">
                         <strong>An unexpected error occurred</strong>
+                      </div>
+                    </Alert>
+                    )}
+                    {!priceId && (
+                    <Alert className="alert-outline-danger">
+                      <div className="d-flex justify-content-center">
+                        <strong>
+                          You must first select a
+                          {' '}
+                          <a href="https://www.xtages.com/pricing.html">plan</a>
+                          {' '}
+                          before signing up.
+                        </strong>
                       </div>
                     </Alert>
                     )}
@@ -161,9 +174,17 @@ export default function SignUpPage() {
                           <a href="https://www.xtages.com/terms.html">
                             terms and conditions
                           </a>
+                          {' '}
+                          and
+                          {' '}
+                          <a href="https://www.xtages.com/privacy.html">
+                            privacy policy
+                          </a>
+                          .
                         </label>
                         <div className="invalid-feedback">
-                          In order to use Xtages you must accept our terms of service.
+                          In order to use Xtages you must accept our
+                          terms of service and privacy policy.
                         </div>
                       </div>
                     </div>
@@ -171,7 +192,7 @@ export default function SignUpPage() {
                       <button
                         type="submit"
                         className="btn btn-block btn-primary"
-                        disabled={isSubmitting}
+                        disabled={isSubmitting || !priceId}
                       >
                         Create my account
                       </button>

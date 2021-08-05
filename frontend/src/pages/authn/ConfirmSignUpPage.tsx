@@ -14,6 +14,7 @@ import {Alert, Button} from 'react-bootstrap';
 import {EmailField, PasswordField} from 'components/user/AuthFields';
 import {getFormValidator} from 'helpers/form';
 import {useTracking} from 'hooks/useTracking';
+import {usePriceId} from 'hooks/usePriceId';
 import {SignUpFormValues} from './SignUpPage';
 
 const formValuesSchema = z.object({
@@ -95,6 +96,7 @@ export default function ConfirmSignUpPage() {
   } = useTracking();
   const auth = useAuth();
   const [errorOccurred, setErrorOccurred] = useState(false);
+  const {priceId} = usePriceId();
 
   function buildFormValues(): FormValues {
     const {state} = location;
@@ -116,14 +118,13 @@ export default function ConfirmSignUpPage() {
 
   async function confirm(values: FormValues, actions: FormikHelpers<FormValues>) {
     setErrorOccurred(false);
-    const params = new URLSearchParams(location.search);
     try {
       await auth.confirmSignUp({
         email: values.email,
         code: values.code,
       });
       trackComponentEvent('ConfirmSignUpPage', 'Signed Up', {
-        priceId: params.get('priceId'),
+        priceId,
       });
     } catch (e) {
       trackComponentApiError('ConfirmSignUpPage', 'confirmSignUp', e);
@@ -146,7 +147,7 @@ export default function ConfirmSignUpPage() {
         org: principal.org,
       });
       await redirectToStripeCheckoutSession({
-        priceIds: [params.get('priceId')!],
+        priceIds: [priceId!],
         organizationName: principal.org,
       });
     } else {
@@ -190,6 +191,19 @@ export default function ConfirmSignUpPage() {
                       </div>
                     </Alert>
                     )}
+                    {!priceId && (
+                      <Alert className="alert-outline-danger">
+                        <div className="d-flex justify-content-center">
+                          <strong>
+                            You must first select a
+                            {' '}
+                            <a href="https://www.xtages.com/pricing.html">plan</a>
+                            {' '}
+                            before signing up.
+                          </strong>
+                        </div>
+                      </Alert>
+                    )}
                     {haveUserAndPass
                       && (
                       <>
@@ -218,7 +232,7 @@ export default function ConfirmSignUpPage() {
                       <button
                         type="submit"
                         className="btn btn-block btn-primary"
-                        disabled={isSubmitting}
+                        disabled={isSubmitting || !priceId}
                       >
                         Confirm
                       </button>
