@@ -12,7 +12,8 @@
         "ecr:*",
         "logs:*",
         "rds:*",
-        "ssm:*"
+        "ssm:*",
+        "sqs:*"
       ],
       "Resource": "*"
     }
