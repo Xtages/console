@@ -7,4 +7,5 @@
         logicalFilePath="seed-xtages-console-dev-db.xml">
 
     <include file="seedchangesets/001_seed.postgresql.sql" relativeToChangelogFile="true" />
+    <include file="seedchangesets/002_add_stripe_test_plans.postgresql.sql" relativeToChangelogFile="true" />
 </databaseChangeLog>
