@@ -15,7 +15,6 @@ import xtages.console.controller.GitHubAvatarUrl
 import xtages.console.controller.model.CodeBuildType
 import xtages.console.dao.fetchOneByNameAndOrganization
 import xtages.console.exception.ExceptionCode.*
-import xtages.console.exception.IllegalArgumentException
 import xtages.console.exception.ensure
 import xtages.console.pojo.templateRepoName
 import xtages.console.query.enums.GithubAppInstallationStatus.ACTIVE
@@ -28,7 +27,8 @@ import xtages.console.query.tables.pojos.GithubUser
 import xtages.console.query.tables.pojos.Organization
 import xtages.console.query.tables.pojos.Project
 import xtages.console.query.tables.pojos.Recipe
-import xtages.console.service.GitHubWebhookEventType.*
+import xtages.console.service.GitHubWebhookEventType.INSTALLATION
+import xtages.console.service.GitHubWebhookEventType.PUSH
 import xtages.console.service.aws.CodeBuildService
 import xtages.console.time.toUtcLocalDateTime
 import java.io.IOException
@@ -56,10 +56,6 @@ class GitHubService(
     fun handleWebhookRequest(eventType: GitHubWebhookEventType?, eventId: String, eventJson: String) {
         when (eventType) {
             INSTALLATION -> onInstallation(eventJson)
-            INSTALLATION_REPOSITORIES -> throw IllegalArgumentException(
-                code = GH_APP_INSTALLATION_INVALID,
-                innerMessage = "GitHub app must be installed at the organization level."
-            )
             PUSH -> onPush(eventId = eventId, eventJson = eventJson)
         }
     }
@@ -319,7 +315,6 @@ class GitHubService(
 
 enum class GitHubWebhookEventType {
     INSTALLATION,
-    INSTALLATION_REPOSITORIES,
     PUSH;
 
     companion object {
