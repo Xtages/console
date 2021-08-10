@@ -81,7 +81,7 @@ class RdsService(
         val rdsResponse = rdsAsyncClient.describeDBInstances(
             DescribeDbInstancesRequest
                 .builder()
-                .dbInstanceIdentifier(organization.hash)
+                .dbInstanceIdentifier(organization.dbIdentifier())
                 .build()
         ).get()
 

@@ -13,6 +13,8 @@ import io.awspring.cloud.core.naming.AmazonResourceName
 import io.awspring.cloud.messaging.listener.SqsMessageDeletionPolicy
 import io.awspring.cloud.messaging.listener.annotation.SqsListener
 import mu.KotlinLogging
+import org.springframework.beans.factory.annotation.Value
+import org.springframework.core.env.Environment
 import org.springframework.stereotype.Service
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
 import software.amazon.awssdk.services.codebuild.CodeBuildAsyncClient
@@ -76,6 +78,8 @@ class CodeBuildService(
     private val authenticationService: AuthenticationService,
     private val usageService: UsageService,
     private val objectMapper: ObjectMapper,
+    @Value("spring.profiles.active")
+    private val activeProfile: String,
 ) {
     private val snsMessageManager = SnsMessageManager()
 
@@ -241,16 +245,19 @@ class CodeBuildService(
         val scriptPath = getScriptPath(recipe, previousGitHubProjectTag, environment)
         val isDeploy = environment == "production"
 
+        val xtagesEnv = if (activeProfile == "prod") "production" else "development"
         val startBuildResponse = codeBuildClient.startBuild(
             StartBuildRequest.builder()
                 .projectName(cbProjectName)
                 .environmentVariablesOverride(
                     listOfNotNull(
-                        buildEnvVar(
-                            "XTAGES_DB_PASS",
-                            organization.ssmDbPassPath,
-                            EnvironmentVariableType.PARAMETER_STORE
-                        ),
+//                        buildEnvVar(
+//                            "XTAGES_DB_PASS",
+//                            organization.ssmDbPassPath,
+//                            EnvironmentVariableType.PARAMETER_STORE
+//                        ),
+                        buildEnvVar("XTAGES_DB_PASS", "secret"),
+                        buildEnvVar("XTAGES_ENV", xtagesEnv),
                         buildEnvVar("XTAGES_DB_URL", organization.rdsEndpoint),
                         buildEnvVar("XTAGES_DB_USER", organization.dbUsername()),
                         buildEnvVar("XTAGES_DB_NAME", organization.dbIdentifier()),
