@@ -24,6 +24,7 @@ enum class ExceptionCode {
     RECIPE_NOT_FOUND,
     USAGE_OVER_LIMIT,
     PROJECT_DEPLOYMENT_NOT_FOUND,
+    COGNITO_ERROR,
 }
 
 /**
@@ -73,3 +74,6 @@ class UsageOverLimitException(usageDetails: UsageOverLimit) :
     }
 }
 
+@ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+class CognitoException(innerMessage: String) :
+    XtagesConsoleException(code = ExceptionCode.COGNITO_ERROR, message = innerMessage)
