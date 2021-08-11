@@ -166,7 +166,7 @@ fun buildPojoToDeployment(
     usernameToGithubUser: Map<String, GithubUser>,
     idToXtagesUser: Map<Int, XtagesUserWithCognitoAttributes>,
     projectDeploymentStatus: DeployStatus? = null,
-    domain: String,
+    customerDeploymentDomain: String,
 ): Deployment {
     val initiator = getBuildInitiator(source, usernameToGithubUser, idToXtagesUser)
 
@@ -183,7 +183,7 @@ fun buildPojoToDeployment(
         ).toUriString(),
         env = source.environment!!,
         timestampInMillis = source.endTime!!.toUtcMillis(),
-        serviceUrl = "https://${source.environment}-${project.hash!!.substring(0, 12)}.${domain}",
+        serviceUrl = "https://${source.environment}-${project.hash!!.substring(0, 12)}.${customerDeploymentDomain}",
         status = if (projectDeploymentStatus == DeployStatus.DEPLOYED) RUNNING else STOPPED,
     )
 }

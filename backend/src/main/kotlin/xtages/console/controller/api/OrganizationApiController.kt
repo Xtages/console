@@ -86,7 +86,7 @@ class OrganizationApiController(
                         project = project,
                         usernameToGithubUser = usernameToGithubUser,
                         idToXtagesUser = idToXtagesUser,
-                        domain = consoleProperties.domain
+                        customerDeploymentDomain = consoleProperties.customerDeploymentDomain
                     )
                 } ?: emptyList(),
                 percentageOfSuccessfulBuildsInTheLastMonth = null

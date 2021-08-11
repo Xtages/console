@@ -201,7 +201,7 @@ class ProjectApiController(
                 usernameToGithubUser = usernameToGithubUser,
                 idToXtagesUser = idToXtagesUser,
                 projectDeploymentStatus = tuple.second.status,
-                domain = consoleProperties.domain
+                customerDeploymentDomain = consoleProperties.customerDeploymentDomain
             )
         }
     }
