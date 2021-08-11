@@ -13,7 +13,8 @@
         "logs:*",
         "rds:*",
         "ssm:*",
-        "sqs:*"
+        "sqs:*",
+        "iam:PassRole"
       ],
       "Resource": "*"
     }

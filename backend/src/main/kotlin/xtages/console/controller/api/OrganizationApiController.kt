@@ -3,6 +3,7 @@ package xtages.console.controller.api
 import org.springframework.http.HttpStatus.CREATED
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Controller
+import xtages.console.config.ConsoleProperties
 import xtages.console.controller.api.model.*
 import xtages.console.controller.model.MD5
 import xtages.console.controller.model.buildPojoToDeployment
@@ -29,6 +30,7 @@ class OrganizationApiController(
     val buildDao: BuildDao,
     val projectDao: ProjectDao,
     val githubUserDao: GithubUserDao,
+    val consoleProperties: ConsoleProperties,
 ) :
     OrganizationApiControllerBase {
 
@@ -83,7 +85,8 @@ class OrganizationApiController(
                         organization = organization,
                         project = project,
                         usernameToGithubUser = usernameToGithubUser,
-                        idToXtagesUser = idToXtagesUser
+                        idToXtagesUser = idToXtagesUser,
+                        customerDeploymentDomain = consoleProperties.customerDeploymentDomain
                     )
                 } ?: emptyList(),
                 percentageOfSuccessfulBuildsInTheLastMonth = null

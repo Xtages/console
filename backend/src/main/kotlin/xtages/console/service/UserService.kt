@@ -11,6 +11,7 @@ import software.amazon.awssdk.services.cognitoidentityprovider.model.AttributeTy
 import software.amazon.awssdk.services.cognitoidentityprovider.model.UserNotFoundException
 import software.amazon.awssdk.services.cognitoidentityprovider.model.UserStatusType
 import xtages.console.config.ConsoleProperties
+import xtages.console.exception.CognitoException
 import xtages.console.exception.ExceptionCode.USER_NOT_FOUND
 import xtages.console.exception.ensure
 import xtages.console.query.tables.daos.GithubUserDao
@@ -21,6 +22,7 @@ import xtages.console.query.tables.pojos.Organization
 import xtages.console.query.tables.pojos.XtagesUser
 import xtages.console.query.tables.references.XTAGES_USER
 import xtages.console.service.aws.CognitoService
+import java.util.concurrent.ExecutionException
 import java.util.stream.Stream
 import kotlin.streams.toList
 
@@ -123,8 +125,12 @@ class UserService(
                 attrs = cognitoUserAttributes,
                 userStatus = cognitoUser.userStatus(),
             )
-        } catch (e: UserNotFoundException) {
-            null
+        } catch (e: ExecutionException) {
+            if (e.cause is UserNotFoundException) {
+                null
+            }
+            logger.error { e }
+            throw CognitoException("There was an error while trying to find a user by email: $email")
         }
     }
 
