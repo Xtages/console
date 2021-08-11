@@ -14,7 +14,6 @@ import io.awspring.cloud.messaging.listener.SqsMessageDeletionPolicy
 import io.awspring.cloud.messaging.listener.annotation.SqsListener
 import mu.KotlinLogging
 import org.springframework.beans.factory.annotation.Value
-import org.springframework.core.env.Environment
 import org.springframework.stereotype.Service
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
 import software.amazon.awssdk.services.codebuild.CodeBuildAsyncClient
@@ -251,12 +250,11 @@ class CodeBuildService(
                 .projectName(cbProjectName)
                 .environmentVariablesOverride(
                     listOfNotNull(
-//                        buildEnvVar(
-//                            "XTAGES_DB_PASS",
-//                            organization.ssmDbPassPath,
-//                            EnvironmentVariableType.PARAMETER_STORE
-//                        ),
-                        buildEnvVar("XTAGES_DB_PASS", "secret"),
+                        buildEnvVar(
+                            "XTAGES_DB_PASS",
+                            organization.ssmDbPassPath,
+                            EnvironmentVariableType.PARAMETER_STORE
+                        ),
                         buildEnvVar("XTAGES_ENV", xtagesEnv),
                         buildEnvVar("XTAGES_DB_URL", organization.rdsEndpoint),
                         buildEnvVar("XTAGES_DB_USER", organization.dbUsername()),

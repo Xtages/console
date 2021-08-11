@@ -7,6 +7,7 @@ import org.springframework.cache.annotation.Cacheable
 import org.springframework.http.HttpStatus.*
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Controller
+import xtages.console.config.ConsoleProperties
 import xtages.console.controller.GitHubUrl
 import xtages.console.controller.api.model.*
 import xtages.console.controller.model.*
@@ -56,6 +57,7 @@ class ProjectApiController(
     private val rdsService: RdsService,
     private val ecsService: EcsService,
     private val projectDeploymentDao: ProjectDeploymentDao,
+    private val consoleProperties: ConsoleProperties,
 ) : ProjectApiControllerBase {
 
     override fun getProject(
@@ -198,7 +200,8 @@ class ProjectApiController(
                 project = project,
                 usernameToGithubUser = usernameToGithubUser,
                 idToXtagesUser = idToXtagesUser,
-                projectDeploymentStatus = tuple.second.status
+                projectDeploymentStatus = tuple.second.status,
+                domain = consoleProperties.domain
             )
         }
     }

@@ -14,8 +14,6 @@ import xtages.console.query.enums.OrganizationSubscriptionStatus
 import xtages.console.query.enums.ProjectType
 import xtages.console.query.tables.pojos.BuildEvent
 import xtages.console.query.tables.pojos.GithubUser
-import xtages.console.query.tables.pojos.ProjectDeployment
-import xtages.console.query.tables.references.PROJECT_DEPLOYMENT
 import xtages.console.service.*
 import xtages.console.time.toUtcMillis
 import xtages.console.query.tables.pojos.Build as BuildPojo
@@ -168,6 +166,7 @@ fun buildPojoToDeployment(
     usernameToGithubUser: Map<String, GithubUser>,
     idToXtagesUser: Map<Int, XtagesUserWithCognitoAttributes>,
     projectDeploymentStatus: DeployStatus? = null,
+    domain: String,
 ): Deployment {
     val initiator = getBuildInitiator(source, usernameToGithubUser, idToXtagesUser)
 
@@ -184,7 +183,7 @@ fun buildPojoToDeployment(
         ).toUriString(),
         env = source.environment!!,
         timestampInMillis = source.endTime!!.toUtcMillis(),
-        serviceUrl = "https://${source.environment}-${project.hash!!.substring(0, 12)}.xtages.dev",
+        serviceUrl = "https://${source.environment}-${project.hash!!.substring(0, 12)}.${domain}",
         status = if (projectDeploymentStatus == DeployStatus.DEPLOYED) RUNNING else STOPPED,
     )
 }

@@ -74,6 +74,6 @@ class UsageOverLimitException(usageDetails: UsageOverLimit) :
     }
 }
 
-@ResponseStatus(HttpStatus.BAD_REQUEST)
+@ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
 class CognitoException(innerMessage: String) :
     XtagesConsoleException(code = ExceptionCode.COGNITO_ERROR, message = innerMessage)
