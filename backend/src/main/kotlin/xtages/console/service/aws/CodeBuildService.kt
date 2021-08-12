@@ -14,6 +14,7 @@ import io.awspring.cloud.messaging.listener.SqsMessageDeletionPolicy
 import io.awspring.cloud.messaging.listener.annotation.SqsListener
 import mu.KotlinLogging
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Service
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
 import software.amazon.awssdk.services.codebuild.CodeBuildAsyncClient
@@ -21,6 +22,11 @@ import software.amazon.awssdk.services.codebuild.model.*
 import xtages.console.config.ConsoleProperties
 import xtages.console.controller.api.model.Logs
 import xtages.console.controller.model.CodeBuildType
+import xtages.console.controller.model.buildPojoToBuild
+import xtages.console.controller.model.organizationPojoToOrganizationConverter
+import xtages.console.controller.model.projectPojoToProject
+import xtages.console.dao.findFromBuilds
+import xtages.console.dao.findPreviousCIBuild
 import xtages.console.exception.ExceptionCode
 import xtages.console.exception.ExceptionCode.INVALID_ENVIRONMENT
 import xtages.console.exception.ensure
@@ -28,15 +34,12 @@ import xtages.console.pojo.*
 import xtages.console.query.enums.BuildStatus
 import xtages.console.query.enums.BuildType
 import xtages.console.query.enums.ResourceType
-import xtages.console.query.tables.daos.BuildDao
-import xtages.console.query.tables.daos.BuildEventDao
-import xtages.console.query.tables.daos.ProjectDao
+import xtages.console.query.tables.daos.*
 import xtages.console.query.tables.pojos.*
 import xtages.console.query.tables.pojos.Build
 import xtages.console.query.tables.pojos.Project
 import xtages.console.query.tables.references.BUILD
-import xtages.console.service.AuthenticationService
-import xtages.console.service.UsageService
+import xtages.console.service.*
 import xtages.console.time.toUtcLocalDateTime
 import java.time.*
 import java.time.format.DateTimeFormatter
@@ -70,12 +73,18 @@ class CodeBuildService(
     private val cloudWatchLogsService: CloudWatchLogsService,
     private val codeBuildAsyncClient: CodeBuildAsyncClient,
     private val codestarNotificationsService: CodestarNotificationsService,
+    private val organizationDao: OrganizationDao,
     private val projectDao: ProjectDao,
     private val buildDao: BuildDao,
     private val buildEventDao: BuildEventDao,
+    private val githubUserDao: GithubUserDao,
+    private val recipeDao: RecipeDao,
     private val consoleProperties: ConsoleProperties,
     private val authenticationService: AuthenticationService,
     private val usageService: UsageService,
+    private val gitHubService: GitHubService,
+    private val notificationService: NotificationService,
+    private val userService: UserService,
     private val objectMapper: ObjectMapper,
     @Value("spring.profiles.active")
     private val activeProfile: String,
@@ -117,11 +126,12 @@ class CodeBuildService(
                     value = event.detail.additionalInformation.phases,
                     valueDesc = "event.detail.additionalInformation.phases"
                 )
-                handleCompletedBuildStatusChange(
+                val updatedBuild = handleCompletedBuildStatusChange(
                     notificationId,
                     build,
                     phases,
                 )
+                maybeSendBuildStatusNotification(updatedBuild)
             } else {
                 buildEventDao.insert(
                     BuildEvent(
@@ -139,11 +149,57 @@ class CodeBuildService(
         }
     }
 
+    @Async
+    fun maybeSendBuildStatusNotification(build: Build) {
+        if (shouldSendNotification(build)) {
+            val project = ensure.foundOne(
+                operation = { projectDao.findById(build.projectId) },
+                code = ExceptionCode.PROJECT_NOT_FOUND
+            )
+            val organization = ensure.foundOne(
+                operation = { organizationDao.fetchOneByName(project.organization!!) },
+                code = ExceptionCode.ORG_NOT_FOUND
+            )
+            logger.debug { "Sending notification for Build [${build.id}] to Organization [${organization.name}]" }
+            val commitDesc = gitHubService.findCommit(
+                organization = organization,
+                project = project,
+                commitHash = build.commitHash!!
+            )?.commitShortInfo?.message ?: ""
+            val usernameToGithubUser = githubUserDao.findFromBuilds(build)
+            val idToXtagesUser = userService.findFromBuilds(build)
+            val orgUsers = userService.listOrganizationUsers(organization = organization)
+            val recipe = recipeDao.fetchOneById(project.recipe!!)
+            notificationService.sendBuildStatusChangedNotification(
+                recipients = listOf(EmailRecipients(bccAddresses = orgUsers.map { user -> user.attrs["email"]!! })),
+                organization = organizationPojoToOrganizationConverter.convert(organization)!!,
+                project = projectPojoToProject(
+                    source = project,
+                    recipe = recipe,
+                    percentageOfSuccessfulBuildsInTheLastMonth = 0.0,
+                    builds = emptyList(),
+                    deployments = emptyList()
+                ),
+                build = buildPojoToBuild(
+                    organization = organization,
+                    project = project,
+                    build = build,
+                    events = emptyList(),
+                    usernameToGithubUser = usernameToGithubUser,
+                    idToXtagesUser = idToXtagesUser
+                ),
+                commitDesc = commitDesc
+            )
+        } else {
+            logger.trace { "Not sending notification for Build [${build.id}]" }
+        }
+    }
+
     private fun handleCompletedBuildStatusChange(
         notificationId: String,
         build: Build,
         phases: List<CodeBuildPhase>
-    ) {
+    ): Build {
         // Sort the phases based on their end time, the last phase with `phase-type` == "COMPLETED" has a `null`
         // `end-time` order it last.
         val sortedPhases = phases.sortedWith { phaseA, phaseB ->
@@ -180,6 +236,7 @@ class CodeBuildService(
                 endTime = (lastPhase.endTime ?: lastPhase.startTime).toUtcLocalDateTime()
             )
         buildDao.update(updatedBuild)
+        return updatedBuild
     }
 
     private fun determineBuildStatus(events: List<BuildEvent>) =
@@ -189,6 +246,24 @@ class CodeBuildService(
             events.any { event -> event.name == "COMPLETED" && event.status == "SUCCEEDED" } -> BuildStatus.SUCCEEDED
             else -> BuildStatus.UNKNOWN
         }
+
+    private fun shouldSendNotification(build: Build): Boolean {
+        return when (build.status) {
+            BuildStatus.FAILED, BuildStatus.NOT_PROVISIONED -> {
+                true
+            }
+            BuildStatus.SUCCEEDED -> {
+                return when (build.type) {
+                    BuildType.CI -> {
+                        val previousBuild = buildDao.findPreviousCIBuild(build = build)
+                        previousBuild?.status == BuildStatus.FAILED
+                    }
+                    else -> false
+                }
+            }
+            else -> false
+        }
+    }
 
     /**
      * Starts a CodeBuild project for a specific [Project]

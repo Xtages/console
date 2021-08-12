@@ -8,7 +8,6 @@ import org.springframework.http.HttpStatus.*
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Controller
 import xtages.console.config.ConsoleProperties
-import xtages.console.controller.GitHubUrl
 import xtages.console.controller.api.model.*
 import xtages.console.controller.model.*
 import xtages.console.dao.*
@@ -20,10 +19,8 @@ import xtages.console.query.enums.BuildStatus
 import xtages.console.query.enums.ProjectType
 import xtages.console.query.enums.ResourceType
 import xtages.console.query.tables.daos.*
-import xtages.console.query.tables.pojos.BuildEvent
-import xtages.console.query.tables.pojos.GithubUser
+import xtages.console.query.tables.pojos.*
 import xtages.console.query.tables.pojos.Organization
-import xtages.console.query.tables.pojos.XtagesUser
 import xtages.console.service.*
 import xtages.console.service.aws.*
 import java.net.URL
@@ -472,18 +469,7 @@ class ProjectApiController(
         deployments: List<Deployment> = emptyList()
     ): Project {
         val recipe = recipeDao.fetchOneById(source.recipe!!)
-        return Project(
-            id = source.id!!,
-            name = source.name!!,
-            version = recipe?.version!!,
-            type = projectPojoTypeToProjectTypeConverter.convert(recipe.projectType!!)!!,
-            passCheckRuleEnabled = source.passCheckRuleEnabled!!,
-            ghRepoUrl = GitHubUrl(organizationName = source.organization!!, repoName = source.name).toUriString(),
-            organization = source.organization!!,
-            percentageOfSuccessfulBuildsInTheLastMonth = percentageOfSuccessfulBuildsInTheLastMonth,
-            builds = builds,
-            deployments = deployments,
-        )
+        return projectPojoToProject(source, recipe, percentageOfSuccessfulBuildsInTheLastMonth, builds, deployments)
     }
 
     private fun ensureDbIsAvailable(organization: Organization) {
