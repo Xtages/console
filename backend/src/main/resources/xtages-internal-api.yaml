@@ -811,6 +811,8 @@ components:
           format: int64
         type:
           $ref: "#/components/schemas/BuildType"
+        env:
+          type: string
         status:
           type: string
           enum:

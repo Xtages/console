@@ -1,0 +1,20 @@
+@option discardLogicWhitespace=true
+
+@import java.net.URI
+@import xtages.console.email.templates.layout.*
+
+@args(String title, URI projectUrl, URI commitUrl, String commitHash, String initiatorName, String initiatorEmail, String commitDesc)
+
+@BasePlain.template(title) -> {
+[Go to Project](@projectUrl.toString())
+
+## Commit Details:
+
+Hash: [@commitHash.substring(0, 6)](@commitUrl.toString())
+Author: @initiatorName <@initiatorEmail>
+Message:
+
+```
+@commitDesc
+```
+}

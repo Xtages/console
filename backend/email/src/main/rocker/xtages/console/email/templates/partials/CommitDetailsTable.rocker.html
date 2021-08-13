@@ -1,0 +1,34 @@
+@import java.net.URI
+
+@args (URI commitUrl, String commitHash, String initiatorName, String initiatorEmail, String commitDesc)
+
+<table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+    <tr>
+        <td valign="top" width="30%" style="text-align: left; font-family: 'Nunito Sans', sans-serif; font-size: 16px; font-size: 1rem; font-size: max(16px, 1rem); line-height: 190%; color: #718096; padding: 10px 10px 0;">
+            GitHub commit:
+        </td>
+        <td valign="top" width="70%" style="text-align: left; font-family: 'Nunito Sans', sans-serif; font-size: 16px; font-size: 1rem; font-size: max(16px, 1rem); line-height: 190%; color: #718096; padding: 10px 10px 0;">
+            @Anchor.template(commitUrl) -> {
+              @commitHash.substring(0, 6)
+            }
+        </td>
+    </tr>
+    <tr>
+        <td valign="top" width="30%" style="text-align: left; font-family: 'Nunito Sans', sans-serif; font-size: 16px; font-size: 1rem; font-size: max(16px, 1rem); line-height: 190%; color: #718096; padding: 10px 10px 0;">
+            Author:
+        </td>
+        <td valign="top" width="70%" style="text-align: left; font-family: 'Nunito Sans', sans-serif; font-size: 16px; font-size: 1rem; font-size: max(16px, 1rem); line-height: 190%; color: #718096; padding: 10px 10px 0;">
+            @initiatorName&nbsp;&lt;@initiatorEmail&gt;
+        </td>
+    </tr>
+    <tr>
+        <td valign="top" width="30%" style="text-align: left; font-family: 'Nunito Sans', sans-serif; font-size: 16px; font-size: 1rem; font-size: max(16px, 1rem); line-height: 190%; color: #718096; padding: 10px 10px 0;">
+            Description:
+        </td>
+        <td valign="top" width="70%" style="text-align: left; font-family: 'Nunito Sans', sans-serif; font-size: 16px; font-size: 1rem; font-size: max(16px, 1rem); line-height: 190%; color: #718096; padding: 10px 10px 0;">
+        <pre style="margin: 0">
+@commitDesc
+        </pre>
+        </td>
+    </tr>
+</table>

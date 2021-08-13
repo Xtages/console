@@ -14,6 +14,7 @@ import xtages.console.query.enums.OrganizationSubscriptionStatus
 import xtages.console.query.enums.ProjectType
 import xtages.console.query.tables.pojos.BuildEvent
 import xtages.console.query.tables.pojos.GithubUser
+import xtages.console.query.tables.pojos.Recipe
 import xtages.console.service.*
 import xtages.console.time.toUtcMillis
 import xtages.console.query.tables.pojos.Build as BuildPojo
@@ -46,6 +47,29 @@ val organizationPojoToOrganizationConverter =
 
 /** Converts a [ProjectType] into a [Project.Type]. */
 val projectPojoTypeToProjectTypeConverter = Converter { source: ProjectType -> Project.Type.valueOf(source.name) }
+
+
+/** Converts a [ProjectPojo] to a [Project]. */
+fun projectPojoToProject(
+    source: ProjectPojo,
+    recipe: Recipe?,
+    percentageOfSuccessfulBuildsInTheLastMonth: Double?,
+    builds: List<Build>,
+    deployments: List<Deployment>
+): Project {
+    return Project(
+        id = source.id!!,
+        name = source.name!!,
+        version = recipe?.version!!,
+        type = projectPojoTypeToProjectTypeConverter.convert(recipe.projectType!!)!!,
+        passCheckRuleEnabled = source.passCheckRuleEnabled!!,
+        ghRepoUrl = GitHubUrl(organizationName = source.organization!!, repoName = source.name).toUriString(),
+        organization = source.organization!!,
+        percentageOfSuccessfulBuildsInTheLastMonth = percentageOfSuccessfulBuildsInTheLastMonth,
+        builds = builds,
+        deployments = deployments,
+    )
+}
 
 /** Converts a [BuildEvent] into a [BuildPhase]. */
 val buildEventPojoToBuildPhaseConverter = Converter { source: BuildEvent ->
@@ -139,6 +163,7 @@ fun buildPojoToBuild(
         id = build.id!!,
         buildNumber = build.buildNumber!!,
         type = BuildType.valueOf(build.type!!.name),
+        env = build.environment,
         status = Build.Status.valueOf(build.status!!.name),
         initiatorName = initiator.name,
         initiatorEmail = initiator.email,

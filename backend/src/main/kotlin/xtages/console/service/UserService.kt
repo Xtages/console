@@ -187,7 +187,7 @@ class UserService(
     /**
      * Finds the [XtagesUserWithCognitoAttributes] from the [builds].
      */
-    fun findFromBuilds(builds: List<Build>): Map<Int, XtagesUserWithCognitoAttributes> {
+    fun findFromBuilds(vararg builds: Build): Map<Int, XtagesUserWithCognitoAttributes> {
         val xtagesUserIds = builds.mapNotNull { build -> build.userId }
         return when {
             xtagesUserIds.isNotEmpty() -> findCognitoUsersByXtagesUserId(*xtagesUserIds.toIntArray())
@@ -195,6 +195,12 @@ class UserService(
             else -> emptyMap()
         }
     }
+
+    /**
+     * Finds the [XtagesUserWithCognitoAttributes] from the [builds].
+     */
+    fun findFromBuilds(builds: List<Build>): Map<Int, XtagesUserWithCognitoAttributes> =
+        findFromBuilds(*builds.toTypedArray())
 
     private fun extractCognitoUserAttributes(attributeList: MutableList<AttributeType>): Map<String, String> {
         val attributes = attributeList.associate { attr -> Pair(attr.name(), attr.value()) }

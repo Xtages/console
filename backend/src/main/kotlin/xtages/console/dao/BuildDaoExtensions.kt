@@ -1,8 +1,6 @@
 package xtages.console.dao
 
-import org.jooq.impl.DSL
 import org.jooq.impl.DSL.*
-import org.springframework.cache.annotation.CacheEvict
 import xtages.console.query.enums.BuildStatus
 import xtages.console.query.enums.BuildType
 import xtages.console.query.tables.daos.BuildDao
@@ -171,6 +169,20 @@ fun BuildDao.fetchLatestByProjectAndEnvironment(projectHash: String, env: String
                 .and(BUILD.ENVIRONMENT.eq(env))
         )
         .orderBy(BUILD.START_TIME.desc())
+        .limit(1)
+        .fetchOneInto(Build::class.java)
+}
+
+/**
+ * Finds the previous `CI` [Build] to [build].
+ */
+fun BuildDao.findPreviousCIBuild(build: Build): Build? {
+    return ctx()
+        .select(BUILD.asterisk())
+        .from(BUILD)
+        .join(PROJECT).on(BUILD.PROJECT_ID.eq(build.projectId))
+        .where(BUILD.END_TIME.lessThan(build.endTime).and(BUILD.TYPE.eq(BuildType.CI)))
+        .orderBy(BUILD.END_TIME.desc())
         .limit(1)
         .fetchOneInto(Build::class.java)
 }
