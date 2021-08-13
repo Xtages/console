@@ -79,3 +79,7 @@ class UsageOverLimitException(usageDetails: UsageOverLimit) :
 @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
 class CognitoException(innerMessage: String) :
     XtagesConsoleException(code = ExceptionCode.COGNITO_ERROR, message = innerMessage)
+
+@ResponseStatus(HttpStatus.BAD_REQUEST)
+class UnknownProjectDeploymentStatus(innerMessage: String) :
+    XtagesConsoleException(code = ExceptionCode.PROJECT_DEPLOYMENT_NOT_FOUND, message = innerMessage)

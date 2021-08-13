@@ -27,7 +27,7 @@ fun ProjectDeploymentDao.fetchLatestDeploymentStatus(
             PROJECT.HASH.eq(projectHash)
                 .and(BUILD.ENVIRONMENT.eq(environment.name.toLowerCase()))
         )
-        .orderBy(PROJECT_DEPLOYMENT.START_TIME.desc())
+        .orderBy(PROJECT_DEPLOYMENT.STATUS_CHANGE_TIME.desc())
         .limit(1)
         .fetchOneInto(ProjectDeployment::class.java)
 }
@@ -39,7 +39,7 @@ fun ProjectDeploymentDao.fetchLatestByBuilds(builds: List<Build>): List<ProjectD
     val latestDeployments = ctx()
         .select(
             PROJECT_DEPLOYMENT.BUILD_ID,
-            max(PROJECT_DEPLOYMENT.START_TIME).`as`("latest_time")
+            max(PROJECT_DEPLOYMENT.STATUS_CHANGE_TIME).`as`("latest_time")
         )
         .from(PROJECT_DEPLOYMENT)
         .where(PROJECT_DEPLOYMENT.BUILD_ID.`in`(builds.map { it.id }))
@@ -52,7 +52,7 @@ fun ProjectDeploymentDao.fetchLatestByBuilds(builds: List<Build>): List<ProjectD
             latestDeployments
         )
         .join(PROJECT_DEPLOYMENT)
-        .on(PROJECT_DEPLOYMENT.START_TIME.eq(latestDeployments.field("latest_time", LocalDateTime::class.java)))
+        .on(PROJECT_DEPLOYMENT.STATUS_CHANGE_TIME.eq(latestDeployments.field("latest_time", LocalDateTime::class.java)))
         .fetchInto(ProjectDeployment::class.java)
 
 }
