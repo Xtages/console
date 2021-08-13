@@ -14,7 +14,7 @@
         "iam:PassRole",
         "logs:*",
         "rds:*",
-        "sqs:*"
+        "sqs:*",
         "ssm:*"
       ],
       "Resource": "*"
