@@ -18,7 +18,7 @@ private val logger = KotlinLogging.logger { }
 class EcsService(
     private val cloudWatchLogsService: CloudWatchLogsService,
     private val ecsAsyncClient: EcsAsyncClient,
-    ) {
+) {
 
     /**
      * Returns the [LogEvent]s for a task that has run in ECS.
@@ -55,6 +55,10 @@ class EcsService(
         return Logs(events = emptyList())
     }
 
+    /**
+     * Returns an ECS service that contains information with tags included.
+     * [cluster] is the cluster name NOT the ARN
+     */
     fun describeService(service: String, cluster: String): AwsEcsService? {
         return ecsAsyncClient.describeServices(
             DescribeServicesRequest
@@ -64,11 +68,6 @@ class EcsService(
                 .include(ServiceField.TAGS)
                 .build()
         ).get().services().singleOrNull()
-
-    }
-
-    fun getBuildId(service: AwsEcsService?): Long {
-        return service?.tags()?.filter { tag -> tag.key() == "build_id" }?.single()?.value()!!.toLong()
     }
 
 }

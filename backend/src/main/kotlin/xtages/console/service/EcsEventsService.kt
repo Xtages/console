@@ -12,7 +12,9 @@ import xtages.console.controller.model.Environment.PRODUCTION
 import xtages.console.controller.model.Environment.STAGING
 import xtages.console.dao.fetchLatestDeploymentStatus
 import xtages.console.exception.ExceptionCode.PROJECT_NOT_FOUND
+import xtages.console.exception.UnknownProjectDeploymentStatus
 import xtages.console.exception.ensure
+import xtages.console.pojo.buildId
 import xtages.console.query.enums.DeployStatus
 import xtages.console.query.tables.daos.ProjectDao
 import xtages.console.query.tables.daos.ProjectDeploymentDao
@@ -114,13 +116,11 @@ class EcsEventsService(
     }
 
     private fun getBuildIdAndProject(event: GenericEvent, service: AwsEcsService?): Pair<Long?, Project> {
-        val buildId = ecsService.getBuildId(service)
-
         val project = ensure.foundOne(
             operation = { projectDao.fetchByHash(event.serviceName()).singleOrNull() },
             code = PROJECT_NOT_FOUND
         )
-        return Pair(buildId, project)
+        return Pair(service?.buildId(), project)
     }
 
     /**
@@ -138,7 +138,7 @@ class EcsEventsService(
             service?.runningCount() == service?.desiredCount() && service?.desiredCount() == 0 -> DeployStatus.DRAINED
             service?.runningCount() == 1  && service.desiredCount() == 0 -> DeployStatus.DRAINING
             service?.runningCount() == 0 && service.desiredCount() == 1 -> DeployStatus.PROVISIONING
-            else -> null
+            else -> throw UnknownProjectDeploymentStatus("Unknown status ${service?.status()} for service: $service")
         }
 
 
