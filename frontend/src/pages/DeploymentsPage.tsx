@@ -76,9 +76,9 @@ export default function DeploymentsPage() {
             const getAppLogsQueryResult = useInfiniteQuery(
               [
                 'deployLogs',
-                currentProject!!.name,
-                currentDeployment!!.id,
-                currentDeployment!!.env,
+                currentProject?.name,
+                currentDeployment?.id,
+                currentDeployment?.env,
                 dateTimeRange.startDateTime.getTime(),
                 dateTimeRange.endDateTime.getTime(),
               ],
