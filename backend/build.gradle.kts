@@ -61,6 +61,7 @@ dependencies {
     implementation("software.amazon.awssdk:cloudwatchlogs")
     implementation("software.amazon.awssdk:rds")
     implementation("software.amazon.awssdk:ssm")
+    implementation("software.amazon.awssdk:ecs")
 
     liquibaseRuntime("org.liquibase:liquibase-core")
     liquibaseRuntime(sourceSets.getByName("main").compileClasspath)
