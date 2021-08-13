@@ -14,7 +14,7 @@ data class ConsoleProperties(val stripe: Stripe, val server: Server, val gitHubA
         val trialPeriod: Long
     )
 
-    data class Server(val basename: String)
+    data class Server(val basename: String, val noReplyAddress: String, val emailReturnPath: String)
 
     data class GitHubApp(val privateKey: String, val identifier: String, val webhookSecret: String)
 
