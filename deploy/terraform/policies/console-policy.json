@@ -10,11 +10,12 @@
         "cognito-identity:*",
         "cognito-idp:*",
         "ecr:*",
+        "ecs:DescribeServices",
+        "iam:PassRole",
         "logs:*",
         "rds:*",
-        "ssm:*",
-        "sqs:*",
-        "iam:PassRole"
+        "sqs:*"
+        "ssm:*"
       ],
       "Resource": "*"
     }
