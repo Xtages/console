@@ -44,6 +44,5 @@
     <include file="changesets/deployed-drained-project-status.postgresql.sql" relativeToChangelogFile="true" />
     <include file="changesets/recipe-updates.postgresql.sql" relativeToChangelogFile="true" />
     <include file="changesets/clean-up-github-user.postgresql.sql" relativeToChangelogFile="true" />
-    <include file="changesets/clean-up-github-user.postgresql.sql" relativeToChangelogFile="true" />
     <include file="changesets/00001-fix-recipe-repo-name.postgresql.sql" relativeToChangelogFile="true" />
 </databaseChangeLog>
