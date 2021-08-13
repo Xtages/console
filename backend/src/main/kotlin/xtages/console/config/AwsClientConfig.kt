@@ -25,6 +25,7 @@ import software.amazon.awssdk.services.cognitoidentity.CognitoIdentityAsyncClien
 import software.amazon.awssdk.services.cognitoidentityprovider.CognitoIdentityProviderAsyncClient
 import software.amazon.awssdk.services.ecr.EcrAsyncClient
 import software.amazon.awssdk.services.rds.RdsAsyncClient
+import software.amazon.awssdk.services.ses.SesAsyncClient
 import software.amazon.awssdk.services.ssm.SsmAsyncClient
 
 @Configuration
@@ -62,6 +63,9 @@ class AwsClientConfig {
 
     @Bean
     fun cloudWatchClient(): CloudWatchAsyncClient = CloudWatchAsyncClient.create()
+
+    @Bean
+    fun sesClient(): SesAsyncClient = SesAsyncClient.create()
 
     @Bean
     fun queueMessagingTemplate(amazonSQSAsync: AmazonSQSAsync): QueueMessagingTemplate =

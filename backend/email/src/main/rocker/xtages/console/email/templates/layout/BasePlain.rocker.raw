@@ -1,0 +1,11 @@
+@option discardLogicWhitespace=true
+
+@args (String title, RockerBody body)
+
+# @title
+
+@body
+
+---
+
+Sent by: [Xtages](https://www.xtages.com)

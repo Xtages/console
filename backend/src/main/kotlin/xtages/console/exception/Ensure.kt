@@ -67,6 +67,28 @@ class Ensure internal constructor() {
     }
 
     /**
+     * Checks that the result of calling [operation] is not empty, otherwise throws an
+     * [IllegalArgumentException] with [ExceptionCode.IS_EMPTY] and [valueDesc].
+     *
+     * @param operation - The lambda to run when checking for emptiness.
+     * @param valueDesc - The description of the value that should have not been empty, for example: `"project.names"`.
+     * @throws IllegalArgumentException if the result of [operation] is an empty [Collection].
+     */
+    fun <T : Any> notEmpty(operation: () -> Collection<T>, valueDesc: String) =
+        notEmpty(value = operation(), valueDesc = valueDesc)
+
+    /**
+     * Checks that [value] is not empty, otherwise throws an [IllegalArgumentException] with [ExceptionCode.IS_EMPTY]
+     * and [valueDesc].
+     *
+     * @param value - The value to check for emptiness.
+     * @param valueDesc - The description of the value that should have not been empty, for example: `"project.names"`.
+     * @throws IllegalArgumentException if [value] is empty.
+     */
+    fun <T : Any> notEmpty(value: Collection<T>, valueDesc: String) =
+        isTrue(value = value.isNotEmpty(), code = ExceptionCode.IS_EMPTY, message = "$valueDesc is empty")
+
+    /**
      * Checks that return value of [operation] is of type [T], otherwise throws an [IllegalArgumentException].
      *
      * @param operation - The lambda to run when checking for type [T].

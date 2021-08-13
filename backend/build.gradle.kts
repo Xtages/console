@@ -1,7 +1,7 @@
 import com.github.gradle.node.npm.task.NpmTask
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import nu.studer.gradle.jooq.JooqEdition
 import nu.studer.gradle.jooq.JooqGenerate
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     id("org.springframework.boot") version "2.4.4"
@@ -25,11 +25,14 @@ repositories {
 }
 
 dependencies {
+    implementation(project(":email"))
+
     annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
     developmentOnly("org.springframework.boot:spring-boot-devtools")
     implementation("commons-validator:commons-validator:1.7")
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jdk8")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
+    implementation("com.fizzed:rocker-runtime:1.3.0")
     implementation("com.jakewharton.byteunits:byteunits:0.9.1")
     implementation("com.stripe:stripe-java:20.45.0")
     implementation("io.awspring.cloud:spring-cloud-aws-autoconfigure:$awspringVersion")
@@ -53,6 +56,7 @@ dependencies {
     implementation("software.amazon.awssdk:cognitoidentity")
     implementation("software.amazon.awssdk:cognitoidentityprovider")
     implementation("software.amazon.awssdk:ecr")
+    implementation("software.amazon.awssdk:ses")
     implementation("software.amazon.awssdk:sts")
     implementation("software.amazon.awssdk:cloudwatchlogs")
     implementation("software.amazon.awssdk:rds")

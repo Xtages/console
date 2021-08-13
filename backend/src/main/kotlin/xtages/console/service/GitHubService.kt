@@ -9,6 +9,7 @@ import com.nimbusds.jwt.JWTClaimsSet
 import com.nimbusds.jwt.SignedJWT
 import mu.KotlinLogging
 import org.kohsuke.github.*
+import org.springframework.context.annotation.Lazy
 import org.springframework.stereotype.Service
 import xtages.console.config.ConsoleProperties
 import xtages.console.controller.GitHubAvatarUrl
@@ -48,7 +49,7 @@ class GitHubService(
     private val projectDao: ProjectDao,
     private val githubUserDao: GithubUserDao,
     private val userService: UserService,
-    private val codeBuildService: CodeBuildService,
+    @param:Lazy private val codeBuildService: CodeBuildService,
     private val recipeDao: RecipeDao,
 ) {
     private val gitHubClient by GitHubClientDelegate(consoleProperties)
@@ -185,15 +186,8 @@ class GitHubService(
     /**
      * Returns a [GHRepository] for the [project] in [organization].
      */
-    @Suppress("DEPRECATION")
     fun getRepositoryForProject(project: Project, organization: Organization): GHRepository? {
-        val githubAppInstallationId = ensure.notNull(
-            value = organization.githubAppInstallationId,
-            valueDesc = "organization.githubAppInstallationId"
-        )
-        val gitHubAppClient = buildGitHubAppClient(
-            gitHubClient.app.getInstallationById(githubAppInstallationId).createToken().create()
-        )
+        val gitHubAppClient = buildGitHubAppClient(organization)
         return try {
             gitHubAppClient.getRepository("${organization.name}/${project.name}")
         } catch (e: IOException) {
@@ -207,13 +201,7 @@ class GitHubService(
      */
     @Suppress("DEPRECATION")
     fun createRepoForProject(project: Project, recipe: Recipe, organization: Organization, description: String?) {
-        val githubAppInstallationId = ensure.notNull(
-            value = organization.githubAppInstallationId,
-            valueDesc = "organization.githubAppInstallationId"
-        )
-        val gitHubAppClient = buildGitHubAppClient(
-            gitHubClient.app.getInstallationById(githubAppInstallationId).createToken().create()
-        )
+        val gitHubAppClient = buildGitHubAppClient(organization)
         val repository = gitHubAppClient
             .createRepository(project.name)
             .owner(organization.name)
@@ -243,10 +231,6 @@ class GitHubService(
         )
     }
 
-    private fun buildGitHubAppClient(installationToken: GHAppInstallationToken): GitHub {
-        return GitHubBuilder().withAppInstallationToken(installationToken.token).build()!!
-    }
-
     /**
      * Tags a [Project] (repository) in the default branch as default
      * The tag format is the time in UTC yyyyMddHm-(short sha1)
@@ -254,16 +238,9 @@ class GitHubService(
      * Note: this method assumes that in a previous method there is a check to make sure that the [Project]
      * belongs to the [Organization]
      */
-    @Suppress("DEPRECATION")
     fun tagProject(organization: Organization, project: Project, userName: String): String {
         val datePattern = "yyyyMddHm"
-        val githubAppInstallationId = ensure.notNull(
-            value = organization.githubAppInstallationId,
-            valueDesc = "organization.githubAppInstallationId"
-        )
-        val gitHubAppClient = buildGitHubAppClient(
-            gitHubClient.app.getInstallationById(githubAppInstallationId).createToken().create()
-        )
+        val gitHubAppClient = buildGitHubAppClient(organization)
 
         val repository = gitHubAppClient.getRepository(project.ghRepoFullName)
         val defaultBranch = repository.defaultBranch
@@ -274,6 +251,26 @@ class GitHubService(
         val tagSha = repository.createTag(tag, message, repository.getBranch(defaultBranch).shA1, "commit").sha
         repository.createRef("refs/tags/$tag", tagSha)
         return tag
+    }
+
+    /**
+     * Finds the GitHub commit for [commitHash].
+     */
+    fun findCommit(organization: Organization, project: Project, commitHash: String): GHCommit? {
+        val gitHubAppClient = buildGitHubAppClient(organization)
+        return gitHubAppClient.getRepository(project.ghRepoFullName).getCommit(commitHash)
+    }
+
+    @Suppress("DEPRECATION")
+    private fun buildGitHubAppClient(organization: Organization): GitHub {
+        val githubAppInstallationId = ensure.notNull(
+            value = organization.githubAppInstallationId,
+            valueDesc = "organization.githubAppInstallationId"
+        )
+        return GitHubBuilder().withAppInstallationToken(
+            gitHubClient.app.getInstallationById(githubAppInstallationId).createToken().create()
+                .token
+        ).build()!!
     }
 
     private class GitHubClientDelegate(val consoleProperties: ConsoleProperties) {
