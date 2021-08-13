@@ -24,6 +24,7 @@ import software.amazon.awssdk.services.codestarnotifications.CodestarNotificatio
 import software.amazon.awssdk.services.cognitoidentity.CognitoIdentityAsyncClient
 import software.amazon.awssdk.services.cognitoidentityprovider.CognitoIdentityProviderAsyncClient
 import software.amazon.awssdk.services.ecr.EcrAsyncClient
+import software.amazon.awssdk.services.ecs.EcsAsyncClient
 import software.amazon.awssdk.services.rds.RdsAsyncClient
 import software.amazon.awssdk.services.ses.SesAsyncClient
 import software.amazon.awssdk.services.ssm.SsmAsyncClient
@@ -94,6 +95,9 @@ class AwsClientConfig {
 
     @Bean
     fun ssmAsyncClient(): SsmAsyncClient = SsmAsyncClient.create()
+
+    @Bean
+    fun ecsAsyncClient(): EcsAsyncClient = EcsAsyncClient.create()
 }
 
 /**

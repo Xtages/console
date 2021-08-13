@@ -10,16 +10,17 @@ import org.springframework.stereotype.Service
 import xtages.console.controller.model.Environment
 import xtages.console.controller.model.Environment.PRODUCTION
 import xtages.console.controller.model.Environment.STAGING
-import xtages.console.dao.fetchLatestByProjectAndEnvironment
 import xtages.console.dao.fetchLatestDeploymentStatus
-import xtages.console.exception.ExceptionCode
+import xtages.console.exception.ExceptionCode.PROJECT_NOT_FOUND
 import xtages.console.exception.ensure
 import xtages.console.query.enums.DeployStatus
-import xtages.console.query.tables.daos.BuildDao
+import xtages.console.query.tables.daos.ProjectDao
 import xtages.console.query.tables.daos.ProjectDeploymentDao
-import xtages.console.query.tables.pojos.Build
+import xtages.console.query.tables.pojos.Project
 import xtages.console.query.tables.pojos.ProjectDeployment
+import xtages.console.service.aws.EcsService
 import java.time.Instant
+import software.amazon.awssdk.services.ecs.model.Service as AwsEcsService
 
 
 private val logger = KotlinLogging.logger { }
@@ -28,26 +29,22 @@ private val logger = KotlinLogging.logger { }
  * This service receives notifications from ECS related to scale-in, steady-state and deploy/re-deploy events
  * for customers clusters.
  *
- * The way we infer the status of the service when we receive the events is a best effort based on the information that
- * we have received. However, there could be problems, for example if more than one deploy happens in a short period of time
- * that could end up displaying information that is not accurate.
- *
- * To fix those problems instead of inferring the state of the deploy, whenever we receive an event we should query ECS
- * to know the status of it. ECS is the source of truth.
+ * The way we decided the [DeployStatus] is by making a call to ECS to see the status of the service and based on the `desired`
+ * and `running` tasks we decide the status.
  */
+
 @Service
 class EcsEventsService(
     private val objectMapper: ObjectMapper,
     private val projectDeploymentDao: ProjectDeploymentDao,
-    private val buildDao: BuildDao,
+    private val ecsService: EcsService,
+    private val projectDao: ProjectDao,
 ) {
     private val snsMessageManager = SnsMessageManager()
 
     /**
-     * Listen to ECS events that resulted in steady state. Depending on the previous [DeployStatus] in the Project
-     * the [DeployStatus] will be updated:
-     * If the previous [DeployStatus] was [DeployStatus.PROVISIONING] then it will transition to [DeployStatus.DEPLOYED]
-     * If the previous [DeployStatus] was [DeployStatus.DRAINING] then it will transition to [DeployStatus.DRAINED]
+     * Listen to ECS events that resulted in steady state and adds a [ProjectDeployment] record with the status
+     * based on the ECS service status.
      * https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs_cwe_events.html
      */
     @SqsListener("ecs-steady-state-queue", deletionPolicy = SqsMessageDeletionPolicy.ON_SUCCESS)
@@ -56,26 +53,18 @@ class EcsEventsService(
         val notification = checkNotification(eventStr)
         val event = objectMapper.readValue(notification.message, EcsEvent::class.java)
 
-        val latestProjectDeployment = ensure.foundOne(
-            operation = {
-                projectDeploymentDao.fetchLatestDeploymentStatus(
-                    projectHash = event.serviceName(),
-                    environment = event.environment(),
-                )
-            },
-            code = ExceptionCode.PROJECT_DEPLOYMENT_NOT_FOUND,
-            message = "Project deployment not found",
-        )
+        val service = ecsService.describeService(event.serviceName(), event.clusterName())
+        val deployStatus = decideDeployStatus(service)
+        val (buildId, project) = getBuildIdAndProject(event, service)
 
-        if (latestProjectDeployment.status != DeployStatus.DRAINED && latestProjectDeployment.status != DeployStatus.DEPLOYED) {
-            val status =
-                if (latestProjectDeployment.status == DeployStatus.PROVISIONING) DeployStatus.DEPLOYED else DeployStatus.DRAINED
-
+        // search for the last project deployment in case there is no change in the status
+        val latestProjectDeployment = projectDeploymentDao.fetchLatestDeploymentStatus(event.serviceName(), event.environment())
+        if (latestProjectDeployment != null && latestProjectDeployment.status != deployStatus) {
             projectDeploymentDao.insert(
                 ProjectDeployment(
-                    projectId = latestProjectDeployment.projectId,
-                    buildId = latestProjectDeployment.buildId,
-                    status = status
+                    projectId = project.id,
+                    status = deployStatus!!,
+                    buildId = buildId
                 )
             )
         }
@@ -91,11 +80,15 @@ class EcsEventsService(
         logger.info { "Scale-in msg received" }
         val notification = checkNotification(eventStr)
         val event = objectMapper.readValue(notification.message, CloudTrailAutoScalingEvent::class.java)
+        val service = ecsService.describeService(event.serviceName(), event.clusterName())
+        val (buildId, project) = getBuildIdAndProject(event, service)
 
-        addProjectDeployment(
-            serviceName = event.serviceName(),
-            environment = event.environment(),
-            deployStatus = DeployStatus.DRAINING
+        projectDeploymentDao.insert(
+            ProjectDeployment(
+                projectId = project.id,
+                status = DeployStatus.DRAINING,
+                buildId = buildId
+            )
         )
 
     }
@@ -108,29 +101,45 @@ class EcsEventsService(
         logger.info { "Deploy updates msg received" }
         val notification = checkNotification(eventStr)
         val event = objectMapper.readValue(notification.message, CloudTrailDeployEvent::class.java)
-
-        addProjectDeployment(
-            serviceName = event.serviceName(),
-            environment = event.environment(),
-            deployStatus = DeployStatus.PROVISIONING
-        )
-
-    }
-
-    private fun addProjectDeployment(serviceName: String, environment: Environment, deployStatus: DeployStatus) {
-        val latestBuild = lookupLatestBuild(
-            serviceName = serviceName,
-            environment = environment,
-        )
+        val service = ecsService.describeService(event.serviceName(), event.clusterName())
+        val (buildId, project) = getBuildIdAndProject(event, service)
 
         projectDeploymentDao.insert(
             ProjectDeployment(
-                projectId = latestBuild.projectId,
-                buildId = latestBuild.id,
-                status = deployStatus,
+                projectId = project.id,
+                status = DeployStatus.PROVISIONING,
+                buildId = buildId
             )
         )
     }
+
+    private fun getBuildIdAndProject(event: GenericEvent, service: AwsEcsService?): Pair<Long?, Project> {
+        val buildId = ecsService.getBuildId(service)
+
+        val project = ensure.foundOne(
+            operation = { projectDao.fetchByHash(event.serviceName()).singleOrNull() },
+            code = PROJECT_NOT_FOUND
+        )
+        return Pair(buildId, project)
+    }
+
+    /**
+     * It decides the deploy status based on the desired and running count + the service status.
+     * Basically if:
+     * running count == desired count == 1 status == Active ==> DEPLOYED
+     * running count == desired count == 0 ==> DRAINED
+     * running count == 0 && desired count == 1 ==> PROVISIONING
+     * running count == 1 && desired count == 0 ==> DRAINED
+     */
+    private fun decideDeployStatus(service: AwsEcsService?) =
+        when {
+            service?.runningCount() == service?.desiredCount() && service?.desiredCount() == 1
+                    && service.status() == EcsServiceStatus.ACTIVE.name -> DeployStatus.DEPLOYED
+            service?.runningCount() == service?.desiredCount() && service?.desiredCount() == 0 -> DeployStatus.DRAINED
+            service?.runningCount() == 1  && service.desiredCount() == 0 -> DeployStatus.DRAINING
+            service?.runningCount() == 0 && service.desiredCount() == 1 -> DeployStatus.PROVISIONING
+            else -> null
+        }
 
 
     private fun checkNotification(eventStr: String): SnsNotification {
@@ -143,23 +152,12 @@ class EcsEventsService(
         return notification
     }
 
-    private fun lookupLatestBuild(serviceName: String, environment: Environment): Build {
-        return ensure.foundOne(
-            operation = {
-                buildDao.fetchLatestByProjectAndEnvironment(
-                    projectHash = serviceName,
-                    env = environment.name.toLowerCase(),
-                )
-            },
-            code = ExceptionCode.BUILD_NOT_FOUND
-        )
-    }
-
 }
 
 private interface GenericEvent {
     fun environment(): Environment
     fun serviceName(): String
+    fun clusterName(): String
 }
 
 private abstract class CloudTrailEvent(
@@ -175,6 +173,16 @@ private abstract class CloudTrailEvent(
         else
             PRODUCTION
     }
+
+    override fun clusterName(): String {
+        return detail.requestParameters.cluster.substringAfterLast("/")
+    }
+}
+
+private enum class EcsServiceStatus {
+    ACTIVE,
+    DRAINING,
+    INACTIVE,
 }
 
 private enum class EcsOperation {
@@ -259,5 +267,9 @@ private data class EcsEvent(
 
     override fun serviceName(): String {
         return resources.singleOrNull()?.substringAfterLast("/")!!
+    }
+
+    override fun clusterName(): String {
+        return resources.singleOrNull()?.substringAfter("/")!!.substringBeforeLast("/")
     }
 }
