@@ -1,9 +1,5 @@
-terraform {
-  backend "s3" {
-    bucket = "xtages-tfstate"
-    key    = "tfstate/us-east-1/production/console"
-    region = "us-east-1"
-  }
+locals {
+  ecs_cluster_name = split("/", data.terraform_remote_state.xtages_ecs.outputs.xtages_ecs_cluster_id)[1]
 }
 
 resource "aws_ecs_task_definition" "console_task_definition" {
