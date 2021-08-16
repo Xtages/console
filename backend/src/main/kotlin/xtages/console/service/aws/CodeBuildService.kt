@@ -86,7 +86,7 @@ class CodeBuildService(
     private val notificationService: NotificationService,
     private val userService: UserService,
     private val objectMapper: ObjectMapper,
-    @Value("spring.profiles.active")
+    @Value("\${spring.profiles.active}")
     private val activeProfile: String,
 ) {
     private val snsMessageManager = SnsMessageManager()
