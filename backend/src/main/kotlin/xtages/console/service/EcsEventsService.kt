@@ -61,7 +61,7 @@ class EcsEventsService(
 
         // search for the last project deployment in case there is no change in the status
         val latestProjectDeployment = projectDeploymentDao.fetchLatestDeploymentStatus(event.serviceName(), event.environment())
-        if (latestProjectDeployment != null && latestProjectDeployment.status != deployStatus) {
+        if (latestProjectDeployment != null) {
             projectDeploymentDao.insert(
                 ProjectDeployment(
                     projectId = project.id,
