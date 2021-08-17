@@ -4,6 +4,7 @@
     {
       "Effect": "Allow",
       "Action": [
+        "acm:*",
         "cloudwatch:*",
         "codebuild:*",
         "codestar-notifications:*",
