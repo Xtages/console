@@ -34,8 +34,8 @@ class CloudWatchService(
                     }
                 }.flatten()
             )
-            .startTime(since.atZone(ZoneOffset.UTC).toInstant())
-            .endTime(OffsetDateTime.now(ZoneOffset.UTC).toInstant())
+            .startTime(since.atZone(ZoneOffset.UTC).toInstant().truncatedTo(ChronoUnit.MILLIS))
+            .endTime(OffsetDateTime.now(ZoneOffset.UTC).toInstant().truncatedTo(ChronoUnit.MILLIS))
             .build()
         // Edge case when the account is created, there are no projects.
         if (request.metricDataQueries().size == 0) return 0L;
