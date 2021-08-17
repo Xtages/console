@@ -26,4 +26,4 @@ phases:
       - docker build --build-arg ENV=prod -t 606626603369.dkr.ecr.us-east-1.amazonaws.com/xtages-console:$TAG .
       - docker push 606626603369.dkr.ecr.us-east-1.amazonaws.com/xtages-console:$TAG
       - export TF_VAR_TAG=$TAG
-      - cd ../deploy/terraform && terraform init && terraform apply -auto-approve
+      - cd ../deploy/terraform && terraform init && terraform plan && terraform apply -auto-approve
