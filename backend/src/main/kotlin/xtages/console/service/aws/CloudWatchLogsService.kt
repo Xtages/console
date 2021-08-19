@@ -79,6 +79,7 @@ class CloudWatchLogsService(
             return cloudWatchLogsAsyncClient.describeLogStreams(builder.build()).get()
         }
 
+        logger.info { "Getting logs for logGroupName:[$logGroupName] and logStreamPrefix:[$logStreamPrefix]" }
         val allLogStreams = mutableListOf<LogStream>()
         var nextToken: String? = null
         do {

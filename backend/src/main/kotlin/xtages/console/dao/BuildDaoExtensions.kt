@@ -125,38 +125,6 @@ fun BuildDao.fetchByOrganizationInDateRange(
 }
 
 /**
- * Returns the latest CD [Build]s for an [organizationName]. The [Build]s returned will have the latest `staging` build
- * and latest `production` build for each [Project] if there is one.
- */
-fun BuildDao.findLatestCdBuilds(organizationName: String): List<Build> {
-    fun buildCdSelect(env: String) = select(BUILD.asterisk())
-        .from(BUILD)
-        .where(
-            BUILD.ENVIRONMENT.eq(env).and(
-                BUILD.TYPE.eq(BuildType.CD).and(
-                    BUILD.STATUS.eq(BuildStatus.SUCCEEDED)
-                )
-            )
-        )
-        .orderBy(BUILD.END_TIME.desc())
-        .limit(1)
-
-    val deploysCte = name("deploys")
-        .`as`(
-            buildCdSelect(env = "staging")
-                .union(buildCdSelect(env = "production"))
-        )
-    return ctx()
-        .with(deploysCte)
-        .select(deploysCte.asterisk())
-        .from(deploysCte)
-        .join(PROJECT).on(deploysCte.field("project_id", Int::class.java)!!.eq(PROJECT.ID))
-        .where(PROJECT.ORGANIZATION.eq(organizationName))
-        .orderBy(PROJECT.NAME, deploysCte.field("end_time")!!.desc())
-        .fetchInto(Build::class.java)
-}
-
-/**
  * Finds the previous `CI` [Build] to [build].
  */
 fun BuildDao.findPreviousCIBuild(build: Build): Build? {
