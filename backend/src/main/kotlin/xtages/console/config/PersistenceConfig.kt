@@ -36,9 +36,9 @@ private class JooqSqlLogger : DefaultExecuteListener() {
 
         // If we're executing a query
         if (ctx.query() != null) {
-            logger.debug { prettyPrinter.renderInlined(ctx.query()) }
+            logger.debug { "\n${prettyPrinter.renderInlined(ctx.query())}" }
         } else if (ctx.routine() != null) {
-            logger.debug { prettyPrinter.renderInlined(ctx.routine()) }
+            logger.debug { "\n${prettyPrinter.renderInlined(ctx.routine())}" }
         }
     }
 }

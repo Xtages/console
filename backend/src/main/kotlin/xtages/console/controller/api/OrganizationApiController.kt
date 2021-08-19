@@ -9,9 +9,9 @@ import xtages.console.controller.model.MD5
 import xtages.console.controller.model.buildPojoToDeployment
 import xtages.console.controller.model.organizationPojoToOrganizationConverter
 import xtages.console.controller.model.projectPojoTypeToProjectTypeConverter
+import xtages.console.dao.fetchLatestDeploymentsByOrg
 import xtages.console.dao.fetchOneByCognitoUserId
 import xtages.console.dao.findFromBuilds
-import xtages.console.dao.findLatestCdBuilds
 import xtages.console.query.enums.OrganizationSubscriptionStatus
 import xtages.console.query.tables.daos.*
 import xtages.console.service.AuthenticationService
@@ -28,6 +28,7 @@ class OrganizationApiController(
     val authenticationService: AuthenticationService,
     val recipeDao: RecipeDao,
     val buildDao: BuildDao,
+    val projectDeploymentDao: ProjectDeploymentDao,
     val projectDao: ProjectDao,
     val githubUserDao: GithubUserDao,
     val consoleProperties: ConsoleProperties,
@@ -58,13 +59,16 @@ class OrganizationApiController(
 
     override fun projectsDeployed(): ResponseEntity<Projects> {
         val organization = organizationDao.fetchOneByCognitoUserId(authenticationService.currentCognitoUserId)
-        val latestCdBuilds = buildDao.findLatestCdBuilds(organizationName = organization.name!!)
-        val buildsPerProjectId = latestCdBuilds.groupBy { build -> build.projectId }
-        val projectPojos = projectDao.fetchById(*buildsPerProjectId.keys.filterNotNull().toIntArray())
+        val latestDeployments = projectDeploymentDao.fetchLatestDeploymentsByOrg(organizationName = organization.name!!)
+        val deploysPerProjectId = latestDeployments.groupBy { deployment -> deployment.projectId }
+        val projectPojos = projectDao.fetchById(*deploysPerProjectId.keys.filterNotNull().toIntArray())
         val recipes = recipeDao.fetchById(*projectPojos.mapNotNull { project -> project.recipe }.toIntArray())
         val recipesById = recipes.associateBy { recipe -> recipe.id }
-        val usernameToGithubUser = githubUserDao.findFromBuilds(latestCdBuilds)
-        val idToXtagesUser = userService.findFromBuilds(latestCdBuilds)
+        val builds =
+            buildDao.fetchById(*latestDeployments.mapNotNull { deployment -> deployment.buildId }.toLongArray())
+        val buildsById = builds.associateBy { build -> build.id }
+        val usernameToGithubUser = githubUserDao.findFromBuilds(builds)
+        val idToXtagesUser = userService.findFromBuilds(builds)
 
         val projects = projectPojos.map { project ->
             val recipe = recipesById[project.recipe]!!
@@ -79,9 +83,10 @@ class OrganizationApiController(
                 )!!,
                 version = recipe.version!!,
                 builds = emptyList(),
-                deployments = buildsPerProjectId[project.id]?.map { build ->
+                deployments = deploysPerProjectId[project.id]?.map { deploy ->
+                    val build = buildsById[deploy.buildId]
                     buildPojoToDeployment(
-                        source = build,
+                        source = build!!,
                         organization = organization,
                         project = project,
                         usernameToGithubUser = usernameToGithubUser,
