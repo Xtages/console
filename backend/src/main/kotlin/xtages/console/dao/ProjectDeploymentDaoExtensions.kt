@@ -66,8 +66,14 @@ fun ProjectDeploymentDao.fetchLatestByBuilds(builds: List<Build>): List<ProjectD
  */
 fun ProjectDeploymentDao.fetchLatestDeploymentsByOrg(organizationName: String): List<ProjectDeployment> {
     val subQuery = ctx()
+        // Each row in this query will the `project_deployment` details plus their "pos" (position) in their respective
+        // partition. We will then use the "pos" to get the first row for each partition, in the `WHERE` of the outer
+        // `SELECT`.
         .select(
             PROJECT_DEPLOYMENT.asterisk(),
+            // This following statement is going to partition the rows by project and environment and order each
+            // partition by `project_deployment.status_change_time`, and alias the racking of each row withing their
+            // partition to a column called 'pos'.
             rank()
                 .over()
                 .partitionBy(PROJECT.ID, BUILD.ENVIRONMENT)
