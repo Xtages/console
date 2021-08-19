@@ -65,7 +65,7 @@ class EcsEventsService(
             projectDeploymentDao.insert(
                 ProjectDeployment(
                     projectId = project.id,
-                    status = deployStatus!!,
+                    status = deployStatus,
                     buildId = buildId
                 )
             )
