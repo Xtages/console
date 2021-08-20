@@ -3,10 +3,11 @@ import {Card, Col, Container, OverlayTrigger, Row, Tooltip} from 'react-bootstra
 import {Link} from 'react-router-dom';
 import {GaugeConfig} from '@ant-design/charts/es/gauge';
 import {Settings} from 'react-feather';
-import {Deployment, Project} from 'gen/api';
+import {Deployment, DeploymentStatusEnum, Project} from 'gen/api';
 import {formatDateTimeFull} from 'helpers/time';
 import colors from 'assets/css/colors.module.scss';
 import loadable from '@loadable/component';
+import cx from 'classnames';
 import {GitHubCommitLink, GitHubLink} from '../link/XtagesLink';
 
 const LoadableGauge = loadable.lib(() => import('@ant-design/charts/es/gauge'));
@@ -59,17 +60,6 @@ export function SimpleProjectCard({
         </Container>
       </Card.Body>
     </Card>
-  );
-}
-
-/**
- * Renders some vitals about a [Project] and its last deployments.
- */
-export function ProjectDetailsCard({project}: SimpleProjectCardProps) {
-  return (
-    <SimpleProjectCard project={project}>
-      <DeploymentDetailsAndBuildChart project={project} />
-    </SimpleProjectCard>
   );
 }
 
@@ -178,6 +168,7 @@ function DeploymentDetailsRow({
   deployment,
   showDeploymentLinkDetailsLink,
 }: DeploymentDetailsRowProps) {
+  const isRunning = deployment?.status === DeploymentStatusEnum.Running;
   return (
     <Row>
       <Col>
@@ -213,32 +204,35 @@ function DeploymentDetailsRow({
               </OverlayTrigger>
             </div>
             {showDeploymentLinkDetailsLink && (
-            <div>
-              <OverlayTrigger overlay={(
-                <Tooltip id="seeDeployLogsTooltip">
-                  See deployment logs
-                </Tooltip>
-              )}
-              >
-                <Link
-                  className="font-weight-bold"
-                  to={`/deployments/${projectName}/${deployment.env}`}
-                >
-                  See deployment logs
-                </Link>
-              </OverlayTrigger>
-            </div>
+              <Container className="px-0">
+                <Row noGutters>
+                  <Col sm="auto" className="pr-2">
+                    Status:
+                    {' '}
+                    <span className={cx('font-weight-bolder', {'text-dark-success': isRunning})}>
+                      {deployment.status}
+                    </span>
+                  </Col>
+                  <Col sm="auto" className="text-muted user-select-none" aria-hidden>|</Col>
+                  <Col sm="auto" className="pl-2">
+                    <OverlayTrigger overlay={(
+                      <Tooltip id="seeDeployLogsTooltip">
+                        See deployment logs
+                      </Tooltip>
+                  )}
+                    >
+                      <Link
+                        className="font-weight-bold"
+                        to={`/deployments/${projectName}/${deployment.env}`}
+                      >
+                        Logs
+                      </Link>
+                    </OverlayTrigger>
+                  </Col>
+                </Row>
+              </Container>
             )}
-            <div>
-              <a
-                href={deployment.serviceUrl}
-                target="_blank"
-                rel="noreferrer"
-              >
-                {deployment.serviceUrl}
-              </a>
-              {' '}
-            </div>
+            <ServiceUrlsList deployment={deployment} />
           </>
         ) : (
           <span>
@@ -251,6 +245,27 @@ function DeploymentDetailsRow({
         )}
       </Col>
     </Row>
+  );
+}
+
+function ServiceUrlsList({deployment}: {deployment: Deployment}) {
+  const {serviceUrls, status} = deployment;
+  return (status === DeploymentStatusEnum.Running
+    ? (
+      <div className="pt-2">
+        {serviceUrls.map((serviceUrl) => (
+          <div key={serviceUrl}>
+            <a
+              href={serviceUrl}
+              target="_blank"
+              rel="noreferrer"
+            >
+              {serviceUrl}
+            </a>
+          </div>
+        ))}
+      </div>
+    ) : <></>
   );
 }
 

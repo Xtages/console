@@ -1,6 +1,6 @@
 import React from 'react';
 import {Meta, Story} from '@storybook/react';
-import {Project, ProjectTypeEnum} from 'gen/api';
+import {DeploymentStatusEnum, Project, ProjectTypeEnum} from 'gen/api';
 import {DeploymentDetails,
   DeploymentDetailsAndBuildChart,
   DeploymentDetailsProps,
@@ -21,7 +21,37 @@ const projectData: Project = {
   version: '15',
   passCheckRuleEnabled: false,
   builds: [],
-  deployments: [],
+  deployments: [
+    {
+      id: 1,
+      initiatorEmail: 'rick.james@gmail.com',
+      initiatorName: 'Rick James',
+      initiatorAvatarUrl: 'https://im.rick.james.com',
+      commitHash: 'abc123',
+      commitUrl: 'https://github.com/Xtages/console/abc123',
+      env: 'production',
+      timestampInMillis: Date.now(),
+      serviceUrls: [
+        'https://somedomain.com',
+        'https://123456-production.xtages.dev',
+      ],
+      status: DeploymentStatusEnum.Running,
+    },
+    {
+      id: 2,
+      initiatorEmail: 'charlie.murphy@gmail.com',
+      initiatorName: 'Charlie Murphy',
+      initiatorAvatarUrl: 'https://cmurphy.com',
+      commitHash: 'uio678',
+      commitUrl: 'https://github.com/Xtages/console/uio678',
+      env: 'staging',
+      timestampInMillis: Date.now(),
+      serviceUrls: [
+        'https://098765-staging.xtages.dev',
+      ],
+      status: DeploymentStatusEnum.Stopped,
+    },
+  ],
   percentageOfSuccessfulBuildsInTheLastMonth: 0.1,
 };
 

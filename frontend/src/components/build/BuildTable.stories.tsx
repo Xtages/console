@@ -1,8 +1,13 @@
 import React from 'react';
 import {Meta, Story} from '@storybook/react';
 import {BrowserRouter} from 'react-router-dom';
+import {Build,
+  BuildStatusEnum,
+  BuildType,
+  Deployment,
+  Project,
+  ProjectTypeEnum} from 'gen/api';
 import {BuildTable, BuildTableProps} from './BuildTable';
-import {BuildStatusEnum, BuildType, ProjectTypeEnum} from '../../gen/api';
 
 export default {
   title: 'Xtages/Build/BuildTable',
@@ -12,7 +17,7 @@ export default {
 // eslint-disable-next-line max-len
 const Template: Story<BuildTableProps> = (args) => <BrowserRouter><BuildTable {...args} /></BrowserRouter>;
 
-const buildData = {
+const buildData: Build = {
   id: 100,
   buildNumber: 1,
   status: BuildStatusEnum.Failed,
@@ -44,7 +49,7 @@ const buildData = {
   ],
 };
 
-const prodDeploymentData = {
+const prodDeploymentData: Deployment = {
   id: 100,
   env: 'production',
   initiatorName: 'Bill Murray',
@@ -53,10 +58,10 @@ const prodDeploymentData = {
   commitHash: '81acee7df324793c6409e178798dab5d197ba50f',
   commitUrl: 'https://github.com/Xtages/console/commit/81acee7df324793c6409e178798dab5d197ba50f',
   timestampInMillis: Date.now(),
-  serviceUrl: 'https://FIXME',
+  serviceUrls: ['https://FIXME'],
 };
 
-const stagingDeploymentData = {
+const stagingDeploymentData: Deployment = {
   id: 100,
   env: 'staging',
   initiatorName: 'Bill Murray',
@@ -65,10 +70,10 @@ const stagingDeploymentData = {
   commitHash: '81acee7df324793c6409e178798dab5d197ba50f',
   commitUrl: 'https://github.com/Xtages/console/commit/81acee7df324793c6409e178798dab5d197ba50f',
   timestampInMillis: Date.now() - (24 * 60 * 60 * 1000),
-  serviceUrl: 'https://FIXME',
+  serviceUrls: ['https://FIXME'],
 };
 
-const projectData = {
+const projectData: Project = {
   id: 10,
   name: 'console',
   ghRepoUrl: 'https://github.com/Xtages/console',
