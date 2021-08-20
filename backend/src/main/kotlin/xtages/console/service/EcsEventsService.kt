@@ -11,6 +11,7 @@ import xtages.console.controller.model.Environment
 import xtages.console.controller.model.Environment.PRODUCTION
 import xtages.console.controller.model.Environment.STAGING
 import xtages.console.dao.fetchLatestDeploymentStatus
+import xtages.console.dao.insertIfNotExist
 import xtages.console.exception.ExceptionCode.PROJECT_NOT_FOUND
 import xtages.console.exception.UnknownProjectDeploymentStatus
 import xtages.console.exception.ensure
@@ -61,8 +62,8 @@ class EcsEventsService(
 
         // search for the last project deployment in case there is no change in the status
         val latestProjectDeployment = projectDeploymentDao.fetchLatestDeploymentStatus(event.serviceName(), event.environment())
-        if (latestProjectDeployment != null && latestProjectDeployment.status != deployStatus) {
-            projectDeploymentDao.insert(
+        if (latestProjectDeployment != null) {
+            projectDeploymentDao.insertIfNotExist(
                 ProjectDeployment(
                     projectId = project.id,
                     status = deployStatus,

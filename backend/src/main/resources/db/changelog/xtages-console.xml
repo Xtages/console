@@ -47,5 +47,7 @@
     <include file="changesets/deploy-status-rename-column.postgresql.sql" relativeToChangelogFile="true" />
     <include file="changesets/00001-fix-recipe-repo-name.postgresql.sql" relativeToChangelogFile="true" />
     <include file="changesets/00002-upgrade-recipe-tag-version.postgresql.sql" relativeToChangelogFile="true" />
+    <include file="changesets/00003-upgrade-recipe-tag-version.postgresql.sql" relativeToChangelogFile="true" />
+    <include file="changesets/00004-constraint-project-deployment.postgresql.sql" relativeToChangelogFile="true" />
 </databaseChangeLog>
 
