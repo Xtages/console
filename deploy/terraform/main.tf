@@ -50,6 +50,7 @@ resource "aws_lb_target_group" "xtages_console" {
   name     = "xtages-console-tg"
   port     = 80
   protocol = "HTTP"
+  deregistration_delay = 120
   vpc_id   = data.terraform_remote_state.xtages_infra.outputs.vpc_id
 
   health_check {
