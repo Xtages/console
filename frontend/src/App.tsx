@@ -12,6 +12,7 @@ import {useFetchInstrumentation} from 'hooks/useFetchInstrumentation';
 import {useXmlHttpRequestInstrumentation} from 'hooks/useXmlHttpRequestInstrumentation';
 import {ErrorBoundary} from 'helpers/error';
 import {ReactQueryDevtools} from 'react-query/devtools';
+import {useSurvicate} from 'hooks/useSurvicate';
 
 const ProjectPage = loadable(() => import('pages/ProjectPage'));
 const CreateProjectPage = loadable(() => import('pages/CreateProjectPage'));
@@ -40,6 +41,7 @@ export default function App() {
 }
 
 function InstrumentedApp() {
+  useSurvicate();
   useXmlHttpRequestInstrumentation();
   useFetchInstrumentation();
   usePageViews();
