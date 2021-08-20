@@ -907,9 +907,11 @@ components:
         timestampInMillis:
           type: integer
           format: int64
-        serviceUrl:
-          type: string
-          minLength: 1
+        serviceUrls:
+          type: array
+          items:
+            type: string
+            minLength: 1
         status:
           type: string
           minLength: 1
@@ -925,7 +927,7 @@ components:
         - commitUrl
         - env
         - timestampInMillis
-        - serviceUrl
+        - serviceUrls
     ResourceType:
       description: Enum of resources
       type: string

@@ -1,6 +1,7 @@
 package xtages.console.controller.model
 
 import org.springframework.core.convert.converter.Converter
+import org.springframework.web.util.UriComponentsBuilder
 import software.amazon.awssdk.services.acm.model.CertificateDetail
 import software.amazon.awssdk.services.cognitoidentityprovider.model.UserStatusType
 import xtages.console.controller.GitHubAvatarUrl
@@ -195,6 +196,15 @@ fun buildPojoToDeployment(
 ): Deployment {
     val initiator = getBuildInitiator(source, usernameToGithubUser, idToXtagesUser)
 
+    val serviceUrls = mutableListOf(
+        "https://${source.environment}-${project.hash!!.substring(0, 12)}.$customerDeploymentDomain"
+    )
+    if (source.environment == Environment.PRODUCTION.name.toLowerCase() && project.associatedDomain != null) {
+        serviceUrls.add(
+            0,
+            UriComponentsBuilder.newInstance().scheme("https").host(project.associatedDomain!!).toUriString()
+        )
+    }
     return Deployment(
         id = source.id!!,
         initiatorName = initiator.name,
@@ -208,7 +218,7 @@ fun buildPojoToDeployment(
         ).toUriString(),
         env = source.environment!!,
         timestampInMillis = source.endTime!!.toUtcMillis(),
-        serviceUrl = "https://${source.environment}-${project.hash!!.substring(0, 12)}.${customerDeploymentDomain}",
+        serviceUrls = serviceUrls,
         status = if (projectDeploymentStatus == DeployStatus.DEPLOYED) RUNNING else STOPPED,
     )
 }
