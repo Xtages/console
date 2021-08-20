@@ -90,6 +90,12 @@ export interface Build {
      * @type {string}
      * @memberof Build
      */
+    env?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof Build
+     */
     status: BuildStatusEnum;
     /**
      * 
@@ -398,11 +404,27 @@ export interface Deployment {
     timestampInMillis: number;
     /**
      * 
+     * @type {Array<string>}
+     * @memberof Deployment
+     */
+    serviceUrls: Array<string>;
+    /**
+     * 
      * @type {string}
      * @memberof Deployment
      */
-    serviceUrl: string;
+    status?: DeploymentStatusEnum;
 }
+
+/**
+    * @export
+    * @enum {string}
+    */
+export enum DeploymentStatusEnum {
+    Running = 'RUNNING',
+    Stopped = 'STOPPED'
+}
+
 /**
  * DNS record necessary to validate a domain belongs to the Organization
  * @export

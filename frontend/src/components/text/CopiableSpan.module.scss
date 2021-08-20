@@ -1,5 +1,21 @@
+@import "src/assets/css/variables";
+@import "src/assets/css/mixins";
+
 .copyButton {
+  color: #{darken($teal, 10%)};
   font-size: 1.1em;
   width: auto;
   height: auto;
+}
+
+.copySpan {
+  > span {
+    transition: background-color 500ms ease;
+  }
+}
+
+.copied {
+  > span {
+    background-color: lighten($success, 30%);
+  }
 }
