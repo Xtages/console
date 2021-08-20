@@ -1,5 +1,6 @@
 package xtages.console.dao
 
+import org.jooq.impl.DSL
 import org.jooq.impl.DSL.max
 import org.jooq.impl.DSL.rank
 import xtages.console.controller.model.Environment
@@ -91,4 +92,25 @@ fun ProjectDeploymentDao.fetchLatestDeploymentsByOrg(organizationName: String): 
         .from(subQuery)
         .where(subQuery.field("pos", Int::class.java)!!.lessThan(2))
         .fetchInto(ProjectDeployment::class.java)
+}
+
+/**
+ * Insert a [ProjectDeployment] if there is no conflict. A conflict could happen if there is a record with the same
+ * build_id and [DeployStatus]
+ */
+fun ProjectDeploymentDao.insertIfNotExist(projectDeployment: ProjectDeployment) {
+    ctx().insertInto(PROJECT_DEPLOYMENT)
+        .columns(
+            PROJECT_DEPLOYMENT.BUILD_ID,
+            PROJECT_DEPLOYMENT.STATUS,
+            PROJECT_DEPLOYMENT.PROJECT_ID,
+        )
+        .values(
+            projectDeployment.buildId,
+            projectDeployment.status,
+            projectDeployment.projectId
+        )
+        .onConflict()
+        .doNothing()
+        .execute()
 }
