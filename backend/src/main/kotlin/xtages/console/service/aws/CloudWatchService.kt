@@ -1,9 +1,11 @@
 package xtages.console.service.aws
 
+import mu.KotlinLogging
 import org.springframework.stereotype.Service
 import software.amazon.awssdk.services.cloudwatch.CloudWatchAsyncClient
 import software.amazon.awssdk.services.cloudwatch.model.*
 import xtages.console.config.ConsoleProperties
+import xtages.console.pojo.dbIdentifier
 import xtages.console.query.tables.pojos.Organization
 import xtages.console.query.tables.pojos.Project
 import java.time.Duration
@@ -11,6 +13,9 @@ import java.time.LocalDateTime
 import java.time.OffsetDateTime
 import java.time.ZoneOffset
 import java.time.temporal.ChronoUnit
+import java.util.concurrent.ExecutionException
+
+private val logger = KotlinLogging.logger { }
 
 @Service
 class CloudWatchService(
@@ -19,9 +24,45 @@ class CloudWatchService(
 ) {
 
     /**
+     * @return The amount of free storage, in bytes, for the DB allocated to the [organization].
+     */
+    fun getBytesDbStorageFree(organization: Organization): Long {
+        val request = GetMetricStatisticsRequest.builder()
+            .metricName("FreeStorageSpace")
+            .namespace("AWS/RDS")
+            .dimensions(
+                buildDimension(
+                    name = "DBInstanceIdentifier",
+                    value = organization.dbIdentifier
+                )
+            )
+            .period(Duration.of(5, ChronoUnit.MINUTES).toSeconds().toInt())
+            .statistics(Statistic.AVERAGE)
+            .startTime(OffsetDateTime.now(ZoneOffset.UTC).minusMinutes(5).toInstant().truncatedTo(ChronoUnit.MILLIS))
+            .endTime(OffsetDateTime.now(ZoneOffset.UTC).toInstant().truncatedTo(ChronoUnit.MILLIS))
+            .build()
+        return try {
+            cloudWatchAsyncClient
+                .getMetricStatistics(request)
+                .get().datapoints()
+                .map { point -> point.average() }
+                .average()
+                .toLong()
+        } catch (e: ExecutionException) {
+            if (e.cause is CloudWatchException) {
+                logger.error(e) {}
+                return 0L
+            }
+            throw e
+        }
+    }
+
+    /**
      * @return The amount of bytes sent (egress) by the [projects] of [organization] from [since] until now.
      */
     fun getBytesSent(organization: Organization, vararg projects: Project, since: LocalDateTime): Long {
+        // Edge case when the account is created, there are no projects.
+        if (projects.isEmpty()) return 0L;
         val request = GetMetricDataRequest.builder()
             .metricDataQueries(
                 listOf("staging", "production").map { env ->
@@ -37,16 +78,22 @@ class CloudWatchService(
             .startTime(since.atZone(ZoneOffset.UTC).toInstant().truncatedTo(ChronoUnit.MILLIS))
             .endTime(OffsetDateTime.now(ZoneOffset.UTC).toInstant().truncatedTo(ChronoUnit.MILLIS))
             .build()
-        // Edge case when the account is created, there are no projects.
-        if (request.metricDataQueries().size == 0) return 0L;
 
-        return cloudWatchAsyncClient
-            .getMetricData(request)
-            .get()
-            .metricDataResults()
-            .flatMap { result -> result.values() }
-            .sumOf { datapoint -> datapoint }
-            .toLong()
+        return try {
+            cloudWatchAsyncClient
+                .getMetricData(request)
+                .get()
+                .metricDataResults()
+                .flatMap { result -> result.values() }
+                .sumOf { datapoint -> datapoint }
+                .toLong()
+        } catch (e: ExecutionException) {
+            if (e.cause is CloudWatchException) {
+                logger.error { e }
+                return 0L
+            }
+            throw e
+        }
     }
 
     private fun buildMetricDataQuery(env: String, project: Project, organization: Organization): MetricDataQuery {

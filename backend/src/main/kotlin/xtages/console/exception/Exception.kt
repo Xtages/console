@@ -68,6 +68,7 @@ class UsageOverLimitException(usageDetails: UsageOverLimit) :
                     ResourceType.PROJECT -> "Projects: ${details.usage} of ${details.limit}"
                     ResourceType.MONTHLY_BUILD_MINUTES -> "Build minutes: ${details.usage} of ${details.limit} min"
                     ResourceType.MONTHLY_DATA_TRANSFER_GBS -> "Data egress: ${details.usage} of ${details.limit} GB"
+                    ResourceType.DB_STORAGE_GBS -> "DB Storage: ${details.usage} of ${details} GB"
                 }
             }
             is UsageOverLimitBecauseOfSubscriptionStatus -> "The organization's account is not in good standing"

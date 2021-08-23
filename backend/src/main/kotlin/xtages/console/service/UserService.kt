@@ -129,7 +129,7 @@ class UserService(
             if (e.cause is UserNotFoundException) {
                 null
             }
-            logger.error { e }
+            logger.error(e) { }
             throw CognitoException("There was an error while trying to find a user by email: $email")
         }
     }

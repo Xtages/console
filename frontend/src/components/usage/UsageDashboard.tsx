@@ -1,8 +1,37 @@
 import React, {FC} from 'react';
 import {Card, CardDeck, ProgressBar} from 'react-bootstrap';
-import {Clock, Codesandbox, DownloadCloud, IconProps} from 'react-feather';
-import {toDate, differenceInDays} from 'date-fns';
-import {ResourceType, UsageDetail, UsageDetailStatusEnum} from '../../gen/api';
+import {Clock, Codesandbox, Database, DownloadCloud, IconProps} from 'react-feather';
+import {differenceInDays, toDate} from 'date-fns';
+import {ResourceType, UsageDetail, UsageDetailStatusEnum} from 'gen/api';
+
+type ResourceMetadata = {
+  icon: FC<IconProps>;
+  title: string;
+  unit: string;
+};
+
+const RESOURCE_TO_METADATA = new Map<ResourceType, ResourceMetadata>([
+  [ResourceType.Project, {
+    icon: Codesandbox,
+    title: 'Projects',
+    unit: 'project(s)',
+  }],
+  [ResourceType.MonthlyBuildMinutes, {
+    icon: Clock,
+    title: 'Build minutes',
+    unit: 'min',
+  }],
+  [ResourceType.MonthlyDataTransferGbs, {
+    icon: DownloadCloud,
+    title: 'Data transfer (egress)',
+    unit: 'GB',
+  }],
+  [ResourceType.DbStorageGbs, {
+    icon: Database,
+    title: 'DB Storage',
+    unit: 'GB',
+  }],
+]);
 
 export interface UsageDashboardProps {
   usageDetails: UsageDetail[];
@@ -17,56 +46,22 @@ export function UsageDashboard({usageDetails}: UsageDashboardProps) {
     map[usage.resourceType] = usage;
     return map;
   }, {} as Record<ResourceType, UsageDetail>);
-  const projectUsage = usagePerResourceType[ResourceType.Project];
-  const buildMinUsage = usagePerResourceType[ResourceType.MonthlyBuildMinutes];
-  const dataTransferUsage = usagePerResourceType[ResourceType.MonthlyDataTransferGbs];
   return (
     <CardDeck>
-      <UsageCard
-        title="Projects"
-        usageDetails={projectUsage}
-      />
-      <UsageCard
-        title="Build minutes"
-        usageDetails={buildMinUsage}
-      />
-      <UsageCard
-        title="Data transfer (egress)"
-        usageDetails={dataTransferUsage}
-      />
+      {Array.from(RESOURCE_TO_METADATA.keys()).map((resource) => (
+        <UsageCard key={resource} usageDetails={usagePerResourceType[resource]} />
+      ))}
     </CardDeck>
   );
-}
-
-const RESOURCE_TYPE_TO_ICON: Record<ResourceType, FC<IconProps>> = {
-  [ResourceType.Project]: Codesandbox,
-  [ResourceType.MonthlyBuildMinutes]: Clock,
-  [ResourceType.MonthlyDataTransferGbs]: DownloadCloud,
-};
-
-const RESOURCE_TYPE_TO_UNIT: Record<ResourceType, string> = {
-  [ResourceType.Project]: 'project(s)',
-  [ResourceType.MonthlyBuildMinutes]: 'min',
-  [ResourceType.MonthlyDataTransferGbs]: 'GB',
-};
-
-interface UsageCardProps {
-  /** The title of the card. */
-  title: string;
-
-  usageDetails: UsageDetail;
 }
 
 /**
  * A {@link Card} that displays the usage of a {@link ResourceType}.
  */
-function UsageCard({
-  title,
-  usageDetails,
-}: UsageCardProps) {
-  const icon = RESOURCE_TYPE_TO_ICON[usageDetails.resourceType];
+function UsageCard({usageDetails}: {usageDetails: UsageDetail}) {
+  const metaData = RESOURCE_TO_METADATA.get(usageDetails.resourceType)!;
+  const {title, icon, unit} = metaData;
   const iconEl = icon && React.createElement(icon);
-  const unit = RESOURCE_TYPE_TO_UNIT[usageDetails.resourceType];
   const resetsInDays = usageDetails.resetTimestampInMillis
     ? (differenceInDays(toDate(usageDetails.resetTimestampInMillis), Date.now()))
     : undefined;

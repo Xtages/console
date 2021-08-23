@@ -42,7 +42,7 @@ class RdsService(
         val password = createAndStorePassInSsm(organization)
 
         val instanceRequest = CreateDbInstanceRequest.builder()
-            .dbInstanceIdentifier(organization.dbIdentifier())
+            .dbInstanceIdentifier(organization.dbIdentifier)
             .masterUserPassword(password)
             .allocatedStorage(plan?.dbStorageGbs!!.toInt())
             .dbName(organization.name)
@@ -50,7 +50,7 @@ class RdsService(
             .dbInstanceClass(plan.dbInstance)
             .engineVersion(consoleProperties.aws.rds.engineVersion)
             .storageType(consoleProperties.aws.rds.storageType)
-            .masterUsername(organization.dbUsername())
+            .masterUsername(organization.dbUsername)
             .vpcSecurityGroupIds(consoleProperties.aws.rds.dbSecurityGroup)
             .backupRetentionPeriod(consoleProperties.aws.rds.backupRetentionPeriod)
             .storageEncrypted(consoleProperties.aws.rds.storageEncrypted)
@@ -81,7 +81,7 @@ class RdsService(
         val rdsResponse = rdsAsyncClient.describeDBInstances(
             DescribeDbInstancesRequest
                 .builder()
-                .dbInstanceIdentifier(organization.dbIdentifier())
+                .dbInstanceIdentifier(organization.dbIdentifier)
                 .build()
         ).get()
 

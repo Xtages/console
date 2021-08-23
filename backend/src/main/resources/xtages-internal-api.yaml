@@ -935,6 +935,7 @@ components:
         - PROJECT
         - MONTHLY_BUILD_MINUTES
         - MONTHLY_DATA_TRANSFER_GBS
+        - DB_STORAGE_GBS
     UsageDetail:
       description: The usage for a certain resource
       properties:
