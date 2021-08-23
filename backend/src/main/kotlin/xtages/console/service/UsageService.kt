@@ -1,6 +1,7 @@
 package xtages.console.service
 
 import com.jakewharton.byteunits.BinaryByteUnit
+import com.jakewharton.byteunits.DecimalByteUnit
 import org.springframework.stereotype.Service
 import xtages.console.dao.fetchActiveCreditsByOrganizationName
 import xtages.console.dao.fetchByOrganizationInDateRange
@@ -77,10 +78,11 @@ class UsageService(
                         val usage = findUsageForResource(
                             organization = organization,
                             resourceType = resourceType,
+                            plan = plan,
                             dateRange = currentBillingMonth,
                         )
                         val resetDateTime = when (resourceType) {
-                            ResourceType.PROJECT -> null
+                            ResourceType.PROJECT, ResourceType.DB_STORAGE_GBS -> null
                             ResourceType.MONTHLY_BUILD_MINUTES,
                             ResourceType.MONTHLY_DATA_TRANSFER_GBS -> currentBillingMonth.endInclusive
                         }
@@ -108,6 +110,7 @@ class UsageService(
     private fun findUsageForResource(
         organization: Organization,
         resourceType: ResourceType,
+        plan: Plan,
         dateRange: ClosedRange<LocalDateTime>
     ): Long {
         return when (resourceType) {
@@ -123,6 +126,12 @@ class UsageService(
                     since = dateRange.start
                 )
             )
+            ResourceType.DB_STORAGE_GBS -> {
+                DecimalByteUnit.BYTES.toGigabytes(
+                    DecimalByteUnit.GIGABYTES.toBytes(plan.dbStorageGbs!!) -
+                            cloudWatchService.getBytesDbStorageFree(organization = organization)
+                )
+            }
         }
     }
 
@@ -175,6 +184,7 @@ class UsageService(
             ResourceType.PROJECT -> plan.limitProjects!!
             ResourceType.MONTHLY_BUILD_MINUTES -> plan.limitMonthlyBuildMinutes!!
             ResourceType.MONTHLY_DATA_TRANSFER_GBS -> plan.limitMonthlyDataTransferGbs!!
+            ResourceType.DB_STORAGE_GBS -> plan.dbStorageGbs!!
         }
     }
 }
@@ -196,8 +206,7 @@ class UsageOverLimitWithDetails(
     resetDateTime: LocalDateTime?,
     val limit: Long,
     val usage: Long
-) :
-    UsageOverLimit(resourceType = resourceType, resetDateTime = resetDateTime)
+) : UsageOverLimit(resourceType = resourceType, resetDateTime = resetDateTime)
 
 /**
  * Represents [resourceType] being considered *over* the limit because the [OrganizationSubscriptionStatus] of the

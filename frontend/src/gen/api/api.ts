@@ -683,7 +683,8 @@ export interface QueryProjectReq {
 export enum ResourceType {
     Project = 'PROJECT',
     MonthlyBuildMinutes = 'MONTHLY_BUILD_MINUTES',
-    MonthlyDataTransferGbs = 'MONTHLY_DATA_TRANSFER_GBS'
+    MonthlyDataTransferGbs = 'MONTHLY_DATA_TRANSFER_GBS',
+    DbStorageGbs = 'DB_STORAGE_GBS'
 }
 
 /**
