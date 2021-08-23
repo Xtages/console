@@ -188,18 +188,24 @@ class ProjectApiController(
             build.type == BuildTypePojo.CD && build.status == BuildStatus.SUCCEEDED && build.environment == "staging"
         }
         val deploymentBuilds = listOfNotNull(prodDeployment, stagingDeployment)
-        val projectDeploymentStatus = projectDeploymentDao.fetchLatestByBuilds(deploymentBuilds)
+        val projectDeployments = projectDeploymentDao.fetchLatestByBuilds(deploymentBuilds)
+        val deploymentsByBuildId = projectDeployments.associateBy { deployment -> deployment.buildId!! }
 
-        return (deploymentBuilds zip projectDeploymentStatus).map { tuple ->
-            buildPojoToDeployment(
-                source = tuple.first,
-                organization = organization,
-                project = project,
-                usernameToGithubUser = usernameToGithubUser,
-                idToXtagesUser = idToXtagesUser,
-                projectDeploymentStatus = tuple.second.status,
-                customerDeploymentDomain = consoleProperties.customerDeploymentDomain
-            )
+        return deploymentBuilds.mapNotNull { build ->
+            val deploy = deploymentsByBuildId[build.id]
+            if (deploy != null) {
+                buildPojoToDeployment(
+                    source = build,
+                    organization = organization,
+                    project = project,
+                    usernameToGithubUser = usernameToGithubUser,
+                    idToXtagesUser = idToXtagesUser,
+                    projectDeploymentStatus = deploy.status,
+                    customerDeploymentDomain = consoleProperties.customerDeploymentDomain
+                )
+            } else {
+                null
+            }
         }
     }
 
