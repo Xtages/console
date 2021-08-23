@@ -191,7 +191,7 @@ class ProjectApiController(
         val projectDeployments = projectDeploymentDao.fetchLatestByBuilds(deploymentBuilds)
         val deploymentsByBuildId = projectDeployments.associateBy { deployment -> deployment.buildId!! }
 
-        val builds = deploymentBuilds.mapNotNull { build ->
+        return deploymentBuilds.mapNotNull { build ->
             val deploy = deploymentsByBuildId[build.id]
             if (deploy != null) {
                 buildPojoToDeployment(
@@ -207,7 +207,6 @@ class ProjectApiController(
                 null
             }
         }
-        return builds
     }
 
     override fun createProject(createProjectReq: CreateProjectReq): ResponseEntity<Project> {
