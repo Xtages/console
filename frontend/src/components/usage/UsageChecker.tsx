@@ -37,7 +37,7 @@ const ALERTABLE_RESOURCES = Array.from(ALERTABLE_RESOURCES_METADATA.keys());
  */
 function UsageOverLimitToast({usage}: {usage: UsageDetail}) {
   const messageLines = ALERTABLE_RESOURCES_METADATA.get(usage.resourceType);
-  const message = <>{messageLines?.map((line) => <p>{line}</p>)}</>;
+  const message = <>{messageLines?.map((line) => <p key={line}>{line}</p>)}</>;
   const [show, setShow] = useState(true);
   const onClose = () => setShow(false);
   return (
