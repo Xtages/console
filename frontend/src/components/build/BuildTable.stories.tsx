@@ -22,6 +22,7 @@ const buildData: Build = {
   buildNumber: 1,
   status: BuildStatusEnum.Failed,
   type: BuildType.Ci,
+  env: 'dev',
   initiatorName: 'Bill Murray',
   initiatorEmail: 'b.murray@xtages.com',
   initiatorAvatarUrl: 'http://www.fillmurray.com/100/100',
@@ -29,6 +30,7 @@ const buildData: Build = {
   commitUrl: 'https://github.com/Xtages/console/commit/81acee7df324793c6409e178798dab5d197ba50f',
   startTimestampInMillis: Date.now(),
   endTimestampInMillis: Date.now() + (7 * 60 * 1000),
+  actions: [],
   phases: [
     {
       id: 1,

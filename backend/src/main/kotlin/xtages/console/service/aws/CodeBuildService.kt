@@ -186,7 +186,9 @@ class CodeBuildService(
                     build = build,
                     events = emptyList(),
                     usernameToGithubUser = usernameToGithubUser,
-                    idToXtagesUser = idToXtagesUser
+                    idToXtagesUser = idToXtagesUser,
+                    // We don't need actions for the emails
+                    actions = emptySet(),
                 ),
                 commitDesc = commitDesc
             )

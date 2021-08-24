@@ -59,7 +59,7 @@ class OrganizationApiController(
 
     override fun projectsDeployed(): ResponseEntity<Projects> {
         val organization = organizationDao.fetchOneByCognitoUserId(authenticationService.currentCognitoUserId)
-        val latestDeployments = projectDeploymentDao.fetchLatestDeploymentsByOrg(organizationName = organization.name!!)
+        val latestDeployments = projectDeploymentDao.fetchLatestDeploymentsByOrg(organization = organization)
         val deploysPerProjectId = latestDeployments.groupBy { deployment -> deployment.projectId }
         val projectPojos = projectDao.fetchById(*deploysPerProjectId.keys.filterNotNull().toIntArray())
         val recipes = recipeDao.fetchById(*projectPojos.mapNotNull { project -> project.recipe }.toIntArray())

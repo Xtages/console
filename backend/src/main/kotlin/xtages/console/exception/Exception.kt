@@ -27,6 +27,7 @@ enum class ExceptionCode {
     USAGE_OVER_LIMIT,
     PROJECT_DEPLOYMENT_NOT_FOUND,
     COGNITO_ERROR,
+    INVALID_ENV,
 }
 
 /**

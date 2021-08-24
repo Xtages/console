@@ -157,14 +157,15 @@ fun buildPojoToBuild(
     build: BuildPojo,
     events: List<BuildEvent>,
     usernameToGithubUser: Map<String, GithubUser>,
-    idToXtagesUser: Map<Int, XtagesUserWithCognitoAttributes>
+    idToXtagesUser: Map<Int, XtagesUserWithCognitoAttributes>,
+    actions: Set<BuildActions>
 ): Build {
     val initiator = getBuildInitiator(build, usernameToGithubUser, idToXtagesUser)
     return Build(
         id = build.id!!,
         buildNumber = build.buildNumber!!,
         type = BuildType.valueOf(build.type!!.name),
-        env = build.environment,
+        env = build.environment!!,
         status = Build.Status.valueOf(build.status!!.name),
         initiatorName = initiator.name,
         initiatorEmail = initiator.email,
@@ -177,6 +178,7 @@ fun buildPojoToBuild(
         ).toUriString(),
         startTimestampInMillis = build.startTime!!.toUtcMillis(),
         endTimestampInMillis = build.endTime?.toUtcMillis(),
+        actions = actions.toList(),
         phases = events.mapNotNull(buildEventPojoToBuildPhaseConverter::convert)
     )
 }

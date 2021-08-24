@@ -1,8 +1,8 @@
 import React from 'react';
 import {Meta, Story} from '@storybook/react';
 import {BrowserRouter} from 'react-router-dom';
+import {Build, BuildStatusEnum, BuildType, ProjectTypeEnum} from 'gen/api';
 import {ProjectRowProps, ProjectTable, ProjectTableProps} from './ProjectTable';
-import {BuildStatusEnum, BuildType, ProjectTypeEnum} from '../../gen/api';
 
 export default {
   title: 'Xtages/Project/ProjectTable',
@@ -19,11 +19,12 @@ const projectData = {
   passCheckRuleEnabled: false,
 };
 
-const buildData = {
+const buildData: Build = {
   id: 100,
   buildNumber: 1,
   status: BuildStatusEnum.Failed,
   type: BuildType.Ci,
+  env: 'dev',
   initiatorName: 'Bill Murray',
   initiatorEmail: 'b.murray@xtages.com',
   initiatorAvatarUrl: 'http://www.fillmurray.com/100/100',
@@ -31,6 +32,7 @@ const buildData = {
   commitUrl: 'https://github.com/Xtages/console/commit/81acee7df324793c6409e178798dab5d197ba50f',
   startTimestampInMillis: Date.now(),
   endTimestampInMillis: Date.now() + (7 * 60 * 1000),
+  actions: [],
   phases: [],
 };
 
