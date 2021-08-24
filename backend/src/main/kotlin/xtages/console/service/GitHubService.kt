@@ -261,6 +261,15 @@ class GitHubService(
         return gitHubAppClient.getRepository(project.ghRepoFullName).getCommit(commitHash)
     }
 
+    /**
+     * Finds the revision of the `HEAD` commit for the default branch for [project].
+     */
+    fun findHeadCommitRevision(organization: Organization, project: Project): String {
+        val gitHubAppClient = buildGitHubAppClient(organization)
+        val repository = gitHubAppClient.getRepository(project.ghRepoFullName)
+        return repository.getBranch(repository.defaultBranch).shA1
+    }
+
     @Suppress("DEPRECATION")
     private fun buildGitHubAppClient(organization: Organization): GitHub {
         val githubAppInstallationId = ensure.notNull(
