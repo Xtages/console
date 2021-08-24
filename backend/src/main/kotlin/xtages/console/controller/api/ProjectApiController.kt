@@ -12,8 +12,7 @@ import xtages.console.controller.api.model.*
 import xtages.console.controller.model.*
 import xtages.console.dao.*
 import xtages.console.exception.ExceptionCode
-import xtages.console.exception.ExceptionCode.RECIPE_NOT_FOUND
-import xtages.console.exception.ExceptionCode.USER_NOT_FOUND
+import xtages.console.exception.ExceptionCode.*
 import xtages.console.exception.ensure
 import xtages.console.query.enums.BuildStatus
 import xtages.console.query.enums.BuildType
@@ -185,24 +184,28 @@ class ProjectApiController(
         build: BuildPojo
     ): Set<BuildActions> {
         val actions = mutableSetOf<BuildActions>()
-        if (latestDeployments.isNotEmpty()) {
-            val deployment = latestDeployments.find { deployment -> deployment.buildId == build.id }
-            // We found a Deployment that corresponds to the Build and the Build was to staging
-            if (deployment != null) {
-                if (build.environment == "staging" && build.status == BuildStatus.SUCCEEDED) {
-                    actions.add(BuildActions.PROMOTE)
-                } else if (build.environment == "production" && build.status == BuildStatus.SUCCEEDED) {
-                    actions.add(BuildActions.ROLLBACK)
-                }
-            } else if (build.status == BuildStatus.SUCCEEDED) {
-                actions.add(BuildActions.DEPLOY)
-            } else if (build.status != BuildStatus.SUCCEEDED && build.type == BuildType.CI) {
-                actions.add(BuildActions.CI)
-            }
-        } else if (build.status == BuildStatus.SUCCEEDED) {
+        val succeeded = build.status == BuildStatus.SUCCEEDED
+        val wasInStaging = build.environment == "staging"
+        val wasInProd = build.environment == "production"
+        val deployment = latestDeployments.find { deployment -> deployment.buildId == build.id }
+        if (wasInStaging) {
+            ensure.isTrue(value = build.type == BuildType.CD, code = INVALID_BUILD_TYPE)
             actions.add(BuildActions.DEPLOY)
-        } else if (build.status != BuildStatus.SUCCEEDED && build.type == BuildType.CI) {
+            if (succeeded) {
+                actions.add(BuildActions.PROMOTE)
+            }
+        } else if (wasInProd) {
+            ensure.isTrue(value = build.type == BuildType.CD, code = INVALID_BUILD_TYPE)
+            actions.add(BuildActions.PROMOTE)
+            if (succeeded && deployment != null) {
+                actions.add(BuildActions.ROLLBACK)
+            }
+        } else {
+            ensure.isTrue(value = build.type == BuildType.CI, code = INVALID_BUILD_TYPE)
             actions.add(BuildActions.CI)
+            if (succeeded) {
+                actions.add(BuildActions.DEPLOY)
+            }
         }
         return actions
     }
