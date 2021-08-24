@@ -82,7 +82,9 @@ class UsageService(
                             dateRange = currentBillingMonth,
                         )
                         val resetDateTime = when (resourceType) {
-                            ResourceType.PROJECT, ResourceType.DB_STORAGE_GBS -> null
+                            // PROJECT and DB_STORAGE_GBS don't reset at the end of the month
+                            ResourceType.PROJECT,
+                            ResourceType.DB_STORAGE_GBS -> null
                             ResourceType.MONTHLY_BUILD_MINUTES,
                             ResourceType.MONTHLY_DATA_TRANSFER_GBS -> currentBillingMonth.endInclusive
                         }
@@ -127,10 +129,14 @@ class UsageService(
                 )
             )
             ResourceType.DB_STORAGE_GBS -> {
-                DecimalByteUnit.BYTES.toGigabytes(
-                    DecimalByteUnit.GIGABYTES.toBytes(plan.dbStorageGbs!!) -
-                            cloudWatchService.getBytesDbStorageFree(organization = organization)
-                )
+                val bytesDbStorageFree = cloudWatchService.getBytesDbStorageFree(organization = organization)
+                if (bytesDbStorageFree == -1L) {
+                    0L
+                } else {
+                    DecimalByteUnit.BYTES.toGigabytes(
+                        DecimalByteUnit.GIGABYTES.toBytes(plan.dbStorageGbs!!) - bytesDbStorageFree
+                    )
+                }
             }
         }
     }
