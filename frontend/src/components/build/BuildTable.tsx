@@ -9,14 +9,10 @@ import {ArrowUpCircle,
   X} from 'react-feather';
 import cx from 'classnames';
 import {useQuery, useQueryClient} from 'react-query';
-import {Button, Container,
-  Dropdown,
-  DropdownButton,
-  Tab,
-  Tabs} from 'react-bootstrap';
-import {Build, BuildPhase, BuildType, Project} from 'gen/api';
+import {Button, Container, Dropdown, DropdownButton, Tab, Tabs} from 'react-bootstrap';
+import {Build, BuildActions, BuildPhase, BuildType, Project} from 'gen/api';
 import {durationString, formatDateTimeMed, formatDateTimeRelativeToNow} from 'helpers/time';
-import {cdApi, logsApi} from 'service/Services';
+import {cdApi, ciApi, logsApi} from 'service/Services';
 import {BuildStatusIcon} from './BuildStatusIcon';
 import Avatar from '../avatar/Avatar';
 import {LogViewer} from '../logviewer/LogViewer';
@@ -69,46 +65,37 @@ export function BuildRowInner({
 }: BuildRowInnerProps) {
   const [collapsed, setCollapsed] = useState(true);
   const toggleCollapsed = () => setCollapsed(!collapsed);
-  const queryClient = useQueryClient();
-
-  async function deploy() {
-    await cdApi.deploy(project.name, {
-      commitHash: build.commitHash,
-    });
-    await queryClient.invalidateQueries(project.name);
-  }
-
-  async function promote() {
-    await cdApi.promote(project.name, {
-      commitHash: build.commitHash,
-      env: 'prod',
-    });
-    await queryClient.invalidateQueries(project.name);
-  }
-
-  async function rollback() {
-    await cdApi.rollback(project.name, {
-      commitHash: build.commitHash,
-      env: 'prod',
-    });
-    await queryClient.invalidateQueries(project.name);
+  let buildIcon;
+  // eslint-disable-next-line default-case
+  switch (build.env) {
+    case 'dev':
+      buildIcon = <GitMerge size="1em" className="text-muted" />;
+      break;
+    case 'staging':
+      buildIcon = <ArrowUpCircle size="1em" className="text-primary" />;
+      break;
+    case 'production':
+      buildIcon = <UploadCloud size="1em" className="text-dark-primary" />;
+      break;
   }
 
   return (
     <>
       <div className="row">
-        <div className="col-12 text-muted text-sm pl-0">
+        <div className="col-12 text-sm pl-0 text-muted">
           {build.type === BuildType.Ci ? (
             <>
-              <GitMerge size=".9em" />
+              {buildIcon}
               {' '}
               Integration
             </>
           ) : (
             <>
-              <UploadCloud size=".9em" />
+              {buildIcon}
               {' '}
-              Deployment
+              Deployment to
+              {' '}
+              {build.env}
             </>
           )}
           {' '}
@@ -187,24 +174,68 @@ export function BuildRowInner({
           </div>
         </div>
         <div className="col-2">
-          <DropdownButton title="Actions" id={`actions-${build.id}`} menuRole="menu" size="sm">
-            <Dropdown.Item onClick={promote}>
-              <span className="pr-2 text-dark-success"><UploadCloud size="1.3em" /></span>
-              Promote to Prod
-            </Dropdown.Item>
-            <Dropdown.Item onClick={deploy}>
-              <span className="pr-2 text-primary"><ArrowUpCircle size="1.3em" /></span>
-              Deploy to Staging
-            </Dropdown.Item>
-            <Dropdown.Item onClick={rollback}>
-              <span className="pr-2 text-danger"><RotateCcw size="1.3em" /></span>
-              Rollback
-            </Dropdown.Item>
-          </DropdownButton>
+          <BuildActionsDropdown project={project} build={build} />
         </div>
       </div>
       {collapsible && <AdditionalInfoPane collapsed={collapsed} project={project} build={build} />}
     </>
+  );
+}
+
+/**
+ * Dropwdown with available Build actions.
+ */
+function BuildActionsDropdown({project, build}: {project: Project, build: Build}) {
+  const queryClient = useQueryClient();
+
+  async function runCi() {
+    await ciApi.ci(project.name, {
+      commitHash: build.commitHash,
+    });
+    await queryClient.invalidateQueries(project.name);
+  }
+
+  async function deploy() {
+    await cdApi.deploy(project.name, {
+      commitHash: build.commitHash,
+    });
+    await queryClient.invalidateQueries(project.name);
+  }
+
+  async function promote() {
+    await cdApi.promote(project.name);
+    await queryClient.invalidateQueries(project.name);
+  }
+
+  async function rollback() {
+    await cdApi.rollback(project.name);
+    await queryClient.invalidateQueries(project.name);
+  }
+
+  const canRunCi = build.actions.includes(BuildActions.Ci);
+  const canPromote = build.actions.includes(BuildActions.Promote);
+  const canDeploy = build.actions.includes(BuildActions.Deploy);
+  const canRollback = build.actions.includes(BuildActions.Rollback);
+
+  return (
+    <DropdownButton title="Actions" id={`actions-${build.id}`} menuRole="menu" size="sm">
+      <Dropdown.Item onClick={runCi} disabled={!canRunCi}>
+        <span className={cx('pr-2', {'text-success': canRunCi})}><GitMerge size="1.3em" /></span>
+        Run CI
+      </Dropdown.Item>
+      <Dropdown.Item onClick={promote} disabled={!canPromote}>
+        <span className={cx('pr-2', {'text-dark-primary': canPromote})}><UploadCloud size="1.3em" /></span>
+        Promote to Prod
+      </Dropdown.Item>
+      <Dropdown.Item onClick={deploy} disabled={!canDeploy}>
+        <span className={cx('pr-2', {'text-primary': canDeploy})}><ArrowUpCircle size="1.3em" /></span>
+        Deploy to Staging
+      </Dropdown.Item>
+      <Dropdown.Item onClick={rollback} disabled={!canRollback}>
+        <span className={cx('pr-2', {'text-danger': canRollback})}><RotateCcw size="1.3em" /></span>
+        Rollback
+      </Dropdown.Item>
+    </DropdownButton>
   );
 }
 

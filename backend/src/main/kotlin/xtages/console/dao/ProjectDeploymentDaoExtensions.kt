@@ -1,12 +1,13 @@
 package xtages.console.dao
 
-import org.jooq.impl.DSL
 import org.jooq.impl.DSL.max
 import org.jooq.impl.DSL.rank
 import xtages.console.controller.model.Environment
 import xtages.console.query.enums.BuildType
 import xtages.console.query.tables.daos.ProjectDeploymentDao
 import xtages.console.query.tables.pojos.Build
+import xtages.console.query.tables.pojos.Organization
+import xtages.console.query.tables.pojos.Project
 import xtages.console.query.tables.pojos.ProjectDeployment
 import xtages.console.query.tables.references.BUILD
 import xtages.console.query.tables.references.ORGANIZATION
@@ -36,6 +37,36 @@ fun ProjectDeploymentDao.fetchLatestDeploymentStatus(
         .fetchOneInto(ProjectDeployment::class.java)
 }
 
+/**
+ * @return The latests [ProjectDeployment]s for [project] per by `environment`.
+ */
+fun ProjectDeploymentDao.fetchLatestDeploymentsByProject(
+    project: Project
+): List<ProjectDeployment> {
+    val subQuery = ctx()
+        .select(
+            PROJECT_DEPLOYMENT.asterisk(),
+            // This following statement is going to partition the rows by environment and order each partition by
+            // `project_deployment.status_change_time`, and alias the racking of each row withing their
+            // partition to a column called 'pos'.
+            rank()
+                .over()
+                .partitionBy(BUILD.ENVIRONMENT)
+                .orderBy(PROJECT_DEPLOYMENT.STATUS_CHANGE_TIME.desc())
+                .`as`("pos")
+        )
+        .from(PROJECT_DEPLOYMENT)
+        .join(PROJECT).on(PROJECT_DEPLOYMENT.PROJECT_ID.eq(PROJECT.ID))
+        .join(BUILD).on(PROJECT_DEPLOYMENT.BUILD_ID.eq(BUILD.ID))
+        .where(PROJECT.ID.eq(project.id!!))
+        .orderBy(PROJECT_DEPLOYMENT.STATUS_CHANGE_TIME.desc()).asTable()
+    return ctx()
+        .select(subQuery.asterisk())
+        .from(subQuery)
+        .where(subQuery.field("pos", Int::class.java)!!.lessThan(2))
+        .fetchInto(ProjectDeployment::class.java)
+}
+
 /***
  * Returns the latest [ProjectDeployment] based on the [builds] list
  */
@@ -62,10 +93,10 @@ fun ProjectDeploymentDao.fetchLatestByBuilds(builds: List<Build>): List<ProjectD
 }
 
 /**
- * Finds the latest [ProjectDeployment]s for [organizationName]. That is, for each project of [organizationName], for
+ * Finds the latest [ProjectDeployment]s for [organization]. That is, for each project of [organization], for
  * each `environment`.
  */
-fun ProjectDeploymentDao.fetchLatestDeploymentsByOrg(organizationName: String): List<ProjectDeployment> {
+fun ProjectDeploymentDao.fetchLatestDeploymentsByOrg(organization: Organization): List<ProjectDeployment> {
     val subQuery = ctx()
         // Each row in this query will the `project_deployment` details plus their "pos" (position) in their respective
         // partition. We will then use the "pos" to get the first row for each partition, in the `WHERE` of the outer
@@ -84,7 +115,7 @@ fun ProjectDeploymentDao.fetchLatestDeploymentsByOrg(organizationName: String): 
         .join(PROJECT).on(ORGANIZATION.NAME.eq(PROJECT.ORGANIZATION))
         .join(PROJECT_DEPLOYMENT).on(PROJECT.ID.eq(PROJECT_DEPLOYMENT.PROJECT_ID))
         .join(BUILD).on(PROJECT_DEPLOYMENT.BUILD_ID.eq(BUILD.ID))
-        .where(ORGANIZATION.NAME.eq(organizationName).and(BUILD.TYPE.eq(BuildType.CD)))
+        .where(ORGANIZATION.NAME.eq(organization.name!!).and(BUILD.TYPE.eq(BuildType.CD)))
         .groupBy(PROJECT_DEPLOYMENT.ID, PROJECT.ID, BUILD.ENVIRONMENT)
         .asTable("subquery")
     return ctx()

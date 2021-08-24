@@ -799,6 +799,15 @@ components:
       enum:
         - CI
         - CD
+    BuildActions:
+      description: Actions available to a specificic Build
+      type: string
+      minLength: 1
+      enum:
+        - DEPLOY
+        - PROMOTE
+        - ROLLBACK
+        - CI
     Build:
       description: A build (CI or CD) that ocurred
       properties:
@@ -841,6 +850,10 @@ components:
         endTimestampInMillis:
           type: integer
           format: int64
+        actions:
+          type: array
+          items:
+            $ref: "#/components/schemas/BuildActions"
         phases:
           type: array
           items:
@@ -849,12 +862,14 @@ components:
         - id
         - buildNumber
         - type
+        - env
         - status
         - initiatorEmail
         - initiatorName
         - commitHash
         - commitUrl
         - startTimestampInMillis
+        - actions
         - phases
     BuildPhase:
       description: A phase of a Build

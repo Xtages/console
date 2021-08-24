@@ -23,6 +23,7 @@ fun mainX() {
         id = 70,
         buildNumber = 13,
         type = BuildType.CI,
+        env = "dev",
         status = Build.Status.SUCCEEDED,
         initiatorName = "Rick James",
         initiatorEmail = "rjames@acme.net",
@@ -31,6 +32,7 @@ fun mainX() {
         startTimestampInMillis = 0,
         endTimestampInMillis = 0,
         phases = emptyList(),
+        actions = emptyList(),
     )
     val commitDesc = """fix: correct minor typos in code
 
