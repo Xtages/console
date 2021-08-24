@@ -90,7 +90,7 @@ export interface Build {
      * @type {string}
      * @memberof Build
      */
-    env?: string;
+    env: string;
     /**
      * 
      * @type {string}
@@ -141,6 +141,12 @@ export interface Build {
     endTimestampInMillis?: number;
     /**
      * 
+     * @type {Array<BuildActions>}
+     * @memberof Build
+     */
+    actions: Array<BuildActions>;
+    /**
+     * 
      * @type {Array<BuildPhase>}
      * @memberof Build
      */
@@ -157,6 +163,18 @@ export enum BuildStatusEnum {
     Failed = 'FAILED',
     InProgress = 'IN_PROGRESS',
     Unknown = 'UNKNOWN'
+}
+
+/**
+ * Actions available to a specificic Build
+ * @export
+ * @enum {string}
+ */
+export enum BuildActions {
+    Deploy = 'DEPLOY',
+    Promote = 'PROMOTE',
+    Rollback = 'ROLLBACK',
+    Ci = 'CI'
 }
 
 /**

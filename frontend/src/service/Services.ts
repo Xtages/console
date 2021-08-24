@@ -1,6 +1,7 @@
 import {Auth as CognitoAuth} from 'aws-amplify';
 import {CdApi,
   CheckoutApi,
+  CiApi,
   Configuration,
   LogsApi,
   OrganizationApi,
@@ -29,6 +30,7 @@ export const checkoutApi = buildAuthdApi<CheckoutApi>(CheckoutApi);
 export const organizationApi = buildAuthdApi<OrganizationApi>(OrganizationApi);
 export const projectApi = buildAuthdApi<ProjectApi>(ProjectApi);
 export const logsApi = buildAuthdApi<LogsApi>(LogsApi);
+export const ciApi = buildAuthdApi<CiApi>(CiApi);
 export const cdApi = buildAuthdApi<CdApi>(CdApi);
 export const usageApi = buildAuthdApi<UsageApi>(UsageApi);
 export const userApi = buildAuthdApi<UserApi>(UserApi);

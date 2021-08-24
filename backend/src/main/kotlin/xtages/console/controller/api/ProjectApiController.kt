@@ -16,6 +16,7 @@ import xtages.console.exception.ExceptionCode.RECIPE_NOT_FOUND
 import xtages.console.exception.ExceptionCode.USER_NOT_FOUND
 import xtages.console.exception.ensure
 import xtages.console.query.enums.BuildStatus
+import xtages.console.query.enums.BuildType
 import xtages.console.query.enums.ProjectType
 import xtages.console.query.enums.ResourceType
 import xtages.console.query.tables.daos.*
@@ -26,7 +27,6 @@ import xtages.console.service.aws.*
 import java.net.URL
 import java.util.*
 import javax.validation.ValidationException
-import xtages.console.query.enums.BuildType as BuildTypePojo
 import xtages.console.query.tables.pojos.Build as BuildPojo
 import xtages.console.query.tables.pojos.Project as ProjectPojo
 
@@ -82,6 +82,7 @@ class ProjectApiController(
             val buildIdToBuildEvents = buildEventDao
                 .fetchByBuildId(*buildIdToBuild.keys.toLongArray())
                 .groupBy { buildEvent -> buildEvent.buildId!! }
+            val projectDeployments = projectDeploymentDao.fetchLatestDeploymentsByProject(project = project)
 
             val builds = when {
                 includeBuilds -> buildPojos.map { build ->
@@ -92,14 +93,16 @@ class ProjectApiController(
                         build = build,
                         events = events,
                         usernameToGithubUser = usernameToGithubUser,
-                        idToXtagesUser = idToXtagesUser
+                        idToXtagesUser = idToXtagesUser,
+                        actions = determineAvailableBuildActions(projectDeployments, build),
                     )
                 }
                 else -> emptyList()
             }
 
             val deployments = when {
-                includeDeployments -> findLatestDeployments(
+                includeDeployments -> convertDeployments(
+                    projectDeployments,
                     organization = organization,
                     project = project,
                     builds = buildPojos,
@@ -135,27 +138,30 @@ class ProjectApiController(
                 .associateBy { build -> build.projectId!! }
             val usernameToGithubUser = githubUserDao.findFromBuilds(projectIdToLatestBuild.values.toList())
             val idToXtagesUser = userService.findFromBuilds(projectIdToLatestBuild.values.toList())
+            val latestDeploymentsByProjectId =
+                projectDeploymentDao.fetchLatestDeploymentsByOrg(organization = organization)
+                    .groupBy { deployment -> deployment.projectId }
 
-            val latestBuildEvents = buildEventDao
-                .fetchByBuildId(*projectIdToLatestBuild.values.mapNotNull { build -> build.id }.toLongArray())
             val convertedProjects = projects
                 .associateWith { project -> projectIdToLatestBuild[project.id] }
                 .map { entry ->
                     val buildPojo = entry.value
                     val project = entry.key
+                    val latestDeployments = latestDeploymentsByProjectId[project.id] ?: emptyList()
                     val convertedBuild = buildPojo?.let { build ->
                         buildPojoToBuild(
                             organization = organization,
                             project = project,
                             build = build,
-                            events = latestBuildEvents,
+                            events = emptyList(),
                             usernameToGithubUser = usernameToGithubUser,
                             idToXtagesUser = idToXtagesUser,
+                            actions = determineAvailableBuildActions(latestDeployments, build),
                         )
                     }
                     convertProjectPojoToProject(
                         source = project,
-                        builds = if (convertedBuild != null) listOf(convertedBuild) else emptyList()
+                        builds = listOfNotNull(convertedBuild)
                     )
                 }.sortedWith { projectA, projectB ->
                     val startTimestampA = projectA.builds.singleOrNull()?.startTimestampInMillis
@@ -174,22 +180,54 @@ class ProjectApiController(
         )
     }
 
-    private fun findLatestDeployments(
+    private fun determineAvailableBuildActions(
+        latestDeployments: List<ProjectDeployment>,
+        build: BuildPojo
+    ): Set<BuildActions> {
+        val actions = mutableSetOf<BuildActions>()
+        if (latestDeployments.isNotEmpty()) {
+            val deployment = latestDeployments.find { deployment -> deployment.buildId == build.id }
+            // We found a Deployment that corresponds to the Build and the Build was to staging
+            if (deployment != null) {
+                if (build.environment == "staging" && build.status == BuildStatus.SUCCEEDED) {
+                    actions.add(BuildActions.PROMOTE)
+                } else if (build.environment == "production" && build.status == BuildStatus.SUCCEEDED) {
+                    actions.add(BuildActions.ROLLBACK)
+                }
+            } else if (build.status == BuildStatus.SUCCEEDED) {
+                actions.add(BuildActions.DEPLOY)
+            } else if (build.status != BuildStatus.SUCCEEDED && build.type == BuildType.CI) {
+                actions.add(BuildActions.CI)
+            }
+        } else if (build.status == BuildStatus.SUCCEEDED) {
+            actions.add(BuildActions.DEPLOY)
+        } else if (build.status != BuildStatus.SUCCEEDED && build.type == BuildType.CI) {
+            actions.add(BuildActions.CI)
+        }
+        return actions
+    }
+
+    private fun convertDeployments(
+        projectDeployments: List<ProjectDeployment>,
         organization: Organization,
         project: ProjectPojo,
         builds: List<BuildPojo>,
         usernameToGithubUser: Map<String, GithubUser>,
         idToXtagesUser: Map<Int, XtagesUserWithCognitoAttributes>
     ): List<Deployment> {
-        val prodDeployment = builds.firstOrNull { build ->
-            build.type == BuildTypePojo.CD && build.status == BuildStatus.SUCCEEDED && build.environment == "production"
-        }
-        val stagingDeployment = builds.firstOrNull { build ->
-            build.type == BuildTypePojo.CD && build.status == BuildStatus.SUCCEEDED && build.environment == "staging"
-        }
-        val deploymentBuilds = listOfNotNull(prodDeployment, stagingDeployment)
-        val projectDeployments = projectDeploymentDao.fetchLatestByBuilds(deploymentBuilds)
         val deploymentsByBuildId = projectDeployments.associateBy { deployment -> deployment.buildId!! }
+        val deploymentBuilds = mutableListOf<BuildPojo>()
+        val buildIdsToFetch = deploymentsByBuildId.keys.toMutableSet()
+        // Try to find the deployment builds from the Builds that have been already loaded in memory
+        val alreadyLoadedBuilds = builds.filter { build -> build.id in buildIdsToFetch }
+        if (alreadyLoadedBuilds.isNotEmpty()) {
+            deploymentBuilds.addAll(alreadyLoadedBuilds)
+            buildIdsToFetch.removeAll(alreadyLoadedBuilds.map { build -> build.id!! })
+        }
+        // Otherwise, go to the DB and load the remaning Builds that weren't already in memory
+        if (buildIdsToFetch.isNotEmpty()) {
+            deploymentBuilds.addAll(buildDao.fetchById(*buildIdsToFetch.toLongArray()))
+        }
 
         return deploymentBuilds.mapNotNull { build ->
             val deploy = deploymentsByBuildId[build.id]
