@@ -42,9 +42,14 @@ class CloudWatchService(
             .endTime(OffsetDateTime.now(ZoneOffset.UTC).toInstant().truncatedTo(ChronoUnit.MILLIS))
             .build()
         return try {
-            cloudWatchAsyncClient
+            val datapoints = cloudWatchAsyncClient
                 .getMetricStatistics(request)
-                .get().datapoints()
+                .get()
+                .datapoints()
+            if (datapoints.isEmpty()) {
+                return -1L
+            }
+            datapoints
                 .map { point -> point.average() }
                 .average()
                 .toLong()
