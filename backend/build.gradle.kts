@@ -19,6 +19,7 @@ group = "com.xtages"
 version = "0.0.1-SNAPSHOT"
 java.sourceCompatibility = JavaVersion.VERSION_11
 val awspringVersion = "2.3.1"
+val micrometerVersion = "1.7.3"
 
 repositories {
     mavenCentral()
@@ -62,6 +63,8 @@ dependencies {
     implementation("software.amazon.awssdk:rds")
     implementation("software.amazon.awssdk:ssm")
     implementation("software.amazon.awssdk:ecs")
+    implementation("io.micrometer:micrometer-registry-cloudwatch:$micrometerVersion")
+
 
     liquibaseRuntime("org.liquibase:liquibase-core")
     liquibaseRuntime(sourceSets.getByName("main").compileClasspath)
