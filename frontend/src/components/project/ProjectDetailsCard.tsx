@@ -1,13 +1,15 @@
 import React, {ReactNode} from 'react';
-import {Card, Col, Container, OverlayTrigger, Row, Tooltip} from 'react-bootstrap';
+import {Button, Card, Col, Container, OverlayTrigger, Row, Tooltip} from 'react-bootstrap';
 import {Link} from 'react-router-dom';
 import {GaugeConfig} from '@ant-design/charts/es/gauge';
-import {Settings} from 'react-feather';
+import {GitMerge, Settings} from 'react-feather';
 import {Deployment, DeploymentStatusEnum, Project} from 'gen/api';
 import {formatDateTimeFull} from 'helpers/time';
 import colors from 'assets/css/colors.module.scss';
 import loadable from '@loadable/component';
 import cx from 'classnames';
+import {useQueryClient} from 'react-query';
+import {ciApi} from 'service/Services';
 import {GitHubCommitLink, GitHubLink} from '../link/XtagesLink';
 
 const LoadableGauge = loadable.lib(() => import('@ant-design/charts/es/gauge'));
@@ -20,6 +22,8 @@ export interface SimpleProjectCardProps {
   projectVitalsColWidth?: number;
 
   showSettingsLink?: boolean;
+
+  showRunCiButton?: boolean;
 }
 
 /**
@@ -32,8 +36,18 @@ export function SimpleProjectCard({
   project,
   projectVitalsColWidth = 3,
   showSettingsLink = true,
+  showRunCiButton = true,
 }
 : SimpleProjectCardProps) {
+  const queryClient = useQueryClient();
+
+  async function runCi() {
+    await ciApi.ci(project.name, {
+      commitHash: 'HEAD',
+    });
+    await queryClient.invalidateQueries(project.name);
+  }
+
   return (
     <Card>
       <Card.Body>
@@ -43,9 +57,6 @@ export function SimpleProjectCard({
               <h2 className="mb-0 lh-100">
                 <Link to={`/project/${project.name}`}>{project.name}</Link>
               </h2>
-              <div>
-                <GitHubLink href={project.ghRepoUrl}>See in GitHub</GitHubLink>
-              </div>
               {showSettingsLink && (
               <div className="pt-2 text-sm">
                 <Link to={`/project/${project.name}/settings`}>
@@ -54,6 +65,18 @@ export function SimpleProjectCard({
                 </Link>
               </div>
               )}
+              {showRunCiButton && (
+              <div className="pt-2">
+                <Button className="btn-xs" variant="success" onClick={runCi}>
+                  <GitMerge size="1em" />
+                  {' '}
+                  Run CI from HEAD
+                </Button>
+              </div>
+              )}
+              <div className="pt-2">
+                <GitHubLink href={project.ghRepoUrl}>See in GitHub</GitHubLink>
+              </div>
             </Col>
             {children}
           </Row>

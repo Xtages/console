@@ -108,7 +108,7 @@ export function ProjectSettingsCard({
   }
 
   return (
-    <SimpleProjectCard project={project} showSettingsLink={false}>
+    <SimpleProjectCard project={project} showSettingsLink={false} showRunCiButton={false}>
       <Col sm={9}>
         <Formik initialValues={initialValues} validate={validate} onSubmit={saveSettings}>
           {({

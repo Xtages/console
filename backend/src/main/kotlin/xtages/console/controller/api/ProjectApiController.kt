@@ -293,13 +293,18 @@ class ProjectApiController(
             code = RECIPE_NOT_FOUND
         )
         ensureDbIsAvailable(organization)
+        val commitHash = if (ciReq.commitHash == "HEAD") {
+            gitHubService.findHeadCommitRevision(organization = organization, project = project)
+        } else {
+            ciReq.commitHash
+        }
         val startCodeBuildResponse = codeBuildService.startCodeBuildProject(
             gitHubAppToken = gitHubService.appToken(organization),
             user = user,
             project = project,
             recipe = recipe,
             organization = organization,
-            commitHash = ciReq.commitHash,
+            commitHash = commitHash,
             codeBuildType = CodeBuildType.CI,
             environment = "dev",
         )
@@ -407,7 +412,7 @@ class ProjectApiController(
         val (_, organization, project) = checkRepoBelongsToOrg(projectName)
         val build = ensure.foundOne(
             operation = { buildDao.fetchById(buildId).first() },
-            code = ExceptionCode.BUILD_NOT_FOUND,
+            code = BUILD_NOT_FOUND,
             lazyMessage = { "Build with id [$buildId] was not found" }
         )
 
