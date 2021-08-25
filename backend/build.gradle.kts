@@ -64,6 +64,7 @@ dependencies {
     implementation("software.amazon.awssdk:ssm")
     implementation("software.amazon.awssdk:ecs")
     implementation("io.micrometer:micrometer-registry-cloudwatch:$micrometerVersion")
+    implementation("software.amazon.awssdk:cloudwatch-metric-publisher")
 
 
     liquibaseRuntime("org.liquibase:liquibase-core")

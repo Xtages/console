@@ -10,6 +10,8 @@ import org.springframework.messaging.converter.MappingJackson2MessageConverter
 import org.springframework.messaging.converter.MessageConverter
 import org.springframework.messaging.handler.annotation.support.PayloadMethodArgumentResolver
 import software.amazon.awssdk.auth.credentials.AnonymousCredentialsProvider
+import software.amazon.awssdk.core.client.config.ClientOverrideConfiguration
+import software.amazon.awssdk.metrics.publishers.cloudwatch.CloudWatchMetricPublisher
 import software.amazon.awssdk.services.acm.AcmAsyncClient
 import software.amazon.awssdk.services.cloudwatch.CloudWatchAsyncClient
 import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsAsyncClient
@@ -28,38 +30,73 @@ import software.amazon.awssdk.services.sts.StsAsyncClient
 class AwsClientConfig {
 
     @Bean
+    fun cloudWatchMetricPublisher(): CloudWatchMetricPublisher {
+        return CloudWatchMetricPublisher.create()
+    }
+
+    @Bean
     fun anonymousCognitoIdentityClient(): CognitoIdentityAsyncClient {
         return CognitoIdentityAsyncClient.builder()
+            .overrideConfiguration(
+                clientOverrideConfiguration()
+            )
             .credentialsProvider(AnonymousCredentialsProvider.create())
             .build()
     }
 
     @Bean
-    fun acmClient(): AcmAsyncClient = AcmAsyncClient.create()
+    fun acmClient(): AcmAsyncClient = AcmAsyncClient.builder()
+        .overrideConfiguration(
+            clientOverrideConfiguration()
+        ).build()
 
     @Bean
-    fun cognitoIdpClient(): CognitoIdentityProviderAsyncClient = CognitoIdentityProviderAsyncClient.create()
+    fun cognitoIdpClient(): CognitoIdentityProviderAsyncClient = CognitoIdentityProviderAsyncClient.builder()
+        .overrideConfiguration(
+            clientOverrideConfiguration()
+        ).build()
 
     @Bean
-    fun ecrAsyncClient(): EcrAsyncClient = EcrAsyncClient.create()
+    fun ecrAsyncClient(): EcrAsyncClient = EcrAsyncClient.builder()
+        .overrideConfiguration(
+            clientOverrideConfiguration()
+        ).build()
 
     @Bean
-    fun codeBuildClient(): CodeBuildAsyncClient = CodeBuildAsyncClient.create()
+    fun codeBuildClient(): CodeBuildAsyncClient = CodeBuildAsyncClient.builder()
+        .overrideConfiguration(
+            clientOverrideConfiguration()
+        ).build()
 
     @Bean
-    fun codestarNotificationsClient(): CodestarNotificationsAsyncClient = CodestarNotificationsAsyncClient.create()
+    fun codestarNotificationsClient(): CodestarNotificationsAsyncClient = CodestarNotificationsAsyncClient.builder()
+        .overrideConfiguration(
+            clientOverrideConfiguration()
+        ).build()
 
     @Bean
-    fun cloudWatchLogsClient(): CloudWatchLogsAsyncClient = CloudWatchLogsAsyncClient.create()
+    fun cloudWatchLogsClient(): CloudWatchLogsAsyncClient = CloudWatchLogsAsyncClient.builder()
+        .overrideConfiguration(
+            clientOverrideConfiguration()
+        ).build()
 
     @Bean
-    fun cloudWatchClient(): CloudWatchAsyncClient = CloudWatchAsyncClient.create()
+    fun cloudWatchClient(): CloudWatchAsyncClient = CloudWatchAsyncClient.builder()
+        .overrideConfiguration(
+            clientOverrideConfiguration()
+        ).build()
 
     @Bean
-    fun sesClient(): SesAsyncClient = SesAsyncClient.create()
+    fun sesClient(): SesAsyncClient = SesAsyncClient.builder()
+        .overrideConfiguration(
+            clientOverrideConfiguration()
+        ).build()
 
     @Bean
-    fun stsClient(): StsAsyncClient = StsAsyncClient.create()
+    fun stsClient(): StsAsyncClient = StsAsyncClient.builder()
+        .overrideConfiguration(
+            clientOverrideConfiguration()
+        ).build()
 
     @Bean
     fun queueMessagingTemplate(amazonSQSAsync: AmazonSQSAsync): QueueMessagingTemplate =
@@ -84,11 +121,25 @@ class AwsClientConfig {
     }
 
     @Bean
-    fun rdsAsyncClient(): RdsAsyncClient = RdsAsyncClient.create()
+    fun rdsAsyncClient(): RdsAsyncClient = RdsAsyncClient.builder()
+        .overrideConfiguration(
+            clientOverrideConfiguration()
+        ).build()
 
     @Bean
-    fun ssmAsyncClient(): SsmAsyncClient = SsmAsyncClient.create()
+    fun ssmAsyncClient(): SsmAsyncClient = SsmAsyncClient.builder()
+        .overrideConfiguration(
+            clientOverrideConfiguration()
+        ).build()
 
     @Bean
-    fun ecsAsyncClient(): EcsAsyncClient = EcsAsyncClient.create()
+    fun ecsAsyncClient(): EcsAsyncClient = EcsAsyncClient.builder()
+        .overrideConfiguration(
+            clientOverrideConfiguration()
+        ).build()
+
+    private fun clientOverrideConfiguration() = ClientOverrideConfiguration
+        .builder()
+        .addMetricPublisher(cloudWatchMetricPublisher())
+        .build()
 }
