@@ -310,7 +310,7 @@ class CodeBuildService(
         buildRecord.store()
         logger.debug { "Build created with id: ${buildRecord.id}" }
 
-        logger.info { "running CodeBuild: $codeBuildType for project : ${project.name} commit: $commitHash organization: ${organization.name}" }
+        logger.info { "running CodeBuild:[$codeBuildType] for project:[${project.name}], commit:[$commitHash], organization: [${organization.name}]" }
         val cbProjectName = if (codeBuildType == CodeBuildType.CI)
             project.codeBuildCiProjectName
         else

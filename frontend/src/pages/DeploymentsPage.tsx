@@ -130,7 +130,7 @@ export default function DeploymentsPage() {
                 <Row>
                   <Col sm={12}>
                     {currentProject ? (
-                      <SimpleProjectCard project={currentProject}>
+                      <SimpleProjectCard project={currentProject} showRunCiButton={false}>
                         <DeploymentDetails
                           project={projectWithSingleDeployment!!}
                           colWidth={9}
