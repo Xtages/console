@@ -78,7 +78,7 @@ export type UseInfiniteQueryLoaderElementProps<D = unknown, E = unknown> = {
    * message rendered by {@link UseInfiniteQueryLoaderElement}. If it returns `undefined` the
    * default error will be rendered.
    */
-  errorHandler?: ((error: E) => ReactNode);
+  errorHandler?: ((error: E) => ReactNode | null | void);
 };
 
 /**
@@ -98,7 +98,7 @@ export function UseInfiniteQueryLoaderElement<D = unknown, E = unknown>({
     error,
   } = queryResult;
 
-  let content: string | ReactNode;
+  let content: string | ReactNode | null | void;
   if (isLoading) {
     content = (
       <div className="mx-auto py-5">

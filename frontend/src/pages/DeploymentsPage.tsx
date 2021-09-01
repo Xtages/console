@@ -40,6 +40,25 @@ export default function DeploymentsPage() {
     history.push(`/deployments/${project.name}/${deployment.env}`);
   }
 
+  function maybeHandleLogsError(e: any) {
+    if (e.isAxiosError
+        && e.response !== undefined
+        && e.response.data !== undefined
+        && e.response.data.error === 'Not Found'
+        && e.response.data.error_code === 'INVALID_LOGS') {
+      return (
+        <Row className="justify-content-center">
+          <Col sm={12}>
+            <Alert className="d-block text-center" variant="danger">
+              We coudn&apos;t find any logs for this deployment
+            </Alert>
+          </Col>
+        </Row>
+      );
+    }
+    return null;
+  }
+
   return (
     <>
       <UsageChecker />
@@ -54,8 +73,8 @@ export default function DeploymentsPage() {
             // Check if one of the projects matches the project name from the route params, or
             // select the first one.
             const currentProject = sortedProjects?.find((project) => project.name === projectName)
-                  || (sortedProjects !== undefined && sortedProjects[0])
-                  || undefined;
+              || (sortedProjects !== undefined && sortedProjects[0])
+              || undefined;
 
             // Sort its deployments, putting the production ones first.
             const sortedDeployments = currentProject
@@ -70,8 +89,8 @@ export default function DeploymentsPage() {
             // Check if one of the deployments matches the env from the route param, or select
             // the first one.
             const currentDeployment = sortedDeployments?.find((deploy) => deploy.env === env)
-                  || (sortedDeployments && sortedDeployments[0])
-                  || undefined;
+              || (sortedDeployments && sortedDeployments[0])
+              || undefined;
 
             const getAppLogsQueryResult = useInfiniteQuery(
               [
@@ -116,16 +135,16 @@ export default function DeploymentsPage() {
             return (
               <Container>
                 {sortedProjects && currentProject && currentDeployment && (
-                <Row className="pb-3 justify-content-end">
-                  <Col sm="auto">
-                    <DeploymentSwitcher
-                      projects={sortedProjects}
-                      currentProject={currentProject}
-                      currentDeployment={currentDeployment}
-                      onDeploymentSelected={changeDeployment}
-                    />
-                  </Col>
-                </Row>
+                  <Row className="pb-3 justify-content-end">
+                    <Col sm="auto">
+                      <DeploymentSwitcher
+                        projects={sortedProjects}
+                        currentProject={currentProject}
+                        currentDeployment={currentDeployment}
+                        onDeploymentSelected={changeDeployment}
+                      />
+                    </Col>
+                  </Row>
                 )}
                 <Row>
                   <Col sm={12}>
@@ -154,7 +173,10 @@ export default function DeploymentsPage() {
                     />
                   </Col>
                 </Row>
-                <UseInfiniteQueryLoaderElement queryResult={getAppLogsQueryResult}>
+                <UseInfiniteQueryLoaderElement
+                  queryResult={getAppLogsQueryResult}
+                  errorHandler={maybeHandleLogsError}
+                >
                   {function renderLogs(logsAxiosResponse) {
                     const logEvents = logsAxiosResponse.pages
                       .flatMap((value) => value.data.events);
@@ -191,6 +213,7 @@ function LoadMoreButton({queryResult}: {queryResult: UseInfiniteQueryResult<Axio
   function loadMore() {
     return fetchNextPage();
   }
+
   let content: ReactNode;
   if (isFetchingNextPage) {
     content = (
