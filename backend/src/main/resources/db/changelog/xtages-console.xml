@@ -50,5 +50,6 @@
     <include file="changesets/00003-upgrade-recipe-tag-version.postgresql.sql" relativeToChangelogFile="true" />
     <include file="changesets/00004-constraint-project-deployment.postgresql.sql" relativeToChangelogFile="true" />
     <include file="changesets/00005-add-db-storage-resource.postgresql.sql" relativeToChangelogFile="true" />
+    <include file="changesets/00006-upgrade-recipe-tag-version.postgresql.sql" relativeToChangelogFile="true" />
 </databaseChangeLog>
 
