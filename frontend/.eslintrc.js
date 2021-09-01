@@ -31,7 +31,7 @@ module.exports = {
     'no-plusplus': 'off',
     'import/no-extraneous-dependencies': [
       'error', {
-        devDependencies: ['**/*.stories.tsx'],
+        devDependencies: ['**/*.stories.tsx', 'src/mocks/**/*.*'],
       },
     ],
     'import/prefer-default-export': 'off',
