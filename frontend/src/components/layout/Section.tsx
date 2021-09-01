@@ -103,7 +103,6 @@ export function LoadIndicatingSection<D = unknown, E = unknown>({
   queryResult,
   children,
   errorHandler = undefined,
-  last,
   ...props
 }: LoadIndicatingSectionProps<D, E>) {
   return (
