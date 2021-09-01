@@ -10,10 +10,13 @@ import xtages.console.config.ConsoleProperties
 import xtages.console.controller.api.model.LogEvent
 import xtages.console.controller.api.model.Logs
 import xtages.console.controller.model.CodeBuildType
+import xtages.console.exception.ExceptionCode
+import xtages.console.exception.NotFoundException
 import xtages.console.exception.ensure
 import xtages.console.pojo.codeBuildLogsGroupNameFor
 import xtages.console.query.tables.daos.OrganizationDao
 import xtages.console.query.tables.pojos.Organization
+import java.util.concurrent.ExecutionException
 
 private val logger = KotlinLogging.logger { }
 
@@ -76,7 +79,17 @@ class CloudWatchLogsService(
             if (nextToken != null) {
                 builder.nextToken(nextToken)
             }
-            return cloudWatchLogsAsyncClient.describeLogStreams(builder.build()).get()
+            try {
+                return cloudWatchLogsAsyncClient.describeLogStreams(builder.build()).get()
+            } catch (e: ExecutionException) {
+                if (e.cause is ResourceNotFoundException) {
+                    throw NotFoundException(
+                        code = ExceptionCode.INVALID_LOGS,
+                        innerMessage = "LogGroupName: [${logGroupName}] with logStreamPrefix: [${logStreamPrefix}] not found."
+                    )
+                }
+                throw e;
+            }
         }
 
         logger.info { "Getting logs for logGroupName:[$logGroupName] and logStreamPrefix:[$logStreamPrefix]" }
@@ -102,7 +115,7 @@ class CloudWatchLogsService(
         logStreamName: String,
         startTime: Long? = null,
         endTime: Long? = null,
-        limit: Int? =null,
+        limit: Int? = null,
         paginationToken: String? = null
     ): Logs {
         logger.info { "logGroupName: $logGroupName logStreamName: $logStreamName" }
