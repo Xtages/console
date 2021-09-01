@@ -5,9 +5,9 @@ import {FormikHelpers} from 'formik/dist/types';
 import {Form, Formik, FormikErrors} from 'formik';
 import {Link as LinkIcon} from 'react-feather';
 import {useQueryClient} from 'react-query';
+import {projectApi} from 'service/Services';
+import {AssociatedDomainCertificateStatusEnum, Project, ProjectSettings} from 'gen/api';
 import {SimpleProjectCard} from './ProjectDetailsCard';
-import {projectApi} from '../../service/Services';
-import {AssociatedDomainCertificateStatusEnum, Project, ProjectSettings} from '../../gen/api';
 import LabeledFormField from '../form/LabeledFormField';
 import styles from './ProjectSettingsCard.module.scss';
 import {CopiableSpan} from '../text/CopiableSpan';
@@ -167,6 +167,8 @@ export function ProjectSettingsCard({
                   <a href="invalid.com">Learn more</a>
                   .
                 </p>
+                {associatedDomain?.certificateStatus
+                === AssociatedDomainCertificateStatusEnum.PendingValidation && (
                 <table className={`table table-sm ${styles.dnsRecordTable}`}>
                   <thead className="thead-light">
                     <tr>
@@ -195,6 +197,7 @@ export function ProjectSettingsCard({
                     </tr>
                   </tbody>
                 </table>
+                )}
               </>
               )}
               <div className="mt-4">
