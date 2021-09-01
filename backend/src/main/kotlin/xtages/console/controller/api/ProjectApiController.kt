@@ -11,7 +11,6 @@ import xtages.console.config.ConsoleProperties
 import xtages.console.controller.api.model.*
 import xtages.console.controller.model.*
 import xtages.console.dao.*
-import xtages.console.exception.ExceptionCode
 import xtages.console.exception.ExceptionCode.*
 import xtages.console.exception.ensure
 import xtages.console.query.enums.BuildStatus
@@ -66,7 +65,7 @@ class ProjectApiController(
         val project = projectDao.fetchOneByNameAndOrganization(orgName = organization.name!!, projectName = projectName)
         val percentageOfSuccessfulBuildsInTheLastMonth =
             when {
-                includeSuccessfulBuildPercentage -> buildDao.findPercentageOfSuccessfulBuildsInMonth(
+                includeSuccessfulBuildPercentage -> buildDao.findPercentageOfSuccessfulBuildsInLast30Days(
                     organizationName = organization.name!!,
                     projectName = projectName
                 )
@@ -227,7 +226,7 @@ class ProjectApiController(
             deploymentBuilds.addAll(alreadyLoadedBuilds)
             buildIdsToFetch.removeAll(alreadyLoadedBuilds.map { build -> build.id!! })
         }
-        // Otherwise, go to the DB and load the remaning Builds that weren't already in memory
+        // Otherwise, go to the DB and load the remaining Builds that weren't already in memory
         if (buildIdsToFetch.isNotEmpty()) {
             deploymentBuilds.addAll(buildDao.fetchById(*buildIdsToFetch.toLongArray()))
         }
@@ -488,7 +487,7 @@ class ProjectApiController(
             val certificateDetail = acmService.getCertificateDetail(certificateArn = project.certArn!!)
             ensure.isTrue(
                 value = project.associatedDomain == certificateDetail.domainName(),
-                code = ExceptionCode.INVALID_DOMAIN,
+                code = INVALID_DOMAIN,
                 message = "The project's associated domain and the project's certificate domain don't match"
             )
             return ResponseEntity.ok(

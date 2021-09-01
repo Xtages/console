@@ -155,7 +155,7 @@ export function DeploymentDetailsAndBuildChart({project}: {project: Project}) {
             <div className="text-center pt-1">
               <small>
                 % of successful builds in the last
-                month
+                30 days
               </small>
             </div>
           </>
