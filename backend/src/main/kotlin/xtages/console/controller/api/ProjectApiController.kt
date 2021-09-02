@@ -140,6 +140,12 @@ class ProjectApiController(
                 projectDeploymentDao.fetchLatestDeploymentsByOrg(organization = organization)
                     .groupBy { deployment -> deployment.projectId }
 
+            // This comparator will put newer start timestamps or their latest Build first
+            // (`null`s are considered "less" than any values) then if the timestamps are null then the sorting happens
+            // by the project's name natural order.
+            val projectComparator =
+                compareByDescending<Project> { project -> project.builds.singleOrNull()?.startTimestampInMillis }
+                    .thenBy { project -> project.name }
             val convertedProjects = projects
                 .associateWith { project -> projectIdToLatestBuild[project.id] }
                 .map { entry ->
@@ -161,16 +167,8 @@ class ProjectApiController(
                         source = project,
                         builds = listOfNotNull(convertedBuild)
                     )
-                }.sortedWith { projectA, projectB ->
-                    val startTimestampA = projectA.builds.singleOrNull()?.startTimestampInMillis
-                    val startTimestampB = projectB.builds.singleOrNull()?.startTimestampInMillis
-                    when {
-                        startTimestampA != null && startTimestampB != null -> startTimestampA.compareTo(startTimestampB) * -1
-                        startTimestampA != null && startTimestampB == null -> -1
-                        startTimestampA == null && startTimestampB != null -> 1
-                        else -> projectA.name.compareTo(projectB.name)
-                    }
                 }
+                .sortedWith(projectComparator)
             return ResponseEntity.ok(convertedProjects)
         }
         return ResponseEntity.ok(
