@@ -193,6 +193,7 @@ function BuildActionsDropdown({project, build}: {project: Project, build: Build}
       commitHash: build.commitHash,
     });
     await queryClient.invalidateQueries(project.name);
+    await queryClient.invalidateQueries('projects');
   }
 
   async function deploy() {
@@ -200,16 +201,19 @@ function BuildActionsDropdown({project, build}: {project: Project, build: Build}
       commitHash: build.commitHash,
     });
     await queryClient.invalidateQueries(project.name);
+    await queryClient.invalidateQueries('projects');
   }
 
   async function promote() {
     await cdApi.promote(project.name);
     await queryClient.invalidateQueries(project.name);
+    await queryClient.invalidateQueries('projects');
   }
 
   async function rollback() {
     await cdApi.rollback(project.name);
     await queryClient.invalidateQueries(project.name);
+    await queryClient.invalidateQueries('projects');
   }
 
   const canRunCi = build.actions.includes(BuildActions.Ci);
