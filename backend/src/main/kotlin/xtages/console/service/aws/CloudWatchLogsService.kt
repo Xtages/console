@@ -85,10 +85,10 @@ class CloudWatchLogsService(
                 if (e.cause is ResourceNotFoundException) {
                     throw NotFoundException(
                         code = ExceptionCode.INVALID_LOGS,
-                        innerMessage = "LogGroupName: [${logGroupName}] with logStreamPrefix: [${logStreamPrefix}] not found."
+                        innerMessage = "LogGroupName: [$logGroupName] with logStreamPrefix: [$logStreamPrefix] not found."
                     )
                 }
-                throw e;
+                throw e
             }
         }
 
@@ -123,17 +123,27 @@ class CloudWatchLogsService(
         val events = mutableListOf<OutputLogEvent>()
         var apiCalls = 0
         do {
-            val response = cloudWatchLogsAsyncClient.getLogEvents(
-                GetLogEventsRequest.builder()
-                    .startFromHead(true)
-                    .startTime(startTime)
-                    .endTime(endTime)
-                    .logGroupName(logGroupName)
-                    .logStreamName(logStreamName)
-                    .nextToken(nextToken)
-                    .limit(limit)
-                    .build()
-            ).get()
+            val response = try {
+                cloudWatchLogsAsyncClient.getLogEvents(
+                    GetLogEventsRequest.builder()
+                        .startFromHead(true)
+                        .startTime(startTime)
+                        .endTime(endTime)
+                        .logGroupName(logGroupName)
+                        .logStreamName(logStreamName)
+                        .nextToken(nextToken)
+                        .limit(limit)
+                        .build()
+                ).get()
+            } catch (e: ExecutionException) {
+                if (e.cause is ResourceNotFoundException) {
+                    throw NotFoundException(
+                        code = ExceptionCode.INVALID_LOGS,
+                        innerMessage = "LogGroupName: [$logGroupName] with logStreamName: [$logStreamName] not found."
+                    )
+                }
+                throw e
+            }
             apiCalls++
             if (response.hasEvents()) {
                 events.addAll(response.events())
