@@ -50,7 +50,7 @@ export default function DeploymentsPage() {
         <Row className="justify-content-center">
           <Col sm={12}>
             <Alert className="d-block text-center" variant="danger">
-              We coudn&apos;t find any logs for this deployment
+              We couldn&apos;t find any logs for this deployment
             </Alert>
           </Col>
         </Row>
@@ -192,7 +192,7 @@ export default function DeploymentsPage() {
                     return (
                       <Row className="justify-content-center">
                         <Col sm="auto">
-                          We coudn&apos;t find any logs for the selected time range.
+                          We couldn&apos;t find any logs for the selected time range.
                           Try adjusting the start date and end date.
                         </Col>
                       </Row>

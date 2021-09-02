@@ -1,4 +1,4 @@
-import React, {ReactNode, useState} from 'react';
+import React, {useState} from 'react';
 import {ArrowUpCircle,
   Check,
   ChevronDown,
@@ -9,10 +9,19 @@ import {ArrowUpCircle,
   X} from 'react-feather';
 import cx from 'classnames';
 import {useQuery, useQueryClient} from 'react-query';
-import {Button, Container, Dropdown, DropdownButton, Tab, Tabs} from 'react-bootstrap';
+import {Alert,
+  Button,
+  Col,
+  Container,
+  Dropdown,
+  DropdownButton,
+  Row,
+  Tab,
+  Tabs} from 'react-bootstrap';
 import {Build, BuildActions, BuildPhase, BuildType, Project} from 'gen/api';
 import {durationString, formatDateTimeMed, formatDateTimeRelativeToNow} from 'helpers/time';
 import {cdApi, ciApi, logsApi} from 'service/Services';
+import {UseQueryLoaderElement} from 'components/layout/UseQueryLoaderElement';
 import {BuildStatusIcon} from './BuildStatusIcon';
 import Avatar from '../avatar/Avatar';
 import {LogViewer} from '../logviewer/LogViewer';
@@ -245,30 +254,46 @@ function AdditionalInfoPane({
   build,
   collapsed,
 }: {project: Project, build: Build, collapsed: boolean}) {
-  if (!collapsed) {
-    const {
-      isLoading,
-      error,
-      data,
-    } = useQuery(
-      `project/${project.name}/${build.type}/${build.id}/logs`,
-      () => logsApi.buildLogs(project.name, build.id),
-    );
-    let logs: string | ReactNode;
-    if (isLoading) {
-      logs = 'Loading...';
-    } else if (error) {
-      logs = `An error has occurred: ${error}`;
-    } else if (data?.data != null) {
-      logs = (
-        <LogViewer logLines={data.data.events} maxHeight={500} />
+  const getBuildsLogsQuery = useQuery(
+    `project/${project.name}/${build.type}/${build.id}/logs`,
+    () => logsApi.buildLogs(project.name, build.id),
+    {
+      enabled: !collapsed,
+    },
+  );
+
+  function maybeHandleLogsError(e: any) {
+    if (e.isAxiosError
+        && e.response !== undefined
+        && e.response.data !== undefined
+        && e.response.data.error === 'Not Found'
+        && e.response.data.error_code === 'INVALID_LOGS') {
+      return (
+        <Row className="justify-content-center">
+          <Col sm={12}>
+            <Alert className="d-block text-center" variant="danger">
+              We couldn&apos;t find any logs for this build.
+            </Alert>
+          </Col>
+        </Row>
       );
     }
+    return null;
+  }
+
+  if (!collapsed) {
     return (
       <Tabs defaultActiveKey="logs">
         <Tab eventKey="logs" title="Logs">
           <Container>
-            {logs}
+            <UseQueryLoaderElement
+              queryResult={getBuildsLogsQuery}
+              errorHandler={maybeHandleLogsError}
+            >
+              {function renderLogs(logsAxiosResponse) {
+                return <LogViewer logLines={logsAxiosResponse.data.events} maxHeight={500} />;
+              }}
+            </UseQueryLoaderElement>
           </Container>
         </Tab>
         <Tab eventKey="phases" title="Phases">
