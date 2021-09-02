@@ -165,9 +165,9 @@ class ProjectApiController(
                     val startTimestampA = projectA.builds.singleOrNull()?.startTimestampInMillis
                     val startTimestampB = projectB.builds.singleOrNull()?.startTimestampInMillis
                     when {
-                        startTimestampA != null && startTimestampB != null -> startTimestampA.compareTo(startTimestampB)
-                        startTimestampA != null && startTimestampB == null -> 1
-                        startTimestampA == null && startTimestampB != null -> -1
+                        startTimestampA != null && startTimestampB != null -> startTimestampA.compareTo(startTimestampB) * -1
+                        startTimestampA != null && startTimestampB == null -> -1
+                        startTimestampA == null && startTimestampB != null -> 1
                         else -> projectA.name.compareTo(projectB.name)
                     }
                 }

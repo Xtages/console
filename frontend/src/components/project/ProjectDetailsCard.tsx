@@ -46,6 +46,7 @@ export function SimpleProjectCard({
       commitHash: 'HEAD',
     });
     await queryClient.invalidateQueries(project.name);
+    await queryClient.invalidateQueries('projects');
   }
 
   return (
