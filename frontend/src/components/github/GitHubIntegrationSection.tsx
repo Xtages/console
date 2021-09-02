@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useState} from 'react';
 import {Alert, Col} from 'react-bootstrap';
 import {useQuery} from 'react-query';
 import {organizationApi} from 'service/Services';
@@ -17,8 +17,13 @@ export function GitHubIntegrationSection() {
     refetchOnReconnect: false,
     refetchOnMount: false,
   });
+  const [show, setShow] = useState(true);
 
-  if (isSuccess && data?.data && !data.data.githubAppInstalled) {
+  function dismissAlert() {
+    setShow(false);
+  }
+
+  if (show && isSuccess && data?.data && !data.data.githubAppInstalled) {
     return (
       <Section>
         <Col sm={12}>
@@ -49,6 +54,7 @@ export function GitHubIntegrationSection() {
             <p className="text-right">
               <a
                 href={process.env.REACT_APP_GIT_HUB_APP_INSTALL_URL}
+                onClick={dismissAlert}
                 target="_blank"
                 rel="noreferrer"
                 className="btn btn-primary btn-icon-label noExternalLinkIcon"
