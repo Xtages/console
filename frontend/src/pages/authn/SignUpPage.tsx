@@ -14,6 +14,7 @@ import {EmailField, PasswordField} from 'components/user/AuthFields';
 import {useTracking} from 'hooks/useTracking';
 import {getFormValidator} from 'helpers/form';
 import {usePriceId} from 'hooks/usePriceId';
+import {DocsLink} from 'components/link/XtagesLink';
 
 const signUpFormValuesSchema = z.object({
   name: z.string()
@@ -138,7 +139,12 @@ export default function SignUpPage() {
                     <LabeledFormField
                       type="text"
                       name="organizationName"
-                      label="GitHub organization name"
+                      label={(
+                        <>
+                          GitHub organization name
+                          <DocsLink articlePath="/github" title="GitHub Integration" />
+                        </>
+                      )}
                       placeholder="NorthPole"
                       invalid={touched.organizationName && errors.organizationName != null}
                       validationFeedback="Please provide your GitHub organization name."

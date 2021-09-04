@@ -7,6 +7,7 @@ import {Link as LinkIcon} from 'react-feather';
 import {useQueryClient} from 'react-query';
 import {projectApi} from 'service/Services';
 import {AssociatedDomainCertificateStatusEnum, Project, ProjectSettings} from 'gen/api';
+import {DocsLink} from 'components/link/XtagesLink';
 import {SimpleProjectCard} from './ProjectDetailsCard';
 import LabeledFormField from '../form/LabeledFormField';
 import styles from './ProjectSettingsCard.module.scss';
@@ -125,6 +126,14 @@ export function ProjectSettingsCard({
               </Alert>
               )}
               <h3 className="h5">Domain Settings</h3>
+              <p className="prose">
+                Use this setting to associate your own domain name to your Project&apos;s
+                production environment. We will handle the creation and renewal of the SSL
+                certificate for your domain. Learn more
+                {' '}
+                <DocsLink articlePath="/projects/custom-domains/" title="Custom Domains Documentation" icon={false}>here</DocsLink>
+                .
+              </p>
               <LabeledFormField
                 type="text"
                 name="associatedDomainName"
@@ -156,7 +165,7 @@ export function ProjectSettingsCard({
               )}
               {associatedDomain?.validationRecord && (
               <>
-                <p>
+                <p className="prose">
                   For Xtages to verify domain ownership, add the following record to the DNS
                   configuration for
                   {' '}
