@@ -8,6 +8,7 @@ import {UsageDashboard} from 'components/usage/UsageDashboard';
 import {UserTable} from 'components/user/UserTable';
 import {InviteUserFormCard} from 'components/user/InviteUserFormCard';
 import {usePriceId} from 'hooks/usePriceId';
+import {DocsLink} from 'components/link/XtagesLink';
 import Page from '../components/layout/Page';
 
 /**
@@ -66,7 +67,15 @@ export default function AccountPage() {
       <LoadIndicatingSection queryResult={usageQueryResult}>
         {(axiosResponse) => (
           <>
-            <SectionTitle title="Usage this month" icon={Activity} />
+            <SectionTitle
+              title={(
+                <>
+                  Usage this month
+                  <DocsLink articlePath="/usage" title="Usage" size="sm" />
+                </>
+              )}
+              icon={Activity}
+            />
             <Col sm={12}>
               <UsageDashboard usageDetails={axiosResponse.data} />
             </Col>
@@ -80,7 +89,15 @@ export default function AccountPage() {
       >
         {(axiosResponse) => (
           <>
-            <SectionTitle title="User management" icon={User} />
+            <SectionTitle
+              title={(
+                <>
+                  User management
+                  <DocsLink articlePath="/accounts#inviting-users" title="Inviting users" size="sm" />
+                </>
+              )}
+              icon={User}
+            />
             <Col sm={12}>
               <h2 className="h5">Invite user</h2>
               <InviteUserFormCard />

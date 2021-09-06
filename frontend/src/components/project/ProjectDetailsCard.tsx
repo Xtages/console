@@ -10,7 +10,7 @@ import loadable from '@loadable/component';
 import cx from 'classnames';
 import {useQueryClient} from 'react-query';
 import {ciApi} from 'service/Services';
-import {GitHubCommitLink, GitHubLink} from '../link/XtagesLink';
+import {DocsLink, GitHubCommitLink, GitHubLink} from '../link/XtagesLink';
 
 const LoadableGauge = loadable.lib(() => import('@ant-design/charts/es/gauge'));
 
@@ -114,7 +114,12 @@ export function DeploymentDetails({
     <Col sm={colWidth} className="text-sm">
       {(prodDeploy || showDeploymentSectionIfEmpty) && (
       <DeploymentDetailsRow
-        title="In production"
+        title={(
+          <>
+            In production
+            <DocsLink articlePath="/projects/promotions/" title="Promotions" size="sm" />
+          </>
+        )}
         name="production"
         projectName={name}
         deployment={prodDeploy}
@@ -130,7 +135,12 @@ export function DeploymentDetails({
       )}
       {(stagingDeploy || showDeploymentSectionIfEmpty) && (
         <DeploymentDetailsRow
-          title="In staging"
+          title={(
+            <>
+              In staging
+              <DocsLink articlePath="/projects/deployments/" title="Deployments" size="sm" />
+            </>
+          )}
           name="staging"
           projectName={name}
           deployment={stagingDeploy}
@@ -168,7 +178,7 @@ export function DeploymentDetailsAndBuildChart({project}: {project: Project}) {
 
 type DeploymentDetailsRowProps = {
   /** Row title */
-  title: string;
+  title: ReactNode;
 
   /** Deployment environment name */
   name: string;

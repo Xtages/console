@@ -6,3 +6,7 @@
     color: darken($value, 10%);
   }
 }
+
+p.prose {
+  max-width: 45em;
+}

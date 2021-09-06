@@ -9,10 +9,10 @@ interface SectionTitleProps {
   icon?: FC<IconProps>;
 
   /** Title of the section */
-  title: string;
+  title: ReactNode;
 
   /** Optional subtible for the section */
-  subtitle?: string;
+  subtitle?: ReactNode;
 
   /** Whether to user a smaller font */
   small?: boolean;

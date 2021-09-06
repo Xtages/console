@@ -4,15 +4,18 @@ import {DefaultRequestBody,
   rest,
   RestContext,
   RestRequest} from 'msw';
-import {BuildActions,
+import {AssociatedDomainCertificateStatusEnum,
+  BuildActions,
   BuildStatusEnum,
   BuildType,
   DeploymentStatusEnum,
+  DomainValidationRecordRecordTypeEnum,
   Logs,
   Organization,
   OrganizationSubscriptionStatusEnum,
   Project,
   Projects,
+  ProjectSettings,
   ProjectTypeEnum,
   ResourceType,
   UsageDetail,
@@ -226,6 +229,19 @@ const usage: Array<UsageDetail> = [{
   limit: 20,
   usage: 1,
 }];
+
+const settings: ProjectSettings = {
+  projectId: 6,
+  associatedDomain: {
+    name: 'www.gosttrap.com',
+    certificateStatus: AssociatedDomainCertificateStatusEnum.PendingValidation,
+    validationRecord: {
+      name: '_aws_blah',
+      value: 'some_super_long_hash_some_super_long_hash_some_super_long_hash_some_super_long_hash',
+      recordType: DomainValidationRecordRecordTypeEnum.Cname,
+    },
+  },
+};
 
 const buildLogs: Logs = {
   events: [
@@ -650,9 +666,10 @@ function respondWithJson(data: any) {
 
 export const handlers = [
   rest.get('/api/v1/organization', respondWithJson(organization)),
-  rest.get('/api/v1/project', respondWithJson(projectsArray)),
   rest.get('/api/v1/organization/projects/deployments', respondWithJson(projects)),
+  rest.get('/api/v1/project', respondWithJson(projectsArray)),
   rest.get('/api/v1/project/GhostTrap', respondWithJson(projectWithBuildsAndDeployments)),
+  rest.get('/api/v1/project/:projectName/settings', respondWithJson(settings)),
   rest.get('/api/v1/project/:projectName/:buildId/logs', respondWithJson(buildLogs)),
   rest.get('/api/v1/project/:projectName/deploy/:buildId/logs', respondWithJson(deployLogs)),
   rest.get('/api/v1/usage', respondWithJson(usage)),
