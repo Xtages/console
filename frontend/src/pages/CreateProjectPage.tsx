@@ -8,6 +8,7 @@ import ProjectTemplateCard from 'components/project/ProjectTemplateCard';
 import {FormikHelpers} from 'formik/dist/types';
 import {useHistory, Link} from 'react-router-dom';
 import {Alert, Button} from 'react-bootstrap';
+import {DocsLink} from 'components/link/XtagesLink';
 import LabeledFormField from '../components/form/LabeledFormField';
 import {projectApi} from '../service/Services';
 import {CreateProjectReqTypeEnum, UsageDetail} from '../gen/api';
@@ -94,12 +95,15 @@ export default function CreateProjectPage() {
       <Section>
         <SectionTitle icon={Codesandbox} title="Create new project" />
         <div className="col">
-          A new
-          {' '}
-          <strong>private</strong>
-          {' '}
-          GitHub repository by the same name as the project will be created,
-          as well as CI and CD pipelines.
+          <p className="prose">
+            A new
+            {' '}
+            <strong>private</strong>
+            {' '}
+            GitHub repository by the same name as the project will be created,
+            as well as CI and CD pipelines.
+            <DocsLink articlePath="/projects" title="Creating a project" />
+          </p>
         </div>
       </Section>
       <Section last>

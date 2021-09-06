@@ -1,6 +1,8 @@
 import React from 'react';
 import cx from 'classnames';
 import {OverlayTrigger, Tooltip} from 'react-bootstrap';
+import {HelpCircle} from 'react-feather';
+import {useTracking} from 'hooks/useTracking';
 import styles from './XtagesLink.module.scss';
 
 type LinkWithTooltipProps = & JSX.IntrinsicElements['a'];
@@ -28,7 +30,7 @@ export function LinkWithTooltip(props: LinkWithTooltipProps) {
 
 type GitHubLinkProps = {
   variant?: 'xs' | 'sm' | 'reg' | 'lg' | 'xl';
-} & JSX.IntrinsicElements['a'];
+} & LinkWithTooltipProps;
 
 /** A link to a GitHub URL. It will always be opened in a new tab. */
 export function GitHubLink({
@@ -86,5 +88,55 @@ export function GitHubCommitLink({
     >
       {commit}
     </GitHubLink>
+  );
+}
+
+const docsBaseUrl = 'https://docs.xtages.com';
+const iconSizes = {
+  sm: '0.7em',
+  reg: '1em',
+  lg: '1.5em',
+};
+
+type DocsLinkProps = {
+  articlePath: string;
+  icon?: boolean;
+  size?: 'sm' | 'lg';
+  title: string;
+} & Omit<LinkWithTooltipProps, 'href' | 'onClick'>;
+
+/**
+ * A link to a documentation article.
+ *
+ * {@link articlePath} is require and should point to the path (after `docs.xtages.com`) of the
+ * article we want to link to. If {@link icon} is false, then the `children` passed to this
+ * component will be rendered, otherwise a `help` icon will be rendered.
+ */
+export function DocsLink({
+  articlePath,
+  icon = true,
+  size,
+  ...props
+}: DocsLinkProps) {
+  const {trackComponentEvent} = useTracking();
+
+  function clickHandler(e: React.MouseEvent<HTMLAnchorElement>) {
+    trackComponentEvent('DocsLink', 'Help Link Clicked', {
+      helpPage: e.currentTarget.href,
+    });
+  }
+
+  return (
+    <LinkWithTooltip
+      {...props}
+      href={`${docsBaseUrl}${articlePath.startsWith('/') ? articlePath : `/${articlePath}`}`}
+      className={cx('text-info', {noExternalLinkIcon: icon, [styles.docsLinkIcon]: icon})}
+      onClick={clickHandler}
+      target="_blank"
+    >
+      {icon
+        ? (<HelpCircle size={iconSizes[size || 'reg']} />)
+        : props.children}
+    </LinkWithTooltip>
   );
 }

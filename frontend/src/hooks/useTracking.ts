@@ -29,7 +29,10 @@ export function useTracking() {
   } = useAnalytics();
 
   function trackEvent(eventName: string, payload?: any) {
-    track(eventName, payload).then(noop);
+    track(eventName, {
+      __location: window.location.href,
+      ...payload,
+    }).then(noop);
   }
 
   function trackApiEvent(url: string, payload?: any) {
