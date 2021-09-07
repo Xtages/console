@@ -120,7 +120,7 @@ export default function ChangePasswordPage() {
                     <PasswordField
                       label="New password"
                       placeholder="Password"
-                      showHelpTooltip
+                      showHelpMessage
                       autoComplete="new-password"
                     />
                     <div className="mt-4">
