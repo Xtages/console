@@ -52,5 +52,6 @@
     <include file="changesets/00005-add-db-storage-resource.postgresql.sql" relativeToChangelogFile="true" />
     <include file="changesets/00006-upgrade-recipe-tag-version.postgresql.sql" relativeToChangelogFile="true" />
     <include file="changesets/00007-upgrade-recipe-tag-version.postgresql.sql" relativeToChangelogFile="true" />
+    <include file="changesets/00008-upgrade-recipe-tag-version.postgresql.sql" relativeToChangelogFile="true" />
 </databaseChangeLog>
 
