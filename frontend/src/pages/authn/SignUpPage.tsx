@@ -24,15 +24,9 @@ const signUpFormValuesSchema = z.object({
   email: z.string()
     .email()
     .nonempty(),
-  // A password must be at least 8 characters long, contain uppercase and and lowercase letters,
-  // a number and a special character
+  // A password must be at least 12 characters long
   password: z.string()
-    .min(8)
-    .refine((val) => /[A-Z]/g.test(val)
-        && /[a-z]/g.test(val)
-        && /\d/g.test(val)
-        // eslint-disable-next-line no-useless-escape
-        && /[\=\+\-\^\$\*\.\[\]\{\}\(\)\?\"\!\@\#\%\&\/\\\,\>\<\'\:\;\|\_\~\`]/g.test(val)),
+    .min(12),
   acceptedTerms: z.boolean().refine((val) => val),
 });
 
@@ -157,9 +151,9 @@ export default function SignUpPage() {
                     />
                     <PasswordField
                       invalid={touched.password && errors.password != null}
-                      validationFeedback="Invalid password."
+                      validationFeedback="Passwords must be at least 12 characters long."
                       autoComplete="new-password"
-                      showHelpTooltip
+                      showHelpMessage
                     />
                     <div className="my-4">
                       <div className="custom-control custom-checkbox mb-3">
