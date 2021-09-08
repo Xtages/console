@@ -238,17 +238,16 @@ class GitHubService(
      * Note: this method assumes that in a previous method there is a check to make sure that the [Project]
      * belongs to the [Organization]
      */
-    fun tagProject(organization: Organization, project: Project, userName: String): String {
+    fun tagProject(organization: Organization, project: Project, userName: String, commitHash: String): String {
         val datePattern = "yyyyMddHm"
         val gitHubAppClient = buildGitHubAppClient(organization)
 
         val repository = gitHubAppClient.getRepository(project.ghRepoFullName)
-        val defaultBranch = repository.defaultBranch
-        val shA1Short = repository.getBranch(defaultBranch).shA1!!.substring(0, 6)
+        val shA1Short = commitHash.substring(0, 6)
         val now = Instant.now().toUtcLocalDateTime()
         val tag = "v${now.format(DateTimeFormatter.ofPattern(datePattern))}-$shA1Short"
         val message = "Xtages automated tag for release triggered by CD operation from $userName"
-        val tagSha = repository.createTag(tag, message, repository.getBranch(defaultBranch).shA1, "commit").sha
+        val tagSha = repository.createTag(tag, message, commitHash, "commit").sha
         repository.createRef("refs/tags/$tag", tagSha)
         return tag
     }
