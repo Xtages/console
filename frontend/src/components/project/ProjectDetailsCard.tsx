@@ -2,7 +2,7 @@ import React, {ReactNode} from 'react';
 import {Button, Card, Col, Container, OverlayTrigger, Row, Tooltip} from 'react-bootstrap';
 import {Link} from 'react-router-dom';
 import {GaugeConfig} from '@ant-design/charts/es/gauge';
-import {GitMerge, Settings} from 'react-feather';
+import {GitMerge, Settings, UploadCloud} from 'react-feather';
 import {Deployment, DeploymentStatusEnum, Project} from 'gen/api';
 import {formatDateTimeFull} from 'helpers/time';
 import colors from 'assets/css/colors.module.scss';
@@ -107,22 +107,17 @@ export function DeploymentDetails({
     deployments,
     name,
   } = project;
-  const prodDeploy = deployments.find((deployment) => deployment.env === 'production');
-  const stagingDeploy = deployments.find((deployment) => deployment.env === 'staging');
-  const showDivider = (prodDeploy && stagingDeploy) || showDeploymentSectionIfEmpty;
+  const prodDeploys = deployments.filter((deployment) => deployment.env === 'production');
+  const stagingDeploys = deployments.filter((deployment) => deployment.env === 'staging');
+  const showDivider = (prodDeploys.length > 0 && stagingDeploys.length > 0)
+      || showDeploymentSectionIfEmpty;
   return (
     <Col sm={colWidth} className="text-sm">
-      {(prodDeploy || showDeploymentSectionIfEmpty) && (
-      <DeploymentDetailsRow
-        title={(
-          <>
-            In production
-            <DocsLink articlePath="/projects/promotions/" title="Promotions" size="sm" />
-          </>
-        )}
-        name="production"
+      {(prodDeploys.length > 0 || showDeploymentSectionIfEmpty) && (
+      <DeploymentsRow
+        type="production"
         projectName={name}
-        deployment={prodDeploy}
+        deployments={prodDeploys}
         showDeploymentLinkDetailsLink={showDeploymentLinkDetailsLink}
       />
       )}
@@ -133,17 +128,11 @@ export function DeploymentDetails({
         </Col>
       </Row>
       )}
-      {(stagingDeploy || showDeploymentSectionIfEmpty) && (
-        <DeploymentDetailsRow
-          title={(
-            <>
-              In staging
-              <DocsLink articlePath="/projects/deployments/" title="Deployments" size="sm" />
-            </>
-          )}
-          name="staging"
+      {(stagingDeploys.length > 0 || showDeploymentSectionIfEmpty) && (
+        <DeploymentsRow
+          type="staging"
           projectName={name}
-          deployment={stagingDeploy}
+          deployments={stagingDeploys}
           showDeploymentLinkDetailsLink={showDeploymentLinkDetailsLink}
         />
       )}
@@ -176,18 +165,15 @@ export function DeploymentDetailsAndBuildChart({project}: {project: Project}) {
   );
 }
 
-type DeploymentDetailsRowProps = {
-  /** Row title */
-  title: ReactNode;
-
+type DeploymentsRowProps = {
   /** Deployment environment name */
-  name: string;
+  type: 'production' | 'staging';
 
   /** Project name */
   projectName: string;
 
   /** [Deployment] data */
-  deployment: Deployment | undefined;
+  deployments: Deployment[];
 
   showDeploymentLinkDetailsLink: boolean;
 };
@@ -195,22 +181,104 @@ type DeploymentDetailsRowProps = {
 /**
  * Renders information about a deployment.
  */
-function DeploymentDetailsRow({
-  title,
-  name,
+function DeploymentsRow({
+  type,
   projectName,
-  deployment,
+  deployments,
   showDeploymentLinkDetailsLink,
-}: DeploymentDetailsRowProps) {
-  const isRunning = deployment?.status === DeploymentStatusEnum.Running;
+}: DeploymentsRowProps) {
+  const inProgressDeploy = deployments
+    .find((deploy) => deploy.status === DeploymentStatusEnum.Stopping
+      || deploy.status === DeploymentStatusEnum.Starting);
+  const finishedDeploy = deployments
+    .find((deploy) => deploy.status === DeploymentStatusEnum.Stopped
+      || deploy.status === DeploymentStatusEnum.Running);
+  let title: ReactNode;
+  if (type === 'staging') {
+    title = (
+      <>
+        In staging
+        <DocsLink articlePath="/projects/deployments/" title="Deployments" size="sm" />
+      </>
+    );
+  } else {
+    title = (
+      <>
+        In production
+        <DocsLink articlePath="/projects/promotions/" title="Promotions" size="sm" />
+      </>
+    );
+  }
+  let noDeploymentsMessage: ReactNode;
+  if (type === 'staging') {
+    noDeploymentsMessage = 'Your app is not running in staging yet.';
+  } else {
+    noDeploymentsMessage = 'Your app is not running in production yet.';
+  }
   return (
     <Row>
       <Col>
         <h3 className="h5">
           {title}
         </h3>
-        {deployment ? (
+        {deployments.length > 0 ? (
           <>
+            <SingleDeployDetails
+              deployment={finishedDeploy}
+              projectName={projectName}
+              showDeploymentLinkDetailsLink={showDeploymentLinkDetailsLink}
+            />
+            <SingleDeployDetails
+              deployment={inProgressDeploy}
+              projectName={projectName}
+              showDeploymentLinkDetailsLink={showDeploymentLinkDetailsLink}
+            />
+          </>
+        ) : noDeploymentsMessage}
+      </Col>
+    </Row>
+  );
+}
+
+type SingleDeployDetailsProps = {
+  deployment?: Deployment;
+
+  /** Project name */
+  projectName: string;
+
+  showDeploymentLinkDetailsLink: boolean;
+};
+
+function SingleDeployDetails({
+  deployment,
+  projectName,
+  showDeploymentLinkDetailsLink,
+}: SingleDeployDetailsProps) {
+  if (!deployment) {
+    return <></>;
+  }
+  const inProgress = deployment.status === DeploymentStatusEnum.Stopping
+      || deployment.status === DeploymentStatusEnum.Starting;
+  let inProgressTitle: string;
+  if (deployment.env === 'staging') {
+    inProgressTitle = 'Changes to staging in progress...';
+  } else {
+    inProgressTitle = 'Changes to production in progress...';
+  }
+  return (
+    <>
+      <Container className={cx('p-0', {
+        'border border-dark-secondary rounded p-2 mt-2': inProgress,
+      })}
+      >
+        {inProgress && <h4 className="h6 text-muted">{inProgressTitle}</h4>}
+        <Row noGutters>
+          {inProgress && (
+          <Col sm="auto" className="pr-2 d-flex flex-column justify-content-center">
+            <span><UploadCloud size="2em" /></span>
+          </Col>
+          )}
+          <Col sm="auto">
             <div>
               Commit:
               {' '}
@@ -219,34 +287,31 @@ function DeploymentDetailsRow({
                 commitHash={deployment.commitHash}
               />
             </div>
+            {!inProgress && (
             <div>
               last deployed on:
-              {' '}
-              <OverlayTrigger overlay={(
-                <Tooltip id="seeMoreBuildDetailsTooltip">
-                  See build
-                  details
-                </Tooltip>
-                  )}
-              >
-                <Link
-                  className="font-weight-bold"
-                  to={`/project/${projectName}/build/${deployment.id}`}
-                >
-                  {formatDateTimeFull(deployment.timestampInMillis)}
-                </Link>
-              </OverlayTrigger>
+              {formatDateTimeFull(deployment.timestampInMillis)}
             </div>
+            )}
             {showDeploymentLinkDetailsLink && (
-              <Container className="px-0">
-                <Row noGutters>
-                  <Col sm="auto" className="pr-2">
-                    Status:
-                    {' '}
-                    <span className={cx('font-weight-bolder', {'text-dark-success': isRunning})}>
-                      {deployment.status}
-                    </span>
-                  </Col>
+            <Container className="px-0">
+              <Row noGutters>
+                <Col sm="auto" className="pr-2">
+                  Status:
+                  {' '}
+                  <span className={cx('font-weight-bolder',
+                    {
+                      'text-dark-success': deployment.status === DeploymentStatusEnum.Running,
+                      'text-dark-danger': deployment.status === DeploymentStatusEnum.Stopped,
+                      'text-dark-info': deployment.status === DeploymentStatusEnum.Stopping
+                      || DeploymentStatusEnum.Starting,
+                    })}
+                  >
+                    {deployment.status}
+                  </span>
+                </Col>
+                {!inProgress && (
+                <>
                   <Col sm="auto" className="text-muted user-select-none" aria-hidden>|</Col>
                   <Col sm="auto" className="pl-2">
                     <OverlayTrigger overlay={(
@@ -263,22 +328,16 @@ function DeploymentDetailsRow({
                       </Link>
                     </OverlayTrigger>
                   </Col>
-                </Row>
-              </Container>
+                </>
+                )}
+              </Row>
+            </Container>
             )}
-            <ServiceUrlsList deployment={deployment} />
-          </>
-        ) : (
-          <span>
-            There are no deployments to
-            {' '}
-            {name}
-            {' '}
-            yet.
-          </span>
-        )}
-      </Col>
-    </Row>
+          </Col>
+        </Row>
+      </Container>
+      {!inProgress && <ServiceUrlsList deployment={deployment} />}
+    </>
   );
 }
 
@@ -286,7 +345,7 @@ function ServiceUrlsList({deployment}: {deployment: Deployment}) {
   const {serviceUrls, status} = deployment;
   return (status === DeploymentStatusEnum.Running
     ? (
-      <div className="pt-2">
+      <div>
         {serviceUrls.map((serviceUrl) => (
           <div key={serviceUrl}>
             <a

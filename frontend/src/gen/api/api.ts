@@ -431,7 +431,7 @@ export interface Deployment {
      * @type {string}
      * @memberof Deployment
      */
-    status?: DeploymentStatusEnum;
+    status: DeploymentStatusEnum;
 }
 
 /**
@@ -439,8 +439,11 @@ export interface Deployment {
     * @enum {string}
     */
 export enum DeploymentStatusEnum {
+    Starting = 'STARTING',
     Running = 'RUNNING',
-    Stopped = 'STOPPED'
+    Stopping = 'STOPPING',
+    Stopped = 'STOPPED',
+    Failed = 'FAILED'
 }
 
 /**

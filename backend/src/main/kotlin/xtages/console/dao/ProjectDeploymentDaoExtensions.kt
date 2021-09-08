@@ -1,11 +1,9 @@
 package xtages.console.dao
 
-import org.jooq.impl.DSL.max
 import org.jooq.impl.DSL.rank
 import xtages.console.controller.model.Environment
 import xtages.console.query.enums.BuildType
 import xtages.console.query.tables.daos.ProjectDeploymentDao
-import xtages.console.query.tables.pojos.Build
 import xtages.console.query.tables.pojos.Organization
 import xtages.console.query.tables.pojos.Project
 import xtages.console.query.tables.pojos.ProjectDeployment
@@ -13,7 +11,6 @@ import xtages.console.query.tables.references.BUILD
 import xtages.console.query.tables.references.ORGANIZATION
 import xtages.console.query.tables.references.PROJECT
 import xtages.console.query.tables.references.PROJECT_DEPLOYMENT
-import java.time.LocalDateTime
 
 /***
  * Returns the lastest [ProjectDeployment] based on the [projectHash]
@@ -38,20 +35,20 @@ fun ProjectDeploymentDao.fetchLatestDeploymentStatus(
 }
 
 /**
- * @return The latests [ProjectDeployment]s for [project] per by `environment`.
+ * @return The latest two [ProjectDeployment]s for [project] per by `environment`.
  */
 fun ProjectDeploymentDao.fetchLatestDeploymentsByProject(
     project: Project
 ): List<ProjectDeployment> {
-    val subQuery = ctx()
+    // This sub query, groups project_deployment rows by build.id and build.environment and ranks each group sorted by
+    // status_change_time.
+    val subQueryGroupedByBuildAndEnv = ctx()
         .select(
             PROJECT_DEPLOYMENT.asterisk(),
-            // This following statement is going to partition the rows by environment and order each partition by
-            // `project_deployment.status_change_time`, and alias the racking of each row withing their
-            // partition to a column called 'pos'.
+            BUILD.ENVIRONMENT,
             rank()
                 .over()
-                .partitionBy(BUILD.ENVIRONMENT)
+                .partitionBy(BUILD.ID, BUILD.ENVIRONMENT)
                 .orderBy(PROJECT_DEPLOYMENT.STATUS_CHANGE_TIME.desc())
                 .`as`("pos")
         )
@@ -59,37 +56,32 @@ fun ProjectDeploymentDao.fetchLatestDeploymentsByProject(
         .join(PROJECT).on(PROJECT_DEPLOYMENT.PROJECT_ID.eq(PROJECT.ID))
         .join(BUILD).on(PROJECT_DEPLOYMENT.BUILD_ID.eq(BUILD.ID))
         .where(PROJECT.ID.eq(project.id!!))
-        .orderBy(PROJECT_DEPLOYMENT.STATUS_CHANGE_TIME.desc()).asTable()
-    return ctx()
-        .select(subQuery.asterisk())
-        .from(subQuery)
-        .where(subQuery.field("pos", Int::class.java)!!.lessThan(2))
-        .fetchInto(ProjectDeployment::class.java)
-}
-
-/***
- * Returns the latest [ProjectDeployment] based on the [builds] list
- */
-fun ProjectDeploymentDao.fetchLatestByBuilds(builds: List<Build>): List<ProjectDeployment> {
-    val latestDeployments = ctx()
+        .orderBy(PROJECT_DEPLOYMENT.STATUS_CHANGE_TIME.desc())
+        .asTable()
+    // This sub query, takes the previous sub query and for each group of (build.id, build.environment) selects the
+    // first row and subsequently groups those rows by (build.environment), meaning that by the end we will have the
+    // last 2 project_deployments for each environment.
+    val subTableGroupedByEnv = ctx()
         .select(
-            PROJECT_DEPLOYMENT.BUILD_ID,
-            max(PROJECT_DEPLOYMENT.STATUS_CHANGE_TIME).`as`("latest_time")
+            subQueryGroupedByBuildAndEnv.asterisk(),
+            rank()
+                .over()
+                .partitionBy(subQueryGroupedByBuildAndEnv.field(BUILD.ENVIRONMENT.unqualifiedName))
+                .orderBy(subQueryGroupedByBuildAndEnv.field(PROJECT_DEPLOYMENT.STATUS_CHANGE_TIME.unqualifiedName)!!.desc())
+                .`as`("pos2")
         )
-        .from(PROJECT_DEPLOYMENT)
-        .where(PROJECT_DEPLOYMENT.BUILD_ID.`in`(builds.map { it.id }))
-        .groupBy(PROJECT_DEPLOYMENT.BUILD_ID).asTable("latest_build")
+        .from(subQueryGroupedByBuildAndEnv)
+        .where(subQueryGroupedByBuildAndEnv.field("pos", Int::class.java)!!.eq(1))
+        .orderBy(subQueryGroupedByBuildAndEnv.field(PROJECT_DEPLOYMENT.STATUS_CHANGE_TIME.unqualifiedName)!!.desc())
+        .asTable()
     return ctx()
-        .select(
-            PROJECT_DEPLOYMENT.asterisk()
-        )
-        .from(
-            latestDeployments
-        )
-        .join(PROJECT_DEPLOYMENT)
-        .on(PROJECT_DEPLOYMENT.STATUS_CHANGE_TIME.eq(latestDeployments.field("latest_time", LocalDateTime::class.java)))
+        .select(subTableGroupedByEnv.asterisk())
+        .from(subTableGroupedByEnv)
+        .where(subTableGroupedByEnv.field("pos2", Int::class.java)!!.lessOrEqual(2))
+        .orderBy(
+            subTableGroupedByEnv.field(BUILD.ENVIRONMENT.unqualifiedName),
+            subTableGroupedByEnv.field(PROJECT_DEPLOYMENT.STATUS_CHANGE_TIME.unqualifiedName)!!.desc())
         .fetchInto(ProjectDeployment::class.java)
-
 }
 
 /**

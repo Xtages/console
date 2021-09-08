@@ -13,9 +13,8 @@ import xtages.console.controller.model.*
 import xtages.console.dao.*
 import xtages.console.exception.ExceptionCode.*
 import xtages.console.exception.ensure
-import xtages.console.query.enums.BuildStatus
+import xtages.console.query.enums.*
 import xtages.console.query.enums.BuildType
-import xtages.console.query.enums.ProjectType
 import xtages.console.query.enums.ResourceType
 import xtages.console.query.tables.daos.*
 import xtages.console.query.tables.pojos.*
@@ -228,24 +227,38 @@ class ProjectApiController(
         if (buildIdsToFetch.isNotEmpty()) {
             deploymentBuilds.addAll(buildDao.fetchById(*buildIdsToFetch.toLongArray()))
         }
+        val deploymentBuildsById = deploymentBuilds.associateBy { build -> build.id }
 
-        return deploymentBuilds.mapNotNull { build ->
-            val deploy = deploymentsByBuildId[build.id]
-            if (deploy != null) {
-                buildPojoToDeployment(
-                    source = build,
-                    organization = organization,
-                    project = project,
-                    usernameToGithubUser = usernameToGithubUser,
-                    idToXtagesUser = idToXtagesUser,
-                    projectDeploymentStatus = deploy.status,
-                    customerDeploymentDomain = consoleProperties.customerDeploymentDomain
-                )
-            } else {
-                null
-            }
+        val deploymentsByEnv = projectDeployments
+            .groupBy { deployment -> deploymentBuildsById[deployment.buildId]!!.environment }
+            .mapValues { entry -> filterDeployments(entry.value) }
+
+        return deploymentsByEnv.values.flatten().map { deployment ->
+            val build = deploymentBuildsById[deployment.buildId]!!
+            buildPojoToDeployment(
+                source = build,
+                projectDeployment = deployment,
+                organization = organization,
+                project = project,
+                usernameToGithubUser = usernameToGithubUser,
+                idToXtagesUser = idToXtagesUser,
+                customerDeploymentDomain = consoleProperties.customerDeploymentDomain
+            )
         }
     }
+
+    private fun filterDeployments(deploymentsForEnv: List<ProjectDeployment>): List<ProjectDeployment> {
+        ensure.isTrue(deploymentsForEnv.size <= 2, INVALID_DEPLOYMENTS)
+        if (deploymentsForEnv.size == 2 && deploymentsForEnv.all(this::isInTerminalState)) {
+            val mutableList = deploymentsForEnv.toMutableList()
+            mutableList.removeLast()
+            return mutableList
+        }
+        return deploymentsForEnv
+    }
+
+    private fun isInTerminalState(deployment: ProjectDeployment) =
+        deployment.status == DeployStatus.DEPLOYED || deployment.status == DeployStatus.DRAINED
 
     override fun createProject(createProjectReq: CreateProjectReq): ResponseEntity<Project> {
         val organization = organizationDao.fetchOneByCognitoUserId(authenticationService.currentCognitoUserId)
