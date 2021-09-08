@@ -319,7 +319,13 @@ class ProjectApiController(
 
         ensureDbIsAvailable(organization)
 
-        val tag = gitHubService.tagProject(organization, project, userName)
+        val tag = gitHubService.tagProject(
+            organization = organization,
+            project = project,
+            userName = userName,
+            commitHash = cdReq.commitHash
+        )
+
         val recipe = ensure.foundOne(
             operation = { recipeDao.fetchOneById(project.recipe!!) },
             code = RECIPE_NOT_FOUND
