@@ -243,7 +243,6 @@ class GitHubService(
         val gitHubAppClient = buildGitHubAppClient(organization)
 
         val repository = gitHubAppClient.getRepository(project.ghRepoFullName)
-        val defaultBranch = repository.defaultBranch
         val shA1Short = commitHash.substring(0, 6)
         val now = Instant.now().toUtcLocalDateTime()
         val tag = "v${now.format(DateTimeFormatter.ofPattern(datePattern))}-$shA1Short"
