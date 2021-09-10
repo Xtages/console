@@ -8,7 +8,6 @@ import {Organization} from 'gen/api';
 import {organizationApi} from 'service/Services';
 import {useQueryClient} from 'react-query';
 import axios from 'axios';
-import {milliseconds} from 'date-fns';
 
 CognitoAuth.configure({
   aws_project_region: process.env.REACT_APP_COGNITO_REGION,
@@ -119,8 +118,6 @@ type CognitoUserWithChallenge = CognitoUser & {
   challengeName: any;
 };
 
-const TWO_HOURS_IN_MILLIS = milliseconds({hours: 2});
-
 /**
  * Provider hook that creates {@link Auth} object and handles state of the {@link Principal}
  * and the authentication process.
@@ -154,9 +151,7 @@ function useProvideAuth() {
   async function fetchOrg() {
     if (organization === null) {
       try {
-        const response = await queryClient.fetchQuery(
-          'org', () => organizationApi.getOrganization(), {staleTime: TWO_HOURS_IN_MILLIS},
-        );
+        const response = await queryClient.fetchQuery('org', () => organizationApi.getOrganization());
         setOrganization(response.data);
       } catch (e: any) {
         if (!axios.isAxiosError(e) || (axios.isAxiosError(e) && e.response?.status !== 404)) {
