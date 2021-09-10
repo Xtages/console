@@ -77,10 +77,11 @@ class OrganizationApiController(
                 )!!,
                 version = recipe.version!!,
                 builds = emptyList(),
-                deployments = deploysPerProjectId[project.id]?.map { deploy ->
-                    val build = buildsById[deploy.buildId]
+                deployments = deploysPerProjectId[project.id]?.map { deployment ->
+                    val build = buildsById[deployment.buildId]
                     buildPojoToDeployment(
                         source = build!!,
+                        projectDeployment = deployment,
                         organization = organization,
                         project = project,
                         usernameToGithubUser = usernameToGithubUser,
