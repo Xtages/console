@@ -7,12 +7,11 @@ import * as z from 'zod';
 import CreateAccountLink from 'pages/authn/CreateAccountLink';
 import {Principal, useAuth} from 'hooks/useAuth';
 import redirectToStripeCheckoutSession from 'service/CheckoutService';
-import {organizationApi} from 'service/Services';
 import Logo from 'components/Logos';
 import LabeledFormField from 'components/form/LabeledFormField';
 import {Alert, Button} from 'react-bootstrap';
 import {EmailField, PasswordField} from 'components/user/AuthFields';
-import {getFormValidator} from 'helpers/form';
+import {useFormValidator} from 'hooks/useFormValidator';
 import {useTracking} from 'hooks/useTracking';
 import {usePriceId} from 'hooks/usePriceId';
 import {SignUpFormValues} from './SignUpPage';
@@ -97,6 +96,7 @@ export default function ConfirmSignUpPage() {
   const auth = useAuth();
   const [errorOccurred, setErrorOccurred] = useState(false);
   const {priceId} = usePriceId();
+  const validate = useFormValidator('ConfirmSignUpPage', formValuesSchema);
 
   function buildFormValues(): FormValues {
     const {state} = location;
@@ -123,11 +123,11 @@ export default function ConfirmSignUpPage() {
         email: values.email,
         code: values.code,
       });
-      trackComponentEvent('ConfirmSignUpPage', 'Signed Up', {
+      trackComponentEvent('ConfirmSignUpPage', 'Confirmed Signed Up', {
         priceId,
       });
     } catch (e) {
-      trackComponentApiError('ConfirmSignUpPage', 'confirmSignUp', e);
+      trackComponentApiError('ConfirmSignUpPage', 'cognito.confirmSignUp', e);
       setErrorOccurred(true);
       actions.setSubmitting(false);
       return;
@@ -139,23 +139,17 @@ export default function ConfirmSignUpPage() {
     actions.setSubmitting(false);
     if (principal instanceof Principal) {
       identifyPrincipal(principal);
-      await organizationApi.createOrganization({
-        organizationName: principal.org,
-        ownerCognitoUserId: principal.id,
-      });
-      trackComponentEvent('ConfirmSignUpPage', 'Org Created', {
-        org: principal.org,
-      });
-      await redirectToStripeCheckoutSession({
+      const req = {
         priceIds: [priceId!],
         organizationName: principal.org,
-      });
+        ownerCognitoUserId: principal.id,
+      };
+      trackComponentEvent('ConfirmSignUpPage', 'Redirecting to Stripe', req);
+      await redirectToStripeCheckoutSession(req);
     } else {
       setErrorOccurred(true);
     }
   }
-
-  const validate = getFormValidator('ConfirmSignUpPage', formValuesSchema);
 
   return (
     <section>

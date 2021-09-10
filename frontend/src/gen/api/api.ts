@@ -296,29 +296,16 @@ export interface CreateCheckoutSessionReq {
     organizationName: string;
     /**
      * 
+     * @type {string}
+     * @memberof CreateCheckoutSessionReq
+     */
+    ownerCognitoUserId: string;
+    /**
+     * 
      * @type {Array<string>}
      * @memberof CreateCheckoutSessionReq
      */
     priceIds: Array<string>;
-}
-/**
- * Request made to POST /organization
- * @export
- * @interface CreateOrgReq
- */
-export interface CreateOrgReq {
-    /**
-     * 
-     * @type {string}
-     * @memberof CreateOrgReq
-     */
-    organizationName: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof CreateOrgReq
-     */
-    ownerCognitoUserId: string;
 }
 /**
  * Request made to POST /project
@@ -533,6 +520,19 @@ export interface Logs {
      * @memberof Logs
      */
     nextToken?: string;
+}
+/**
+ * Request to check if it\'s possible to sign up an organization.
+ * @export
+ * @interface OrgEligibleReq
+ */
+export interface OrgEligibleReq {
+    /**
+     * 
+     * @type {string}
+     * @memberof OrgEligibleReq
+     */
+    name: string;
 }
 /**
  * An Organization
@@ -1513,46 +1513,6 @@ export const OrganizationApiAxiosParamCreator = function (configuration?: Config
     return {
         /**
          * 
-         * @summary Creates a new Organization beloging to a user, if the user doesn\'t exist then it\'s created also
-         * @param {CreateOrgReq} createOrgReq 
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        createOrganization: async (createOrgReq: CreateOrgReq, options: any = {}): Promise<RequestArgs> => {
-            // verify required parameter 'createOrgReq' is not null or undefined
-            assertParamExists('createOrganization', 'createOrgReq', createOrgReq)
-            const localVarPath = `/organization`;
-            // use dummy base URL string because the URL constructor only accepts absolute URLs.
-            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
-            let baseOptions;
-            if (configuration) {
-                baseOptions = configuration.baseOptions;
-            }
-
-            const localVarRequestOptions = { method: 'POST', ...baseOptions, ...options};
-            const localVarHeaderParameter = {} as any;
-            const localVarQueryParameter = {} as any;
-
-            // authentication bearerAuth required
-            // http bearer authentication required
-            await setBearerAuthToObject(localVarHeaderParameter, configuration)
-
-
-    
-            localVarHeaderParameter['Content-Type'] = 'application/json';
-
-            setSearchParams(localVarUrlObj, localVarQueryParameter, options.query);
-            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
-            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
-            localVarRequestOptions.data = serializeDataIfNeeded(createOrgReq, localVarRequestOptions, configuration)
-
-            return {
-                url: toPathString(localVarUrlObj),
-                options: localVarRequestOptions,
-            };
-        },
-        /**
-         * 
          * @summary Returns details about the organization associated with the currently logged in user.
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
@@ -1579,6 +1539,46 @@ export const OrganizationApiAxiosParamCreator = function (configuration?: Config
             setSearchParams(localVarUrlObj, localVarQueryParameter, options.query);
             let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
             localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
+         * 
+         * @summary Returns whether it is possible to sign up an organization.
+         * @param {OrgEligibleReq} orgEligibleReq 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getOrganizationEligibility: async (orgEligibleReq: OrgEligibleReq, options: any = {}): Promise<RequestArgs> => {
+            // verify required parameter 'orgEligibleReq' is not null or undefined
+            assertParamExists('getOrganizationEligibility', 'orgEligibleReq', orgEligibleReq)
+            const localVarPath = `/organization/eligibility`;
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'PUT', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            // authentication bearerAuth required
+            // http bearer authentication required
+            await setBearerAuthToObject(localVarHeaderParameter, configuration)
+
+
+    
+            localVarHeaderParameter['Content-Type'] = 'application/json';
+
+            setSearchParams(localVarUrlObj, localVarQueryParameter, options.query);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+            localVarRequestOptions.data = serializeDataIfNeeded(orgEligibleReq, localVarRequestOptions, configuration)
 
             return {
                 url: toPathString(localVarUrlObj),
@@ -1631,23 +1631,23 @@ export const OrganizationApiFp = function(configuration?: Configuration) {
     return {
         /**
          * 
-         * @summary Creates a new Organization beloging to a user, if the user doesn\'t exist then it\'s created also
-         * @param {CreateOrgReq} createOrgReq 
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        async createOrganization(createOrgReq: CreateOrgReq, options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Organization>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.createOrganization(createOrgReq, options);
-            return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
-        },
-        /**
-         * 
          * @summary Returns details about the organization associated with the currently logged in user.
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
         async getOrganization(options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Organization>> {
             const localVarAxiosArgs = await localVarAxiosParamCreator.getOrganization(options);
+            return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
+        },
+        /**
+         * 
+         * @summary Returns whether it is possible to sign up an organization.
+         * @param {OrgEligibleReq} orgEligibleReq 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async getOrganizationEligibility(orgEligibleReq: OrgEligibleReq, options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<void>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.getOrganizationEligibility(orgEligibleReq, options);
             return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
         },
         /**
@@ -1672,22 +1672,22 @@ export const OrganizationApiFactory = function (configuration?: Configuration, b
     return {
         /**
          * 
-         * @summary Creates a new Organization beloging to a user, if the user doesn\'t exist then it\'s created also
-         * @param {CreateOrgReq} createOrgReq 
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        createOrganization(createOrgReq: CreateOrgReq, options?: any): AxiosPromise<Organization> {
-            return localVarFp.createOrganization(createOrgReq, options).then((request) => request(axios, basePath));
-        },
-        /**
-         * 
          * @summary Returns details about the organization associated with the currently logged in user.
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
         getOrganization(options?: any): AxiosPromise<Organization> {
             return localVarFp.getOrganization(options).then((request) => request(axios, basePath));
+        },
+        /**
+         * 
+         * @summary Returns whether it is possible to sign up an organization.
+         * @param {OrgEligibleReq} orgEligibleReq 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getOrganizationEligibility(orgEligibleReq: OrgEligibleReq, options?: any): AxiosPromise<void> {
+            return localVarFp.getOrganizationEligibility(orgEligibleReq, options).then((request) => request(axios, basePath));
         },
         /**
          * 
@@ -1710,18 +1710,6 @@ export const OrganizationApiFactory = function (configuration?: Configuration, b
 export class OrganizationApi extends BaseAPI {
     /**
      * 
-     * @summary Creates a new Organization beloging to a user, if the user doesn\'t exist then it\'s created also
-     * @param {CreateOrgReq} createOrgReq 
-     * @param {*} [options] Override http request option.
-     * @throws {RequiredError}
-     * @memberof OrganizationApi
-     */
-    public createOrganization(createOrgReq: CreateOrgReq, options?: any) {
-        return OrganizationApiFp(this.configuration).createOrganization(createOrgReq, options).then((request) => request(this.axios, this.basePath));
-    }
-
-    /**
-     * 
      * @summary Returns details about the organization associated with the currently logged in user.
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
@@ -1729,6 +1717,18 @@ export class OrganizationApi extends BaseAPI {
      */
     public getOrganization(options?: any) {
         return OrganizationApiFp(this.configuration).getOrganization(options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * 
+     * @summary Returns whether it is possible to sign up an organization.
+     * @param {OrgEligibleReq} orgEligibleReq 
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof OrganizationApi
+     */
+    public getOrganizationEligibility(orgEligibleReq: OrgEligibleReq, options?: any) {
+        return OrganizationApiFp(this.configuration).getOrganizationEligibility(orgEligibleReq, options).then((request) => request(this.axios, this.basePath));
     }
 
     /**

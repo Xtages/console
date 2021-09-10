@@ -1,5 +1,6 @@
 import {useAnalytics} from 'use-analytics';
 import {Principal} from 'hooks/useAuth';
+import * as Sentry from '@sentry/react';
 
 type ErrorType = 'formValidation' | 'apiCall';
 
@@ -41,14 +42,18 @@ export function useTracking() {
     if (u.host !== new URL(window.location.href).host) {
       eventName = 'External API Called';
     }
-    trackEvent(eventName, {
+    const event = {
       schema: u.protocol.endsWith(':') ? u.protocol.substr(0, u.protocol.length - 1) : u.protocol,
       hostname: u.hostname,
       port: u.port,
       path: u.pathname,
       search: urlSearchParamsToMap(u.searchParams),
       ...payload,
-    });
+    };
+    trackEvent(eventName, event);
+    if (payload.status !== undefined && payload.status <= 400) {
+      Sentry.captureException(event);
+    }
   }
 
   function trackComponentEvent(component: string, eventName: string, payload?: any) {
@@ -77,10 +82,19 @@ export function useTracking() {
     identify(principal.id, {
       org: principal.org,
     }).then(noop);
+    Sentry.configureScope((scope) => {
+      scope.setUser({
+        id: principal.id,
+      });
+      scope.setTags({org: principal.org});
+    });
   }
 
   function reset() {
     analyticsReset().then(noop);
+    Sentry.configureScope((scope) => {
+      scope.clear();
+    });
   }
 
   return {

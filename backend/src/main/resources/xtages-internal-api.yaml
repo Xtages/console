@@ -371,11 +371,14 @@ paths:
                 $ref: "#/components/schemas/Organization"
         "401":
           $ref: "#/components/responses/UnauthorizedError"
+        "404":
+          $ref: "#/components/responses/DefaultError"
         default:
           $ref: "#/components/responses/DefaultError"
-    post:
-      summary: Creates a new Organization beloging to a user, if the user doesn't exist then it's created also
-      operationId: createOrganization
+  /organization/eligibility:
+    put:
+      summary: Returns whether it is possible to sign up an organization.
+      operationId: getOrganizationEligibility
       tags:
         - organization
       requestBody:
@@ -383,16 +386,12 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/CreateOrgReq"
+              $ref: "#/components/schemas/OrgEligibleReq"
       responses:
-        '201':
-          description: Organization was created
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Organization"
-        "401":
-          $ref: "#/components/responses/UnauthorizedError"
+        '200':
+          description: Organization is eligible
+        '409':
+          description: Organization is not eligible
         default:
           $ref: "#/components/responses/DefaultError"
   /organization/projects/deployments:
@@ -554,6 +553,14 @@ components:
           format: int32
         message:
           type: string
+    OrgEligibleReq:
+      description: Request to check if it's possible to sign up an organization.
+      properties:
+        name:
+          type: string
+          minLength: 1
+      required:
+        - name
     Organization:
       description: An Organization
       properties:
@@ -574,18 +581,6 @@ components:
         - name
         - subscriptionStatus
         - githubAppInstalled
-    CreateOrgReq:
-      description: Request made to POST /organization
-      required:
-        - organizationName
-        - ownerCognitoUserId
-      properties:
-        organizationName:
-          type: string
-          minLength: 1
-        ownerCognitoUserId:
-          type: string
-          minLength: 1
     QueryProjectReq:
       description: Query to retrieve projects
       properties:
@@ -770,9 +765,13 @@ components:
       description: Request made to POST /checkout/session
       required:
         - organizationName
+        - ownerCognitoUserId
         - priceIds
       properties:
         organizationName:
+          type: string
+          minLength: 1
+        ownerCognitoUserId:
           type: string
           minLength: 1
         priceIds:
