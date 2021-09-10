@@ -46,8 +46,7 @@ class SecurityConfig(
                 disable()
             }
             csrf {
-                ignoringAntMatchers("/api/v1/*/webhook")
-                ignoringAntMatchers("/api/v1/organization/eligibility")
+                ignoringAntMatchers("/api/v1/*/webhook", "/api/v1/organization/eligibility")
             }
             sessionManagement {
                 // Don't create an HTTPSession and instead always rely on the
