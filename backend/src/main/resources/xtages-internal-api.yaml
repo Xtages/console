@@ -931,8 +931,11 @@ components:
           type: string
           minLength: 1
           enum:
+            - STARTING
             - RUNNING
+            - STOPPING
             - STOPPED
+            - FAILED
       required:
         - id
         - initiatorEmail
@@ -943,6 +946,7 @@ components:
         - env
         - timestampInMillis
         - serviceUrls
+        - status
     ResourceType:
       description: Enum of resources
       type: string
