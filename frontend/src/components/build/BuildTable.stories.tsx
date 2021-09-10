@@ -5,6 +5,7 @@ import {Build,
   BuildStatusEnum,
   BuildType,
   Deployment,
+  DeploymentStatusEnum,
   Project,
   ProjectTypeEnum} from 'gen/api';
 import {BuildTable, BuildTableProps} from './BuildTable';
@@ -61,6 +62,7 @@ const prodDeploymentData: Deployment = {
   commitUrl: 'https://github.com/Xtages/console/commit/81acee7df324793c6409e178798dab5d197ba50f',
   timestampInMillis: Date.now(),
   serviceUrls: ['https://FIXME'],
+  status: DeploymentStatusEnum.Running,
 };
 
 const stagingDeploymentData: Deployment = {
@@ -73,6 +75,7 @@ const stagingDeploymentData: Deployment = {
   commitUrl: 'https://github.com/Xtages/console/commit/81acee7df324793c6409e178798dab5d197ba50f',
   timestampInMillis: Date.now() - (24 * 60 * 60 * 1000),
   serviceUrls: ['https://FIXME'],
+  status: DeploymentStatusEnum.Running,
 };
 
 const projectData: Project = {

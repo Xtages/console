@@ -28,6 +28,7 @@ enum class ExceptionCode {
     PROJECT_DEPLOYMENT_NOT_FOUND,
     COGNITO_ERROR,
     INVALID_LOGS,
+    INVALID_DEPLOYMENTS,
 }
 
 /**

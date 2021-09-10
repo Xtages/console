@@ -7,14 +7,13 @@ import software.amazon.awssdk.services.cognitoidentityprovider.model.UserStatusT
 import xtages.console.controller.GitHubAvatarUrl
 import xtages.console.controller.GitHubUrl
 import xtages.console.controller.api.model.*
-import xtages.console.controller.api.model.Deployment.Status.RUNNING
-import xtages.console.controller.api.model.Deployment.Status.STOPPED
 import xtages.console.query.enums.DeployStatus
 import xtages.console.query.enums.GithubAppInstallationStatus
 import xtages.console.query.enums.OrganizationSubscriptionStatus
 import xtages.console.query.enums.ProjectType
 import xtages.console.query.tables.pojos.BuildEvent
 import xtages.console.query.tables.pojos.GithubUser
+import xtages.console.query.tables.pojos.ProjectDeployment
 import xtages.console.query.tables.pojos.Recipe
 import xtages.console.service.*
 import xtages.console.time.toUtcMillis
@@ -189,11 +188,11 @@ fun buildPojoToBuild(
  */
 fun buildPojoToDeployment(
     source: BuildPojo,
+    projectDeployment: ProjectDeployment,
     organization: OrganizationPojo,
     project: ProjectPojo,
     usernameToGithubUser: Map<String, GithubUser>,
     idToXtagesUser: Map<Int, XtagesUserWithCognitoAttributes>,
-    projectDeploymentStatus: DeployStatus? = null,
     customerDeploymentDomain: String,
 ): Deployment {
     val initiator = getBuildInitiator(source, usernameToGithubUser, idToXtagesUser)
@@ -221,8 +220,17 @@ fun buildPojoToDeployment(
         env = source.environment!!,
         timestampInMillis = source.endTime!!.toUtcMillis(),
         serviceUrls = serviceUrls,
-        status = if (projectDeploymentStatus == DeployStatus.DEPLOYED) RUNNING else STOPPED,
+        status = deployStatusToDeploymentStatus.convert(projectDeployment.status!!)!!,
     )
+}
+
+val deployStatusToDeploymentStatus = Converter { source: DeployStatus ->
+    when (source) {
+        DeployStatus.PROVISIONING -> Deployment.Status.STARTING
+        DeployStatus.DEPLOYED -> Deployment.Status.RUNNING
+        DeployStatus.DRAINING -> Deployment.Status.STOPPING
+        DeployStatus.DRAINED -> Deployment.Status.STOPPED
+    }
 }
 
 private fun getBuildInitiator(
