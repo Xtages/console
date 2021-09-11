@@ -9,8 +9,8 @@ import {useHistory, useLocation} from 'react-router-dom';
 import {FormikHelpers} from 'formik/dist/types';
 import {Credentials, Principal, useAuth} from 'hooks/useAuth';
 import {CognitoUser} from 'amazon-cognito-identity-js';
+import {useFormValidator} from 'hooks/useFormValidator';
 import {useTracking} from 'hooks/useTracking';
-import {getFormValidator} from 'helpers/form';
 
 const completePasswordFormValuesSchema = z.object({
   email: z.string()
@@ -45,6 +45,7 @@ export default function ChangePasswordPage() {
     trackComponentApiError,
   } = useTracking();
   const [errorOccurred, setErrorOccurred] = useState(false);
+  const validate = useFormValidator('ChangePasswordPage', completePasswordFormValuesSchema);
 
   async function changePassword(values: CompletePasswordFormValues,
     actions: FormikHelpers<CompletePasswordFormValues>) {
@@ -76,11 +77,6 @@ export default function ChangePasswordPage() {
     }
     actions.setSubmitting(false);
   }
-
-  const validate = getFormValidator(
-    'ChangePasswordPage',
-    completePasswordFormValuesSchema,
-  );
 
   return (
     <section>

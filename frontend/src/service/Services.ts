@@ -26,8 +26,15 @@ function buildAuthdApi<T extends BaseAPI>(ApiType: typeof BaseAPI): T {
   })) as T;
 }
 
+function buildUnauthdApi<T extends BaseAPI>(ApiType: typeof BaseAPI): T {
+  return new ApiType(new Configuration({
+    basePath: getBasePath(),
+  })) as T;
+}
+
 export const checkoutApi = buildAuthdApi<CheckoutApi>(CheckoutApi);
 export const organizationApi = buildAuthdApi<OrganizationApi>(OrganizationApi);
+export const unauthdOrganizationApi = buildUnauthdApi<OrganizationApi>(OrganizationApi);
 export const projectApi = buildAuthdApi<ProjectApi>(ProjectApi);
 export const logsApi = buildAuthdApi<LogsApi>(LogsApi);
 export const ciApi = buildAuthdApi<CiApi>(CiApi);

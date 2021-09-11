@@ -3,6 +3,7 @@
 a[target="_blank"]:not(.noExternalLinkIcon):after {
   @include material-icon(12px);
   padding-left: 2px;
+  padding-right: 2px;
   content: " \e89e";
 }
 

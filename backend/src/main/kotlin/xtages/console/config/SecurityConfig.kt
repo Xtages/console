@@ -3,9 +3,7 @@ package xtages.console.config
 import mu.KotlinLogging
 import org.slf4j.MDC
 import org.springframework.context.annotation.Configuration
-import org.springframework.core.env.Environment
 import org.springframework.http.HttpMethod
-import org.springframework.http.HttpMethod.POST
 import org.springframework.security.access.AccessDecisionVoter
 import org.springframework.security.access.ConfigAttribute
 import org.springframework.security.access.vote.AuthenticatedVoter
@@ -22,7 +20,7 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
 import org.springframework.security.web.FilterInvocation
 import org.springframework.security.web.access.expression.WebExpressionVoter
 import org.springframework.stereotype.Component
-import xtages.console.dao.fetchOneByCognitoUserId
+import xtages.console.dao.maybeFetchOneByCognitoUserId
 import xtages.console.exception.ensure
 import xtages.console.query.enums.OrganizationSubscriptionStatus
 import xtages.console.query.tables.daos.OrganizationDao
@@ -32,7 +30,6 @@ private val logger = KotlinLogging.logger { }
 @Configuration
 @EnableWebSecurity
 class SecurityConfig(
-    private val environment: Environment,
     private val organizationInGoodStandingAccessDecisionVoter: OrganizationInGoodStandingAccessDecisionVoter
 ) :
     WebSecurityConfigurerAdapter() {
@@ -49,7 +46,7 @@ class SecurityConfig(
                 disable()
             }
             csrf {
-                ignoringAntMatchers("/api/v1/*/webhook")
+                ignoringAntMatchers("/api/v1/*/webhook", "/api/v1/organization/eligibility")
             }
             sessionManagement {
                 // Don't create an HTTPSession and instead always rely on the
@@ -67,9 +64,11 @@ class SecurityConfig(
             authorize
                 .mvcMatchers("/**").permitAll()
                 .mvcMatchers("/api/**").authenticated().accessDecisionManager(accessDecisionManager())
+                // This endpoint is called from the signup page so we don't have JWT yet.
+                .mvcMatchers(HttpMethod.PUT, "/api/v1/organization/eligibility").permitAll()
                 // Allow all access to POSTs made to webhook paths because those will be cryptographically authenticated
                 // via signature
-                .mvcMatchers(POST, "/api/v1/*/webhook").permitAll()
+                .mvcMatchers(HttpMethod.POST, "/api/v1/*/webhook").permitAll()
         }
     }
 
@@ -108,7 +107,8 @@ private val validOrgSubscriptionStatus =
  * suspended or cancelled).
  */
 @Component
-class OrganizationInGoodStandingAccessDecisionVoter(val organizationDao: OrganizationDao) : AccessDecisionVoter<FilterInvocation> {
+class OrganizationInGoodStandingAccessDecisionVoter(val organizationDao: OrganizationDao) :
+    AccessDecisionVoter<FilterInvocation> {
     override fun supports(attribute: ConfigAttribute) = attribute.attribute == "authenticated"
 
     override fun supports(clazz: Class<*>?) = true
@@ -120,11 +120,16 @@ class OrganizationInGoodStandingAccessDecisionVoter(val organizationDao: Organiz
     ): Int {
         logger.debug { "Handling invocation [$invocation]" }
         if (authentication is JwtAuthenticationToken) {
-            // For POST /api/v1/organization we only require that the user has a valid JWT, because this endpoint is
-            // how the checkout flow creates an Organization and if we try validate that there's an Organization
-            // associated to the user then we run into a chicken & egg problem.
-            if (HttpMethod.resolve(invocation.request.method) == POST && invocation.requestUrl == "/api/v1/organization") {
-                logger.debug { "[$invocation] Attempting to create organization." }
+            // For GET /api/v1/organization we only require that the user has a valid JWT, because this endpoint
+            // allows the FE to determine if the user has an organization associated and in which status the
+            // organization is.
+            // For POST /api/v1/checkout/session we only require that the user has a valid JWT because this endpoint is
+            // used before an organization exists.
+            val method = HttpMethod.resolve(invocation.request.method)
+            if ((method == HttpMethod.GET && invocation.requestUrl == "/api/v1/organization")
+                || (method == HttpMethod.POST && invocation.requestUrl == "/api/v1/checkout/session")
+            ) {
+                logger.debug { "[$invocation] Attempting to get organization or create checkout session." }
                 return AccessDecisionVoter.ACCESS_ABSTAIN
             }
             val organizationName = ensure.ofType<String>(
@@ -132,25 +137,21 @@ class OrganizationInGoodStandingAccessDecisionVoter(val organizationDao: Organiz
                 "organization"
             )
             val cognitoUserId = CognitoUserId.fromJwt(authentication.principal)
-            val organization = organizationDao.fetchOneByCognitoUserId(cognitoUserId)
-            if (organization.name == organizationName &&
-                organization.subscriptionStatus in validOrgSubscriptionStatus
-            ) {
-                MDC.put("cid", cognitoUserId.id)
-                MDC.put("org", organization.name)
-                return AccessDecisionVoter.ACCESS_GRANTED
-            } else {
-                if (organization.name != organizationName) {
-                    logger.warn {
-                        "[$invocation] User [${cognitoUserId.id}] tried to access organization [$organizationName](from JWT claim) but it's not an organization the user belongs to."
+            val organization = organizationDao.maybeFetchOneByCognitoUserId(cognitoUserId)
+            if (organization != null) {
+                if (organization.name == organizationName &&
+                    organization.subscriptionStatus in validOrgSubscriptionStatus
+                ) {
+                    MDC.put("cid", cognitoUserId.id)
+                    MDC.put("org", organization.name)
+                    return AccessDecisionVoter.ACCESS_GRANTED
+                } else {
+                    if (organization.name != organizationName) {
+                        logger.warn {
+                            "[$invocation] User [${cognitoUserId.id}] tried to access organization [$organizationName](from JWT claim) but it's not an organization the user belongs to."
+                        }
                     }
-                }
-                if (organization.subscriptionStatus !in validOrgSubscriptionStatus) {
-                    // Allow for Organization that are not in good standing to create a Stripe CheckoutSession, so we
-                    // send them to the Stripe UI.
-                    if (HttpMethod.resolve(invocation.request.method) == POST && invocation.requestUrl == "/api/v1/checkout/session") {
-                        return AccessDecisionVoter.ACCESS_GRANTED
-                    } else {
+                    if (organization.subscriptionStatus !in validOrgSubscriptionStatus) {
                         logger.info {
                             "[$invocation] User [${cognitoUserId.id}] tried to access organization [$organizationName](from JWT claim) but the organization's subscription status is [${organization.subscriptionStatus}]"
                         }
@@ -161,5 +162,4 @@ class OrganizationInGoodStandingAccessDecisionVoter(val organizationDao: Organiz
         }
         return AccessDecisionVoter.ACCESS_ABSTAIN
     }
-
 }

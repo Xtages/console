@@ -62,17 +62,9 @@ class UserService(
      * Creates new Xtages user and looks up it's Cognito Identity and stores it.
      */
     fun registerUserFromCognito(cognitoUserId: String, organization: Organization, isOwner: Boolean = false) {
-        val idResponse = anonymousCognitoIdentityClient.getId(
-            GetIdRequest.builder()
-                .identityPoolId(consoleProperties.aws.cognito.identityPoolId)
-                .logins(authenticationService.loginsMap)
-                .accountId(consoleProperties.aws.accountId)
-                .build()
-        ).get()
         cognitoService.addUserToGroup(username = cognitoUserId, groupName = organization.name!!)
         val owner = XtagesUser(
             cognitoUserId = cognitoUserId,
-            cognitoIdentityId = idResponse.identityId(),
             organizationName = organization.name!!,
             isOwner = isOwner
         )

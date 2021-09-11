@@ -9,7 +9,7 @@ import Logo from 'components/Logos';
 import {Alert, Col, Container, Row} from 'react-bootstrap';
 import {EmailField, PasswordField} from 'components/user/AuthFields';
 import {CognitoUser} from 'amazon-cognito-identity-js';
-import {getFormValidator} from 'helpers/form';
+import {useFormValidator} from 'hooks/useFormValidator';
 import {useTracking} from 'hooks/useTracking';
 
 /** The properties that are available to the {@link LoginPage} component. */
@@ -49,6 +49,7 @@ export default function LoginPage({location}: LoginPageProps) {
     trackComponentEvent,
   } = useTracking();
   const [errorOccurred, setErrorOccurred] = useState(false);
+  const validate = useFormValidator('LoginPage', loginFormValuesSchema);
 
   async function logIn(values: LoginFormValues, actions: FormikHelpers<LoginFormValues>) {
     setErrorOccurred(false);
@@ -82,8 +83,6 @@ export default function LoginPage({location}: LoginPageProps) {
     }
     actions.setSubmitting(false);
   }
-
-  const validate = getFormValidator('LoginPage', loginFormValuesSchema);
 
   return (
     <section>

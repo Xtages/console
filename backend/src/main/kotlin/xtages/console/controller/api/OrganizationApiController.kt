@@ -1,30 +1,28 @@
 package xtages.console.controller.api
 
-import org.springframework.http.HttpStatus.CREATED
+import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Controller
 import xtages.console.config.ConsoleProperties
-import xtages.console.controller.api.model.*
-import xtages.console.controller.model.MD5
+import xtages.console.controller.api.model.OrgEligibleReq
+import xtages.console.controller.api.model.Organization
+import xtages.console.controller.api.model.Project
+import xtages.console.controller.api.model.Projects
 import xtages.console.controller.model.buildPojoToDeployment
 import xtages.console.controller.model.organizationPojoToOrganizationConverter
 import xtages.console.controller.model.projectPojoTypeToProjectTypeConverter
 import xtages.console.dao.fetchLatestDeploymentsByOrg
 import xtages.console.dao.fetchOneByCognitoUserId
 import xtages.console.dao.findFromBuilds
-import xtages.console.query.enums.OrganizationSubscriptionStatus
+import xtages.console.dao.maybeFetchOneByCognitoUserId
 import xtages.console.query.tables.daos.*
 import xtages.console.service.AuthenticationService
 import xtages.console.service.UserService
-import xtages.console.service.aws.CognitoService
-import java.util.*
-import xtages.console.query.tables.pojos.Organization as OrganizationPojo
 
 @Controller
 class OrganizationApiController(
     val organizationDao: OrganizationDao,
     val userService: UserService,
-    val cognitoService: CognitoService,
     val authenticationService: AuthenticationService,
     val recipeDao: RecipeDao,
     val buildDao: BuildDao,
@@ -35,26 +33,22 @@ class OrganizationApiController(
 ) :
     OrganizationApiControllerBase {
 
-    override fun createOrganization(createOrgReq: CreateOrgReq): ResponseEntity<Organization> {
-        cognitoService.createGroup(groupName = createOrgReq.organizationName)
-        val organization = OrganizationPojo(
-            name = createOrgReq.organizationName,
-            subscriptionStatus = OrganizationSubscriptionStatus.UNCONFIRMED,
-            hash = MD5.md5(UUID.randomUUID().toString())
-        )
-        organizationDao.insert(organization)
-        userService.registerUserFromCognito(
-            cognitoUserId = createOrgReq.ownerCognitoUserId,
-            organization = organization,
-            isOwner = true
-        )
-        return ResponseEntity.status(CREATED)
-            .body(organizationPojoToOrganizationConverter.convert(organization))
+    override fun getOrganization(): ResponseEntity<Organization> {
+        val organization = organizationDao.maybeFetchOneByCognitoUserId(authenticationService.currentCognitoUserId)
+        return if (organization != null) {
+            ResponseEntity.ok(organizationPojoToOrganizationConverter.convert(organization))
+        } else {
+            ResponseEntity(HttpStatus.NOT_FOUND)
+        }
     }
 
-    override fun getOrganization(): ResponseEntity<Organization> {
-        val organization = organizationDao.fetchOneByCognitoUserId(authenticationService.currentCognitoUserId)
-        return ResponseEntity.ok(organizationPojoToOrganizationConverter.convert(organization))
+    override fun getOrganizationEligibility(orgEligibleReq: OrgEligibleReq): ResponseEntity<Unit> {
+        val organization = organizationDao.fetchOneByName(orgEligibleReq.name)
+        return if (organization != null) {
+            ResponseEntity(HttpStatus.CONFLICT)
+        } else {
+            ResponseEntity.ok(Unit)
+        }
     }
 
     override fun projectsDeployed(): ResponseEntity<Projects> {

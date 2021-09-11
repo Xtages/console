@@ -9,6 +9,7 @@ import software.amazon.awssdk.auth.credentials.AwsSessionCredentials
 import software.amazon.awssdk.services.cognitoidentity.CognitoIdentityAsyncClient
 import software.amazon.awssdk.services.cognitoidentity.model.Credentials
 import software.amazon.awssdk.services.cognitoidentity.model.GetCredentialsForIdentityRequest
+import software.amazon.awssdk.services.cognitoidentity.model.GetIdRequest
 import xtages.console.config.CognitoUserId
 import xtages.console.config.ConsoleProperties
 import xtages.console.exception.ExceptionCode
@@ -53,10 +54,20 @@ class AuthenticationService(
                 operation = { userDao.fetchOneByCognitoUserId(jwt.subject) },
                 code = ExceptionCode.USER_NOT_FOUND
             )
-            val cognitoIdentityId = ensure.notNull(value = user.cognitoIdentityId, valueDesc = "user.cognitoIdentityId")
+            if (user.cognitoIdentityId == null) {
+                val idResponse = anonymousCognitoIdentityClient.getId(
+                    GetIdRequest.builder()
+                        .identityPoolId(consoleProperties.aws.cognito.identityPoolId)
+                        .logins(loginsMap)
+                        .accountId(consoleProperties.aws.accountId)
+                        .build()
+                ).get()
+                user.cognitoIdentityId = idResponse.identityId()
+                userDao.update(user)
+            }
             val cachedCredentials: Credentials =
                 ensure.notNull(
-                    value = cache.get(cognitoIdentityId) {
+                    value = cache.get(user.cognitoIdentityId) {
                         val credentialsForIdentity = anonymousCognitoIdentityClient.getCredentialsForIdentity(
                             GetCredentialsForIdentityRequest.builder()
                                 .identityId(user.cognitoIdentityId)

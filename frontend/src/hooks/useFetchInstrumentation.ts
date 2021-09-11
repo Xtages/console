@@ -5,15 +5,16 @@ async function buildEventPayload(
 ) {
   const endTime = performance.now();
   const elapsed = endTime - startTime;
+  const clonedResponse = response?.clone();
   const payload: Record<string, any> = {
     method: getMethod(input),
-    status: response?.status,
+    status: clonedResponse?.status,
     startTime,
     endTime,
     elapsed,
   };
-  if (error || (response && response.status > 400)) {
-    payload.errorMsg = await response?.text();
+  if (error || (clonedResponse && clonedResponse.status >= 400)) {
+    payload.errorMsg = await clonedResponse?.text();
     payload.error = error;
   }
   return payload;
@@ -35,7 +36,9 @@ function getMethod(input: RequestInfo) {
 
 function shouldTrack(input: RequestInfo) {
   const url = getUrl(input);
-  return url.indexOf('segment.io') < 0;
+  return !url.includes('segment.io')
+      && !url.includes('segment.com')
+      && !url.includes('sentry.io');
 }
 
 export function useFetchInstrumentation() {
@@ -50,20 +53,10 @@ export function useFetchInstrumentation() {
       const startTime = performance.now();
       try {
         const response = await originalFetch(input, init);
-        if (response.status < 400) {
-          trackApiEvent(
-            getUrl(input), await buildEventPayload(startTime, input, response),
-          );
-        } else {
-          trackApiEvent(
-            getUrl(input), await buildEventPayload(startTime, input, response),
-          );
-        }
+        trackApiEvent(getUrl(input), await buildEventPayload(startTime, input, response));
         return response;
       } catch (e) {
-        trackApiEvent(
-          getUrl(input), await buildEventPayload(startTime, input, null, e),
-        );
+        trackApiEvent(getUrl(input), await buildEventPayload(startTime, input, null, e));
         throw e;
       }
     }

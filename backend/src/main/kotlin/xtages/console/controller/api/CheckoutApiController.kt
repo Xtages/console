@@ -35,6 +35,7 @@ class CheckoutApiController(
             stripeService.createCheckoutSession(
                 priceIds = createCheckoutSessionReq.priceIds,
                 organizationName = createCheckoutSessionReq.organizationName,
+                ownerCognitoUserId = createCheckoutSessionReq.ownerCognitoUserId,
             )
         )
     }

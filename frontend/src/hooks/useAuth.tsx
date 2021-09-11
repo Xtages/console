@@ -3,6 +3,11 @@ import {CognitoUser} from 'amazon-cognito-identity-js';
 import {Auth as CognitoAuth, Hub} from 'aws-amplify';
 import React, {createContext, ReactNode, useContext, useState} from 'react';
 import useAsyncEffect from 'use-async-effect';
+import {Nullable} from 'types/nullable';
+import {Organization} from 'gen/api';
+import {organizationApi} from 'service/Services';
+import {useQueryClient} from 'react-query';
+import axios from 'axios';
 
 CognitoAuth.configure({
   aws_project_region: process.env.REACT_APP_COGNITO_REGION,
@@ -70,8 +75,6 @@ export class Principal {
   }
 }
 
-export type NullablePrincipal = Principal | null;
-
 /**
  * A {@link Context} for authentication.
  *
@@ -80,7 +83,7 @@ export type NullablePrincipal = Principal | null;
  * a sensible default on creation. However when calling {@link useAuth} this will never be
  * `null`.
  */
-const AuthContext = createContext<Auth | null>(null);
+const AuthContext = createContext<Nullable<Auth>>(null);
 
 /**
  * Provider component that wraps the app and makes an {@link Auth} object
@@ -108,7 +111,7 @@ export type Credentials = {
 
 type SignUpValues = {
   name: string;
-  org: string;
+  orgName: string;
 } & Credentials;
 
 type CognitoUserWithChallenge = CognitoUser & {
@@ -124,8 +127,10 @@ type CognitoUserWithChallenge = CognitoUser & {
  *    will be non-null.
  */
 function useProvideAuth() {
-  const [principal, setPrincipal] = useState<NullablePrincipal>(null);
+  const [principal, setPrincipal] = useState<Nullable<Principal>>(null);
   const [inProgress, setInProgress] = useState(true);
+  const [organization, setOrganization] = useState<Nullable<Organization>>(null);
+  const queryClient = useQueryClient();
 
   /**
    * Sign-in using email and password. This function will not update the {@link Principal} state,
@@ -140,8 +145,20 @@ function useProvideAuth() {
     if (user.challengeName) {
       return user;
     }
-    const converted = await Principal.fromCognitoUser(user);
-    return converted;
+    return Principal.fromCognitoUser(user);
+  }
+
+  async function fetchOrg() {
+    if (organization === null) {
+      try {
+        const response = await queryClient.fetchQuery('org', () => organizationApi.getOrganization());
+        setOrganization(response.data);
+      } catch (e: any) {
+        if (!axios.isAxiosError(e) || (axios.isAxiosError(e) && e.response?.status !== 404)) {
+          throw e;
+        }
+      }
+    }
   }
 
   /** Sign-in using email and password. */
@@ -154,6 +171,7 @@ function useProvideAuth() {
     if (user.challengeName) {
       return user;
     }
+    await fetchOrg();
     const converted = await Principal.fromCognitoUser(user);
     setPrincipal(converted);
     setInProgress(false);
@@ -168,6 +186,7 @@ function useProvideAuth() {
     const loggedInUser = await CognitoAuth.completeNewPassword(user, password);
     const converted = await Principal.fromCognitoUser(loggedInUser);
     setPrincipal(converted);
+    await fetchOrg();
     return converted;
   }
 
@@ -188,19 +207,20 @@ function useProvideAuth() {
     username,
     password,
     name,
-    org,
-  }: SignUpValues): Promise<NullablePrincipal> {
+    orgName,
+  }: SignUpValues): Promise<Nullable<Principal>> {
     const result = await CognitoAuth.signUp({
       username,
       password,
       attributes: {
         name,
-        'custom:organization': org,
+        'custom:organization': orgName,
       },
     });
     if (result.user != null && result.userConfirmed) {
       const converted = await Principal.fromCognitoUser(result.user);
       setPrincipal(converted);
+      await fetchOrg();
       return converted;
     }
     setPrincipal(null);
@@ -236,14 +256,17 @@ function useProvideAuth() {
    * @param global - if `true` the user will be logged out of all devices.
    */
   async function logOut({global = false}: {global?: boolean} = {}) {
-    await CognitoAuth.signOut({global});
     setPrincipal(null);
+    setOrganization(null);
+    queryClient.clear();
+    await CognitoAuth.signOut({global});
   }
 
   async function getPrincipal() {
     try {
-      const user : CognitoUserWithChallenge = await CognitoAuth.currentAuthenticatedUser();
+      const user: CognitoUserWithChallenge = await CognitoAuth.currentAuthenticatedUser();
       if (!user.challengeName) {
+        await fetchOrg();
         setPrincipal(await Principal.fromCognitoUser(user));
         setInProgress(false);
       }
@@ -252,7 +275,7 @@ function useProvideAuth() {
     }
   }
 
-  let listener: HubCallback | null;
+  let listener: Nullable<HubCallback>;
 
   // Subscribe to auth events on mount.
   // Because this sets state in the callback it will cause any
@@ -268,6 +291,7 @@ function useProvideAuth() {
               const user = data.payload.data;
               if (principal == null && user && user.isConfirmed && !user.challengeName) {
                 setPrincipal(await Principal.fromCognitoUser(user));
+                await fetchOrg();
               }
               break;
             }
@@ -275,6 +299,7 @@ function useProvideAuth() {
               const user = data.payload.data;
               if (principal == null && user && user.userConfirmed) {
                 setPrincipal(await Principal.fromCognitoUser(user));
+                await fetchOrg();
               }
               break;
             }
@@ -301,6 +326,7 @@ function useProvideAuth() {
   return {
     inProgress,
     principal,
+    organization,
     logIn,
     logInForOrgSignup,
     completeNewPassword,
