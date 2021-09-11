@@ -1,20 +1,24 @@
-import React, {useState} from 'react';
+import React, {ReactNode, useState} from 'react';
 import {Link, useHistory} from 'react-router-dom';
 import {Field, Form, Formik} from 'formik';
 import {FormikHelpers} from 'formik/dist/types';
 import {Briefcase, User} from 'react-feather';
 import * as z from 'zod';
 import cx from 'classnames';
-import {NullablePrincipal, useAuth} from 'hooks/useAuth';
+import {Principal, useAuth} from 'hooks/useAuth';
 import redirectToStripeCheckoutSession from 'service/CheckoutService';
 import Logo from 'components/Logos';
 import LabeledFormField from 'components/form/LabeledFormField';
 import {Alert} from 'react-bootstrap';
 import {EmailField, PasswordField} from 'components/user/AuthFields';
 import {useTracking} from 'hooks/useTracking';
-import {getFormValidator} from 'helpers/form';
+import {useFormValidator} from 'hooks/useFormValidator';
 import {usePriceId} from 'hooks/usePriceId';
 import {DocsLink} from 'components/link/XtagesLink';
+import {Nullable} from 'types/nullable';
+import {useQueryClient} from 'react-query';
+import {unauthdOrganizationApi} from 'service/Services';
+import Axios from 'axios';
 
 const signUpFormValuesSchema = z.object({
   name: z.string()
@@ -27,7 +31,8 @@ const signUpFormValuesSchema = z.object({
   // A password must be at least 12 characters long
   password: z.string()
     .min(12),
-  acceptedTerms: z.boolean().refine((val) => val),
+  acceptedTerms: z.boolean()
+    .refine((val) => val),
 });
 
 export type SignUpFormValues = z.infer<typeof signUpFormValuesSchema>;
@@ -46,29 +51,35 @@ export default function SignUpPage() {
   const auth = useAuth();
   const history = useHistory();
   const {priceId} = usePriceId();
+  const queryClient = useQueryClient();
   const {
     identifyPrincipal,
     trackComponentApiError,
     trackComponentEvent,
   } = useTracking();
-  const [errorOccurred, setErrorOccurred] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<ReactNode>(null);
+  const schemaValidator = useFormValidator('SignUpPage', signUpFormValuesSchema);
 
   async function signUp(values: SignUpFormValues, actions: FormikHelpers<SignUpFormValues>) {
-    setErrorOccurred(false);
-    let principal: NullablePrincipal;
+    setErrorMsg(null);
+    let principal: Nullable<Principal>;
     try {
       principal = await auth.signUp({
         name: values.name,
-        org: values.organizationName,
+        orgName: values.organizationName,
         username: values.email,
         password: values.password,
       });
       trackComponentEvent('SignUpPage', 'Signed Up', {
         priceId,
       });
-    } catch (e) {
-      setErrorOccurred(true);
-      trackComponentApiError('SignUpPage', 'signUp', e);
+    } catch (e: any) {
+      if (e.code === 'UsernameExistsException') {
+        setErrorMsg('Invalid email, or an account with the given email already exists.');
+      } else {
+        setErrorMsg('An unexpected error occurred.');
+      }
+      trackComponentApiError('SignUpPage', 'cognito.signUp', e);
       return;
     }
     actions.setSubmitting(false);
@@ -78,14 +89,32 @@ export default function SignUpPage() {
     } else {
       trackComponentEvent('SignUpPage', 'Signed Up');
       identifyPrincipal(principal);
-      await redirectToStripeCheckoutSession({
+      const req = {
         priceIds: [priceId!],
         organizationName: values.organizationName,
-      });
+        ownerCognitoUserId: principal.id,
+      };
+      trackComponentEvent('SignUpPage', 'Redirecting to Stripe', req);
+      await redirectToStripeCheckoutSession(req);
     }
   }
 
-  const validate = getFormValidator('SignUpPage', signUpFormValuesSchema);
+  async function validate(values: SignUpFormValues) {
+    const errors = schemaValidator(values);
+    if (Object.keys(errors).length === 0) {
+      try {
+        await queryClient.fetchQuery('eligibility',
+          () => unauthdOrganizationApi.getOrganizationEligibility({
+            name: values.organizationName,
+          }), {cacheTime: 0});
+      } catch (e: unknown) {
+        if (Axios.isAxiosError(e) && e.response?.status === 409) {
+          errors.organizationName = 'Organization already registered.';
+        }
+      }
+    }
+    return errors;
+  }
 
   return (
     <section>
@@ -101,25 +130,25 @@ export default function SignUpPage() {
               <Formik initialValues={initialValues} validate={validate} onSubmit={signUp}>
                 {({isSubmitting, touched, errors}) => (
                   <Form noValidate>
-                    {errorOccurred && (
-                    <Alert className="alert-outline-danger">
-                      <div className="d-flex justify-content-center">
-                        <strong>An unexpected error occurred</strong>
-                      </div>
-                    </Alert>
+                    {errorMsg && (
+                      <Alert className="alert-outline-danger">
+                        <div className="d-flex justify-content-center">
+                          <strong>{errorMsg}</strong>
+                        </div>
+                      </Alert>
                     )}
                     {!priceId && (
-                    <Alert className="alert-outline-danger">
-                      <div className="d-flex justify-content-center">
-                        <strong>
-                          You must first select a
-                          {' '}
-                          <a href="https://www.xtages.com/pricing.html">plan</a>
-                          {' '}
-                          before signing up.
-                        </strong>
-                      </div>
-                    </Alert>
+                      <Alert className="alert-outline-danger">
+                        <div className="d-flex justify-content-center">
+                          <strong>
+                            You must first select a
+                            {' '}
+                            <a href="https://www.xtages.com/pricing.html">plan</a>
+                            {' '}
+                            before signing up.
+                          </strong>
+                        </div>
+                      </Alert>
                     )}
                     <LabeledFormField
                       type="text"
@@ -138,10 +167,10 @@ export default function SignUpPage() {
                           GitHub organization name
                           <DocsLink articlePath="/github" title="GitHub Integration" />
                         </>
-                      )}
+                            )}
                       placeholder="NorthPole"
                       invalid={touched.organizationName && errors.organizationName != null}
-                      validationFeedback="Please provide your GitHub organization name."
+                      validationFeedback={typeof errors.organizationName === 'string' ? errors.organizationName : 'Please provide your GitHub organization name.'}
                       addOn={<Briefcase size="1em" />}
                     />
                     <EmailField

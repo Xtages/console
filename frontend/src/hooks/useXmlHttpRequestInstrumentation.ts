@@ -19,20 +19,20 @@ function buildEventPayload(req: XMLHttpRequestWithMetadata) {
     endTime,
     elapsed,
   };
-  if (req.status > 400) {
+  if (req.status >= 400) {
     payload.errorMsg = req.responseText;
   }
   return payload;
 }
 
 function shouldTrack(url: string) {
-  return url.indexOf('segment.io') < 0;
+  return !url.includes('segment.io')
+      && !url.includes('mixpanel.com')
+      && !url.includes('sentry.io');
 }
 
 export function useXmlHttpRequestInstrumentation() {
-  const {
-    trackApiEvent,
-  } = useTracking();
+  const {trackApiEvent} = useTracking();
 
   const originalOpen = XMLHttpRequest.prototype.open;
   function interceptedOpen(
@@ -51,11 +51,7 @@ export function useXmlHttpRequestInstrumentation() {
     this.addEventListener('loadend', () => {
       const req = this as XMLHttpRequestWithMetadata;
       if (shouldTrack(req.responseURL)) {
-        if (req.status < 400) {
-          trackApiEvent(req.responseURL, buildEventPayload(req));
-        } else {
-          trackApiEvent(req.responseURL, buildEventPayload(req));
-        }
+        trackApiEvent(req.responseURL, buildEventPayload(req));
       }
     });
     originalOpen.call(this, method, url, async || false, username, password);
