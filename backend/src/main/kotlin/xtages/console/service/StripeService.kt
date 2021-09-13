@@ -13,6 +13,7 @@ import org.springframework.web.context.annotation.RequestScope
 import org.springframework.web.util.UriComponentsBuilder
 import xtages.console.config.ConsoleProperties
 import xtages.console.dao.fetchOneByCognitoUserId
+import xtages.console.dao.insertIfNotExists
 import xtages.console.exception.ExceptionCode.ORG_NOT_FOUND
 import xtages.console.exception.ensure
 import xtages.console.query.enums.OrganizationSubscriptionStatus
@@ -238,14 +239,16 @@ class StripeService(
         val subscription = Subscription.retrieve(checkout.subscription)
         val plan = planDao.fetchByProductId(subscription.items.data.single().price.product).single()
 
-        organizationToPlanDao.insert(
+        organizationToPlanDao.insertIfNotExists(
             OrganizationToPlan(
                 organizationName = organization.name,
                 planId = plan.id,
                 startTime = LocalDateTime.now()
             )
         )
-        rdsService.provision(organization)
+        if (organization.rdsArn == null) {
+            rdsService.provision(organization)
+        }
     }
 }
 
