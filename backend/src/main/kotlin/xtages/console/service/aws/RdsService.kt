@@ -5,19 +5,20 @@ import org.apache.commons.lang3.RandomStringUtils
 import org.springframework.stereotype.Service
 import software.amazon.awssdk.services.rds.RdsAsyncClient
 import software.amazon.awssdk.services.rds.model.CreateDbInstanceRequest
+import software.amazon.awssdk.services.rds.model.DbInstanceNotFoundException
 import software.amazon.awssdk.services.rds.model.DescribeDbInstancesRequest
 import software.amazon.awssdk.services.rds.model.RdsException
 import software.amazon.awssdk.services.ssm.SsmAsyncClient
-import software.amazon.awssdk.services.ssm.model.ParameterType
-import software.amazon.awssdk.services.ssm.model.PutParameterRequest
-import software.amazon.awssdk.services.ssm.model.Tag
+import software.amazon.awssdk.services.ssm.model.*
 import xtages.console.config.ConsoleProperties
 import xtages.console.dao.fetchLatestByOrganizationName
 import xtages.console.pojo.dbIdentifier
+import xtages.console.pojo.dbName
 import xtages.console.pojo.dbUsername
 import xtages.console.query.tables.daos.OrganizationDao
 import xtages.console.query.tables.daos.PlanDao
 import xtages.console.query.tables.pojos.Organization
+import java.util.concurrent.ExecutionException
 import software.amazon.awssdk.services.rds.model.Tag as TagRds
 
 private val logger = KotlinLogging.logger { }
@@ -45,7 +46,7 @@ class RdsService(
             .dbInstanceIdentifier(organization.dbIdentifier)
             .masterUserPassword(password)
             .allocatedStorage(plan?.dbStorageGbs!!.toInt())
-            .dbName(organization.name)
+            .dbName(organization.dbName)
             .engine(consoleProperties.aws.rds.engine)
             .dbInstanceClass(plan.dbInstance)
             .engineVersion(consoleProperties.aws.rds.engineVersion)
@@ -88,6 +89,24 @@ class RdsService(
         return rdsResponse.dbInstances().firstOrNull()?.endpoint()?.address()
     }
 
+    fun dbInstanceExists(organization: Organization): Boolean {
+        try {
+            rdsAsyncClient.describeDBInstances(
+                DescribeDbInstancesRequest
+                    .builder()
+                    .dbInstanceIdentifier(organization.dbIdentifier)
+                    .build()
+            ).get()
+        } catch (e: ExecutionException) {
+            if (e.cause is DbInstanceNotFoundException) {
+                return false
+            } else {
+                throw e
+            }
+        }
+        return true
+    }
+
     /**
      * Creates and store in SSM the password used for the RDS instance
      * The path for SSM is build as follow:
@@ -101,13 +120,21 @@ class RdsService(
             .type(ParameterType.SECURE_STRING)
             .keyId("alias/aws/ssm")
             .value(password)
+            .overwrite(true)
+            .build()
+        ssmAsyncClient.putParameter(putParameterRequest).get()
+
+        // Amazon doesn't allow setting `overwrite = true` in the `PutParameter` request above and adding tags at the
+        // same time. So we have to create the parameter first and then add the tags using `AddTagsToResource`.
+        val addTagsToResourceRequest = AddTagsToResourceRequest.builder()
+            .resourceId(organization.ssmDbPassPath)
+            .resourceType(ResourceTypeForTagging.PARAMETER)
             .tags(
                 buildSsmTag("organization", organization.name!!),
                 buildSsmTag("organization-hash", organization.hash!!)
             )
             .build()
-
-        ssmAsyncClient.putParameter(putParameterRequest).get()
+        ssmAsyncClient.addTagsToResource(addTagsToResourceRequest)
         organizationDao.merge(organization)
         return password
     }
