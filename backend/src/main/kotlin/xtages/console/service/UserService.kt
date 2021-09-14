@@ -119,9 +119,9 @@ class UserService(
             )
         } catch (e: ExecutionException) {
             if (e.cause is UserNotFoundException) {
-                null
+                return null
             }
-            logger.error(e) { }
+            logger.error(e) { "There was an error while trying to find a user by email: $email" }
             throw CognitoException("There was an error while trying to find a user by email: $email")
         }
     }
