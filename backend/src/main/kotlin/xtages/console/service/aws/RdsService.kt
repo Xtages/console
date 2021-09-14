@@ -5,6 +5,7 @@ import org.apache.commons.lang3.RandomStringUtils
 import org.springframework.stereotype.Service
 import software.amazon.awssdk.services.rds.RdsAsyncClient
 import software.amazon.awssdk.services.rds.model.CreateDbInstanceRequest
+import software.amazon.awssdk.services.rds.model.DbInstanceNotFoundException
 import software.amazon.awssdk.services.rds.model.DescribeDbInstancesRequest
 import software.amazon.awssdk.services.rds.model.RdsException
 import software.amazon.awssdk.services.ssm.SsmAsyncClient
@@ -17,6 +18,7 @@ import xtages.console.pojo.dbUsername
 import xtages.console.query.tables.daos.OrganizationDao
 import xtages.console.query.tables.daos.PlanDao
 import xtages.console.query.tables.pojos.Organization
+import java.util.concurrent.ExecutionException
 import software.amazon.awssdk.services.rds.model.Tag as TagRds
 
 private val logger = KotlinLogging.logger { }
@@ -85,6 +87,24 @@ class RdsService(
         ).get()
 
         return rdsResponse.dbInstances().firstOrNull()?.endpoint()?.address()
+    }
+
+    fun dbInstanceExists(organization: Organization): Boolean {
+        try {
+            rdsAsyncClient.describeDBInstances(
+                DescribeDbInstancesRequest
+                    .builder()
+                    .dbInstanceIdentifier(organization.dbIdentifier)
+                    .build()
+            ).get()
+        } catch (e: ExecutionException) {
+            if (e.cause is DbInstanceNotFoundException) {
+                return false
+            } else {
+                throw e
+            }
+        }
+        return true
     }
 
     /**

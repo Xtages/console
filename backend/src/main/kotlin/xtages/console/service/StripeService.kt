@@ -246,8 +246,8 @@ class StripeService(
                 startTime = LocalDateTime.now()
             )
         )
-        if (organization.rdsArn == null) {
-            rdsService.provision(organization)
+        if (!rdsService.dbInstanceExists(organization = organization)) {
+            rdsService.provision(organization = organization)
         }
     }
 }
