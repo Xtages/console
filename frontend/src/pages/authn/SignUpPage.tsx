@@ -57,6 +57,9 @@ export default function SignUpPage() {
     trackComponentApiError,
     trackComponentEvent,
   } = useTracking();
+  if (!priceId) {
+    trackComponentEvent('SignUpPage', 'PriceId not set');
+  }
   const [errorMsg, setErrorMsg] = useState<ReactNode>(null);
   const schemaValidator = useFormValidator('SignUpPage', signUpFormValuesSchema);
 

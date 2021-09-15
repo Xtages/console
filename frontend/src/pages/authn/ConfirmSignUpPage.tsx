@@ -98,6 +98,10 @@ export default function ConfirmSignUpPage() {
   const {priceId} = usePriceId();
   const validate = useFormValidator('ConfirmSignUpPage', formValuesSchema);
 
+  if (!priceId) {
+    trackComponentEvent('ConfirmSignUpPage', 'PriceId not set');
+  }
+
   function buildFormValues(): FormValues {
     const {state} = location;
     if (state != null) {
