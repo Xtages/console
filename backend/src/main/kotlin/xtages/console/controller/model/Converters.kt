@@ -218,7 +218,7 @@ fun buildPojoToDeployment(
             commitHash = source.commitHash
         ).toUriString(),
         env = source.environment!!,
-        timestampInMillis = source.endTime!!.toUtcMillis(),
+        timestampInMillis = source.startTime!!.toUtcMillis(),
         serviceUrls = serviceUrls,
         status = deployStatusToDeploymentStatus.convert(projectDeployment.status!!)!!,
     )
