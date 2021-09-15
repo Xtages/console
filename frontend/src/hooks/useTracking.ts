@@ -29,6 +29,15 @@ export function useTracking() {
     reset: analyticsReset,
   } = useAnalytics();
 
+  function tryParseUrl(url: string) {
+    try {
+      return new URL(url);
+    } catch (e) {
+      Sentry.captureException(e, {extra: {url}});
+    }
+    return null;
+  }
+
   function trackEvent(eventName: string, payload?: any) {
     track(eventName, {
       __location: window.location.href,
@@ -37,22 +46,24 @@ export function useTracking() {
   }
 
   function trackApiEvent(url: string, payload?: any) {
-    const u = new URL(url);
-    let eventName = 'API Called';
-    if (u.host !== new URL(window.location.href).host) {
-      eventName = 'External API Called';
-    }
-    const event = {
-      schema: u.protocol.endsWith(':') ? u.protocol.substr(0, u.protocol.length - 1) : u.protocol,
-      hostname: u.hostname,
-      port: u.port,
-      path: u.pathname,
-      search: urlSearchParamsToMap(u.searchParams),
-      ...payload,
-    };
-    trackEvent(eventName, event);
-    if (payload.status !== undefined && payload.status <= 400) {
-      Sentry.captureException(event);
+    const u = tryParseUrl(url);
+    if (u !== null) {
+      let eventName = 'API Called';
+      if (u.host !== new URL(window.location.href).host) {
+        eventName = 'External API Called';
+      }
+      const event = {
+        schema: u.protocol.endsWith(':') ? u.protocol.substr(0, u.protocol.length - 1) : u.protocol,
+        hostname: u.hostname,
+        port: u.port,
+        path: u.pathname,
+        search: urlSearchParamsToMap(u.searchParams),
+        ...payload,
+      };
+      trackEvent(eventName, event);
+      if (payload.status !== undefined && payload.status >= 400) {
+        Sentry.captureException(event);
+      }
     }
   }
 
