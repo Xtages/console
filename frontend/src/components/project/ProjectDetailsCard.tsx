@@ -290,6 +290,7 @@ function SingleDeployDetails({
             {!inProgress && (
             <div>
               last deployed on:
+              {' '}
               {formatDateTimeFull(deployment.timestampInMillis)}
             </div>
             )}
