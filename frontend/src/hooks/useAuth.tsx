@@ -23,13 +23,13 @@ export class Principal {
   readonly id: string;
 
   /** User's name */
-  readonly name: string;
+  readonly name: Nullable<string>;
 
   /** User's email */
   readonly email: string;
 
   /** User's organization */
-  readonly org: string;
+  // readonly org: string;
 
   /** Cognito user */
   readonly cognitoUser: CognitoUser;
@@ -38,19 +38,19 @@ export class Principal {
     id,
     name,
     email,
-    org,
+    // org,
     cognitoUser,
   }: {
     id: string;
-    name: string;
+    name: Nullable<string>;
     email: string;
-    org: string;
+    // org: string;
     cognitoUser: CognitoUser;
   }) {
     this.id = id;
     this.name = name;
     this.email = email;
-    this.org = org;
+    // this.org = org;
     this.cognitoUser = cognitoUser;
   }
 
@@ -69,7 +69,7 @@ export class Principal {
       id: user.getUsername(),
       name: attrs.name,
       email: attrs.email,
-      org: attrs['custom:organization'],
+      // org: attrs['custom:organization'],
       cognitoUser: user,
     });
   }
@@ -109,10 +109,10 @@ export type Credentials = {
   password: string;
 };
 
-type SignUpValues = {
-  name: string;
-  orgName: string;
-} & Credentials;
+// type SignUpValues = {
+//   name: string;
+//   orgName: string;
+// } & Credentials;
 
 type CognitoUserWithChallenge = CognitoUser & {
   challengeName: any;
@@ -206,15 +206,15 @@ function useProvideAuth() {
   async function signUp({
     username,
     password,
-    name,
-    orgName,
-  }: SignUpValues): Promise<Nullable<Principal>> {
+    // name,
+    // orgName,
+  }: Credentials): Promise<Nullable<Principal>> {
     const result = await CognitoAuth.signUp({
       username,
       password,
       attributes: {
-        name,
-        'custom:organization': orgName,
+        name: 'STOP REQUIRING THE NAME ATTR!',
+        // 'custom:organization': orgName,
       },
     });
     if (result.user != null && result.userConfirmed) {

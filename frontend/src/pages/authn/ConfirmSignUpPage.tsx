@@ -145,7 +145,7 @@ export default function ConfirmSignUpPage() {
       identifyPrincipal(principal);
       const req = {
         priceIds: [priceId!],
-        organizationName: principal.org,
+        organizationName: /* principal.org */ '',
         ownerCognitoUserId: principal.id,
       };
       trackComponentEvent('ConfirmSignUpPage', 'Redirecting to Stripe', req);

@@ -12,7 +12,7 @@ import {DocsLink} from 'components/link/XtagesLink';
 import LabeledFormField from '../components/form/LabeledFormField';
 import {projectApi} from '../service/Services';
 import {CreateProjectReqTypeEnum, UsageDetail} from '../gen/api';
-import {useAuth} from '../hooks/useAuth';
+// import {useAuth} from '../hooks/useAuth';
 
 const createProjectFormValuesSchema = z.object({
   projectName: z.string()
@@ -31,8 +31,8 @@ export default function CreateProjectPage() {
     projectName: '',
   };
   const [errorMsg, setErrorMsg] = useState<ReactNode>(null);
-  const auth = useAuth();
-  const organization = auth.principal?.org!!;
+  // const auth = useAuth();
+  const organization = /* auth.principal?.org!! */ 'GET THE ORG FROM THE SERVER!!!!';
   const history = useHistory();
 
   async function createProject(
