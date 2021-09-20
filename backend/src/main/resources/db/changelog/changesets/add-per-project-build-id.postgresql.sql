@@ -8,7 +8,7 @@ ALTER TABLE "project"
 
 -- changeset czuniga:29 logicalFilePath:xtages-console.xml
 -- The `next_build_external_id` increments `project.build_id_seq` and returns the next `build_id`.
-CREATE FUNCTION next_build_external_id(project_id INT) RETURNS INT
+CREATE FUNCTION next_build_external_id(project_id INT) RETURNS BIGINT
     LANGUAGE 'sql'
 AS
 $BODY$
