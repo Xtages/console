@@ -2,29 +2,18 @@ import React, {ReactNode, useState} from 'react';
 import {Link, useHistory} from 'react-router-dom';
 import {Field, Form, Formik} from 'formik';
 import {FormikHelpers} from 'formik/dist/types';
-import {Briefcase, User} from 'react-feather';
 import * as z from 'zod';
 import cx from 'classnames';
 import {Principal, useAuth} from 'hooks/useAuth';
-import redirectToStripeCheckoutSession from 'service/CheckoutService';
 import Logo from 'components/Logos';
-import LabeledFormField from 'components/form/LabeledFormField';
 import {Alert} from 'react-bootstrap';
 import {EmailField, PasswordField} from 'components/user/AuthFields';
 import {useTracking} from 'hooks/useTracking';
 import {useFormValidator} from 'hooks/useFormValidator';
 import {usePriceId} from 'hooks/usePriceId';
-import {DocsLink} from 'components/link/XtagesLink';
 import {Nullable} from 'types/nullable';
-import {useQueryClient} from 'react-query';
-import {unauthdOrganizationApi} from 'service/Services';
-import Axios from 'axios';
 
 const signUpFormValuesSchema = z.object({
-  name: z.string()
-    .nonempty(),
-  organizationName: z.string()
-    .nonempty(),
   email: z.string()
     .email()
     .nonempty(),
@@ -42,8 +31,6 @@ export type SignUpFormValues = z.infer<typeof signUpFormValuesSchema>;
  */
 export default function SignUpPage() {
   const initialValues: SignUpFormValues = {
-    name: '',
-    organizationName: '',
     email: '',
     password: '',
     acceptedTerms: false,
@@ -51,7 +38,6 @@ export default function SignUpPage() {
   const auth = useAuth();
   const history = useHistory();
   const {priceId} = usePriceId();
-  const queryClient = useQueryClient();
   const {
     identifyPrincipal,
     trackComponentApiError,
@@ -61,15 +47,13 @@ export default function SignUpPage() {
     trackComponentEvent('SignUpPage', 'PriceId not set');
   }
   const [errorMsg, setErrorMsg] = useState<ReactNode>(null);
-  const schemaValidator = useFormValidator('SignUpPage', signUpFormValuesSchema);
+  const validate = useFormValidator('SignUpPage', signUpFormValuesSchema);
 
   async function signUp(values: SignUpFormValues, actions: FormikHelpers<SignUpFormValues>) {
     setErrorMsg(null);
     let principal: Nullable<Principal>;
     try {
       principal = await auth.signUp({
-        name: values.name,
-        orgName: values.organizationName,
         username: values.email,
         password: values.password,
       });
@@ -92,31 +76,7 @@ export default function SignUpPage() {
     } else {
       trackComponentEvent('SignUpPage', 'Signed Up');
       identifyPrincipal(principal);
-      const req = {
-        priceIds: [priceId!],
-        organizationName: values.organizationName,
-        ownerCognitoUserId: principal.id,
-      };
-      trackComponentEvent('SignUpPage', 'Redirecting to Stripe', req);
-      await redirectToStripeCheckoutSession(req);
     }
-  }
-
-  async function validate(values: SignUpFormValues) {
-    const errors = schemaValidator(values);
-    if (Object.keys(errors).length === 0) {
-      try {
-        await queryClient.fetchQuery('eligibility',
-          () => unauthdOrganizationApi.getOrganizationEligibility({
-            name: values.organizationName,
-          }), {cacheTime: 0});
-      } catch (e: unknown) {
-        if (Axios.isAxiosError(e) && e.response?.status === 409) {
-          errors.organizationName = 'Organization already registered.';
-        }
-      }
-    }
-    return errors;
   }
 
   return (
@@ -153,29 +113,6 @@ export default function SignUpPage() {
                         </div>
                       </Alert>
                     )}
-                    <LabeledFormField
-                      type="text"
-                      name="name"
-                      label="Name"
-                      placeholder="Santa Claus"
-                      invalid={touched.name && errors.name != null}
-                      validationFeedback="Please provide your name."
-                      addOn={<User size="1em" />}
-                    />
-                    <LabeledFormField
-                      type="text"
-                      name="organizationName"
-                      label={(
-                        <>
-                          GitHub organization name
-                          <DocsLink articlePath="/github" title="GitHub Integration" />
-                        </>
-                            )}
-                      placeholder="NorthPole"
-                      invalid={touched.organizationName && errors.organizationName != null}
-                      validationFeedback={typeof errors.organizationName === 'string' ? errors.organizationName : 'Please provide your GitHub organization name.'}
-                      addOn={<Briefcase size="1em" />}
-                    />
                     <EmailField
                       invalid={touched.email && errors.email != null}
                       validationFeedback="Please provide a valid email address."
