@@ -11,6 +11,7 @@ import {Credentials, Principal, useAuth} from 'hooks/useAuth';
 import {CognitoUser} from 'amazon-cognito-identity-js';
 import {useFormValidator} from 'hooks/useFormValidator';
 import {useTracking} from 'hooks/useTracking';
+import {useQueryParams} from 'hooks/useQueryParams';
 
 const completePasswordFormValuesSchema = z.object({
   email: z.string()
@@ -32,7 +33,7 @@ type LocationState = {
  */
 export default function ChangePasswordPage() {
   const location = useLocation<LocationState>();
-  const email = new URLSearchParams(location.search).get('email');
+  const email = useQueryParams().get('email');
   const initialValues = {
     email: email ?? location.state?.username ?? '',
     oldPassword: location?.state?.password ?? '',
