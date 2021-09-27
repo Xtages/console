@@ -9,15 +9,15 @@ import {isOrgInGoodStanding} from 'helpers/organization';
  * in good standing, otherwise it will redirect to `/login`.
  */
 export default function AuthdAndGoodStandingRoute({location, ...props}: RouteProps) {
-  const auth = useAuth();
+  const {inProgress, organization, principal} = useAuth();
 
-  if (auth.inProgress) {
+  if (inProgress) {
     return <></>;
   }
-  if (auth.principal !== null && isOrgInGoodStanding(auth.organization)) {
+  if (principal !== null && (organization === null || isOrgInGoodStanding(organization))) {
     return <Route {...props} />;
   }
-  if (auth.principal === null) {
+  if (principal === null) {
     return (
       <Route {...props}>
         <Redirect to={{
@@ -28,7 +28,7 @@ export default function AuthdAndGoodStandingRoute({location, ...props}: RoutePro
       </Route>
     );
   }
-  if (!isOrgInGoodStanding(auth.organization)) {
+  if (organization && !isOrgInGoodStanding(organization)) {
     return (
       <Route {...props}>
         <Redirect to={{

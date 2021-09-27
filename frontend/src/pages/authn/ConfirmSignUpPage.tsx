@@ -6,7 +6,6 @@ import {FormikHelpers} from 'formik/dist/types';
 import * as z from 'zod';
 import CreateAccountLink from 'pages/authn/CreateAccountLink';
 import {Principal, useAuth} from 'hooks/useAuth';
-import redirectToStripeCheckoutSession from 'service/CheckoutService';
 import Logo from 'components/Logos';
 import LabeledFormField from 'components/form/LabeledFormField';
 import {Alert, Button} from 'react-bootstrap';
@@ -136,20 +135,14 @@ export default function ConfirmSignUpPage() {
       actions.setSubmitting(false);
       return;
     }
-    const principal = await auth.logInForOrgSignup({
+    const principal = await auth.logIn({
       username: values.email,
       password: values.password,
     });
     actions.setSubmitting(false);
     if (principal instanceof Principal) {
       identifyPrincipal(principal);
-      const req = {
-        priceIds: [priceId!],
-        organizationName: principal.org,
-        ownerCognitoUserId: principal.id,
-      };
-      trackComponentEvent('ConfirmSignUpPage', 'Redirecting to Stripe', req);
-      await redirectToStripeCheckoutSession(req);
+      trackComponentEvent('ConfirmSignUpPage', 'Signed Up');
     } else {
       setErrorOccurred(true);
     }
