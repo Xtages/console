@@ -9,10 +9,10 @@ import {FormikHelpers} from 'formik/dist/types';
 import {useHistory, Link} from 'react-router-dom';
 import {Alert, Button} from 'react-bootstrap';
 import {DocsLink} from 'components/link/XtagesLink';
+import {useAuth} from 'hooks/useAuth';
+import {projectApi} from 'service/Services';
+import {CreateProjectReqTypeEnum, UsageDetail} from 'gen/api';
 import LabeledFormField from '../components/form/LabeledFormField';
-import {projectApi} from '../service/Services';
-import {CreateProjectReqTypeEnum, UsageDetail} from '../gen/api';
-import {useAuth} from '../hooks/useAuth';
 
 const createProjectFormValuesSchema = z.object({
   projectName: z.string()
@@ -32,7 +32,7 @@ export default function CreateProjectPage() {
   };
   const [errorMsg, setErrorMsg] = useState<ReactNode>(null);
   const auth = useAuth();
-  const organization = auth.principal?.org!!;
+  const organization = auth.principal?.org ?? 'UNKNOWN';
   const history = useHistory();
 
   async function createProject(
@@ -173,7 +173,7 @@ export default function CreateProjectPage() {
                     </div>
                     <div className="row">
                       <div className="col py-3 text-right">
-                        <Button type="submit" disabled={isSubmitting}>Create</Button>
+                        <Button type="submit" disabled={isSubmitting || auth.principal?.org !== null}>Create</Button>
                       </div>
                     </div>
                   </Form>
