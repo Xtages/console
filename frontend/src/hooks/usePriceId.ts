@@ -1,6 +1,6 @@
 import useLocalStorage from 'use-local-storage';
-import {useLocation} from 'react-router-dom';
 import {useEffect} from 'react';
+import {useQueryParams} from 'hooks/useQueryParams';
 
 const NO_PRICE_ID_SET = 'NO_VALUE';
 
@@ -17,9 +17,8 @@ const NO_PRICE_ID_SET = 'NO_VALUE';
 export function usePriceId() {
   const [priceId, setPriceId] = useLocalStorage<string>('xtages.priceId', NO_PRICE_ID_SET);
 
-  const location = useLocation();
-  const searchParams = new URLSearchParams(location.search);
-  const priceIdParam = searchParams.get('priceId');
+  const queryParams = useQueryParams();
+  const priceIdParam = queryParams.get('priceId');
 
   if (priceIdParam !== priceId && priceIdParam !== null) {
     setPriceId(priceIdParam);

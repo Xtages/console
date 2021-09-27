@@ -45,7 +45,7 @@ Refs #133 """
     val properties = ConsoleProperties(
         server = ConsoleProperties.Server("https://console.xtages.com", "", ""),
         stripe = ConsoleProperties.Stripe("", "", "", 10),
-        gitHubApp = ConsoleProperties.GitHubApp("", "", ""),
+        gitHubApp = ConsoleProperties.GitHubApp("", 3, "", "", "", ""),
         aws = ConsoleProperties.Aws(
             "",
             "",

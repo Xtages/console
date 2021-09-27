@@ -535,6 +535,47 @@ paths:
           $ref: "#/components/responses/UnauthorizedError"
         default:
           $ref: "#/components/responses/DefaultError"
+  /github/app/install/url:
+    get:
+      summary: Returns the GitHub App install URL with an associated state token
+      operationId: getInstallUrl
+      tags:
+        - gitHubApp
+      responses:
+        '200':
+          description: The GitHub App install URL
+          content:
+            application/json:
+              schema:
+                type: string
+                minLength: 1
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        default:
+          $ref: "#/components/responses/DefaultError"
+  /github/app/install:
+    post:
+      summary: Records the GitHub App installation and creates an Organization based on it
+      operationId: recordInstall
+      tags:
+        - gitHubApp
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GitHubInstallReq"
+      responses:
+        '200':
+          description: The created Organization
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Organization"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        default:
+          $ref: "#/components/responses/DefaultError"
 components:
   securitySchemes:
     bearerAuth:
@@ -1026,6 +1067,26 @@ components:
         - username
         - isOwner
         - status
+    GitHubInstallReq:
+      description: Request sent when the GitHub App is installed
+      properties:
+        code:
+          type: string
+          minLength: 1
+        installationId:
+          type: integer
+          format: int64
+        setupAction:
+          type: string
+          minLength: 1
+        state:
+          type: string
+          minLength: 1
+      required:
+        - code
+        - installation_id
+        - setup_action
+        - state
   responses:
     DefaultError:
       description: Default error

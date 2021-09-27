@@ -22,6 +22,7 @@ const ChangePasswordPage = loadable(() => import('pages/authn/ChangePasswordPage
 const ConfirmSignUpPage = loadable(() => import('pages/authn/ConfirmSignUpPage'));
 const CreateProjectPage = loadable(() => import('pages/CreateProjectPage'));
 const DeploymentsPage = loadable(() => import('pages/DeploymentsPage'));
+const GitHubAppPostInstallPage = loadable(() => import('pages/GitHubAppPostInstallPage'));
 const HomePage = loadable(() => import('pages/HomePage'));
 const InvalidOrgPage = loadable(() => import('pages/authn/InvalidOrgPage'));
 const LoginPage = loadable(() => import('pages/authn/LoginPage'));
@@ -75,6 +76,7 @@ function InstrumentedApp() {
           <UnauthdRoute path="/signup" component={SignUpPage} />
           <UnauthdRoute path="/changePassword" component={ChangePasswordPage} />
           <UnauthdRoute path="/confirm" component={ConfirmSignUpPage} />
+          <AuthdRoute path="/ghappinstalled" exact component={GitHubAppPostInstallPage} />
           <AuthdRoute path="/badorg" component={InvalidOrgPage} />
           <AuthdAndGoodStandingRoute path="/account" component={AccountPage} />
           <AuthdAndGoodStandingRoute path="/project/:name" exact component={ProjectPage} />
