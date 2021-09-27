@@ -28,7 +28,7 @@ class UserApiController(
             return ResponseEntity(HttpStatus.FORBIDDEN)
         }
         val user = userDao.fetchOneByCognitoUserId(authenticationService.currentCognitoUserId.id)
-        if (user!!.isOwner!!) {
+        user!!.isOwner ?: run {
             return ResponseEntity.ok(
                 userService.listOrganizationUsers(organization = organization)
                     .mapNotNull(xtagesUserWithCognitoAttributesToUser::convert)
