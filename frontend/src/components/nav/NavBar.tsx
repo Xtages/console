@@ -68,21 +68,26 @@ export default function NavBar() {
             </li>
           </ul>
         </div>
-        <div className="ml-3">
-          {auth?.principal?.name
-                    && (
-                    <span className="mr-2">
-                      Hello,
-                      {' '}
-                      {auth?.principal?.name}
-                      !
-                    </span>
-                    )}
+        <div className="ml-1">
           <Dropdown>
             <Dropdown.Toggle as={AvatarDropdownToggle}>
               <Avatar rounded />
             </Dropdown.Toggle>
             <Dropdown.Menu>
+              {auth?.principal?.name
+              && (
+              <>
+                <Dropdown.ItemText>
+                  <span className="mr-2">
+                    Hello,
+                    {' '}
+                    {auth?.principal?.name}
+                    !
+                  </span>
+                </Dropdown.ItemText>
+                <Dropdown.Divider />
+              </>
+              )}
               <Dropdown.Item onClick={goToAccount}>Account</Dropdown.Item>
               <Dropdown.Divider />
               <Dropdown.Item onClick={signOut}>Sign out</Dropdown.Item>
