@@ -91,13 +91,13 @@ export function useTracking() {
 
   function identifyPrincipal(principal: Principal) {
     identify(principal.id, {
-      org: principal.org,
+      org: principal.org ?? 'NO_ORG_ASSIGNED_YET',
     }).then(noop);
     Sentry.configureScope((scope) => {
       scope.setUser({
         id: principal.id,
       });
-      scope.setTags({org: principal.org});
+      scope.setTags({org: principal.org ?? 'NO_ORG_ASSIGNED_YET'});
     });
   }
 

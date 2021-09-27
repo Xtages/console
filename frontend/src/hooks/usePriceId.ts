@@ -2,6 +2,8 @@ import useLocalStorage from 'use-local-storage';
 import {useLocation} from 'react-router-dom';
 import {useEffect} from 'react';
 
+const NO_PRICE_ID_SET = 'NO_VALUE';
+
 /**
  * Hook to retrieve the priceId used in the sign-up process.
  *
@@ -13,25 +15,25 @@ import {useEffect} from 'react';
  * can be called to remove it from `localStorage`.
  */
 export function usePriceId() {
-  const [priceId, setPriceId] = useLocalStorage<string | null>('xtages.priceId');
+  const [priceId, setPriceId] = useLocalStorage<string>('xtages.priceId', NO_PRICE_ID_SET);
 
   const location = useLocation();
   const searchParams = new URLSearchParams(location.search);
   const priceIdParam = searchParams.get('priceId');
 
-  if (priceIdParam !== priceId && priceIdParam) {
+  if (priceIdParam !== priceId && priceIdParam !== null) {
     setPriceId(priceIdParam);
   }
 
   function clearPriceId() {
     useEffect(() => {
-      setPriceId(null);
+      setPriceId(NO_PRICE_ID_SET);
       return () => {};
     }, [priceId]);
   }
 
   return {
-    priceId,
+    priceId: priceId === NO_PRICE_ID_SET ? null : priceId,
     clearPriceId,
   };
 }

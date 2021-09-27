@@ -15,6 +15,9 @@ CognitoAuth.configure({
   userPoolWebClientId: process.env.REACT_APP_COGNITO_USER_POOL_WEB_CLIENT_ID,
 });
 
+// Marker to designate that a user hasn't specified their name.
+const NAME_NOT_SPECIFIED = '__u_n_d_e_f_i_n_e_d__';
+
 /**
  * Object representing the currently authenticated user.
  */
@@ -23,13 +26,13 @@ export class Principal {
   readonly id: string;
 
   /** User's name */
-  readonly name: string;
+  readonly name: Nullable<string>;
 
   /** User's email */
   readonly email: string;
 
   /** User's organization */
-  readonly org: string;
+  readonly org: Nullable<string>;
 
   /** Cognito user */
   readonly cognitoUser: CognitoUser;
@@ -42,9 +45,9 @@ export class Principal {
     cognitoUser,
   }: {
     id: string;
-    name: string;
+    name: Nullable<string>;
     email: string;
-    org: string;
+    org: Nullable<string>;
     cognitoUser: CognitoUser;
   }) {
     this.id = id;
@@ -67,7 +70,7 @@ export class Principal {
     );
     return new Principal({
       id: user.getUsername(),
-      name: attrs.name,
+      name: attrs.name === NAME_NOT_SPECIFIED ? null : attrs.name,
       email: attrs.email,
       org: attrs['custom:organization'],
       cognitoUser: user,
@@ -109,11 +112,6 @@ export type Credentials = {
   password: string;
 };
 
-type SignUpValues = {
-  name: string;
-  orgName: string;
-} & Credentials;
-
 type CognitoUserWithChallenge = CognitoUser & {
   challengeName: any;
 };
@@ -132,22 +130,6 @@ function useProvideAuth() {
   const [organization, setOrganization] = useState<Nullable<Organization>>(null);
   const queryClient = useQueryClient();
 
-  /**
-   * Sign-in using email and password. This function will not update the {@link Principal} state,
-   * this is necessary so `<AuthdRoute>`s are not refreshed when the state is changed.
-   */
-  async function logInForOrgSignup({
-    username,
-    password,
-  }: Credentials):
-    Promise<Principal | CognitoUserWithChallenge> {
-    const user: CognitoUserWithChallenge = await CognitoAuth.signIn(username, password);
-    if (user.challengeName) {
-      return user;
-    }
-    return Principal.fromCognitoUser(user);
-  }
-
   async function fetchOrg() {
     if (organization === null) {
       try {
@@ -156,6 +138,8 @@ function useProvideAuth() {
       } catch (e: any) {
         if (!axios.isAxiosError(e) || (axios.isAxiosError(e) && e.response?.status !== 404)) {
           throw e;
+        } else {
+          setOrganization(null);
         }
       }
     }
@@ -206,15 +190,12 @@ function useProvideAuth() {
   async function signUp({
     username,
     password,
-    name,
-    orgName,
-  }: SignUpValues): Promise<Nullable<Principal>> {
+  }: Credentials): Promise<Nullable<Principal>> {
     const result = await CognitoAuth.signUp({
       username,
       password,
       attributes: {
-        name,
-        'custom:organization': orgName,
+        name: NAME_NOT_SPECIFIED,
       },
     });
     if (result.user != null && result.userConfirmed) {
@@ -328,7 +309,6 @@ function useProvideAuth() {
     principal,
     organization,
     logIn,
-    logInForOrgSignup,
     completeNewPassword,
     changePassword,
     signUp,
