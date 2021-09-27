@@ -82,7 +82,7 @@ class GitHubAppApiController(
         val installations = GitHub.connectUsingOAuth(oAuthToken).myself.appInstallations
         val installation = installations.single { installation ->
             installation.id == gitHubInstallReq.installationId
-                    && installation.appId == consoleProperties.gitHubApp.appId
+                    && installation.appId == consoleProperties.gitHubApp.identifier
         }
         ensure.isTrue(
             value = installation.targetType == GHTargetType.ORGANIZATION,

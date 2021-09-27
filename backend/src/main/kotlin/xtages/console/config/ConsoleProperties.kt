@@ -24,9 +24,8 @@ data class ConsoleProperties(
 
     data class GitHubApp(
         val privateKey: String,
-        val identifier: String,
+        val identifier: Long,
         val webhookSecret: String,
-        val appId: Long,
         val clientId: String,
         val clientSecret: String,
         val installUrl: String
