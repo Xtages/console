@@ -33,6 +33,7 @@ enum class ExceptionCode {
     INVALID_GITHUB_APP_INSTALL_TARGET,
     INVALID_GITHUB_APP_INSTALL_NOT_ALL_REPOS_SELECTED,
     ORG_ALREADY_EXISTS,
+    USER_NEEDS_TO_LINK_ORG_FORBIDDEN
 }
 
 /**
@@ -90,3 +91,7 @@ class CognitoException(innerMessage: String) :
 @ResponseStatus(HttpStatus.BAD_REQUEST)
 class UnknownProjectDeploymentStatus(innerMessage: String) :
     XtagesConsoleException(code = ExceptionCode.PROJECT_DEPLOYMENT_NOT_FOUND, message = innerMessage)
+
+@ResponseStatus(HttpStatus.FORBIDDEN)
+class UserNeedsToLinkOrganizationException(innerMessage: String) :
+    XtagesConsoleException(code = ExceptionCode.USER_NEEDS_TO_LINK_ORG_FORBIDDEN, message = innerMessage)
