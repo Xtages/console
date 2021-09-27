@@ -66,6 +66,9 @@ class GitHubService(
         logger.debug { "Handling GitHub Push event for commit [${push.head}]" }
         if (push.ref.endsWith("/main") || push.ref.endsWith("/master")) {
             if (push.commits.isNotEmpty()) {
+                // TODO(czuniga): Don't look up based on the push.organization.login instead use
+                // push.installation.id against organization.installationId, that way the Xtages' Org name is not
+                // linked to the GitHub's Org name.
                 val organization = ensure.foundOne(
                     operation = { organizationDao.fetchOneByName(push.organization.login) },
                     code = ORG_NOT_FOUND
@@ -127,7 +130,6 @@ class GitHubService(
         )
         /*
         See https://docs.github.com/en/developers/webhooks-and-events/webhook-events-and-payloads#installation
-        created - Someone installs a GitHub App.
         deleted - Someone uninstalls a GitHub App
         suspend - Someone suspends a GitHub App installation.
         unsuspend - Someone unsuspends a GitHub App installation.
@@ -136,20 +138,6 @@ class GitHubService(
             the new permissions request.
         */
         when (action) {
-            "created" -> {
-                val repositorySelection = installation.get("repository_selection").asText()
-                ensure.isTrue(
-                    value = repositorySelection == "all",
-                    code = GH_APP_NOT_ALL_REPOSITORIES_SELECTED,
-                    message = "GitHub app was not installed on all repositories"
-                )
-                organizationDao.update(
-                    organization.copy(
-                        githubAppInstallationId = installationId,
-                        githubAppInstallationStatus = ACTIVE
-                    )
-                )
-            }
             "deleted" -> {
                 organizationDao.update(
                     organization.copy(
@@ -189,6 +177,7 @@ class GitHubService(
     fun getRepositoryForProject(project: Project, organization: Organization): GHRepository? {
         val gitHubAppClient = buildGitHubAppClient(organization)
         return try {
+            // TODO(czuniga): Don't assume that Xtages' organization.name is the same as GitHub's organization name
             gitHubAppClient.getRepository("${organization.name}/${project.name}")
         } catch (e: IOException) {
             null
@@ -204,6 +193,7 @@ class GitHubService(
         val gitHubAppClient = buildGitHubAppClient(organization)
         val repository = gitHubAppClient
             .createRepository(project.name)
+            // TODO(czuniga): Don't assume that Xtages' organization.name is the same as GitHub's organization name
             .owner(organization.name)
             .private_(true)
             .description(description ?: "")
