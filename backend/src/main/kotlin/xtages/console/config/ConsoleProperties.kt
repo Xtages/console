@@ -5,7 +5,13 @@ import org.springframework.boot.context.properties.ConstructorBinding
 
 @ConstructorBinding
 @ConfigurationProperties("xtages.console")
-data class ConsoleProperties(val stripe: Stripe, val server: Server, val gitHubApp: GitHubApp, val aws: Aws, val customerDeploymentDomain: String) {
+data class ConsoleProperties(
+    val stripe: Stripe,
+    val server: Server,
+    val gitHubApp: GitHubApp,
+    val aws: Aws,
+    val customerDeploymentDomain: String
+) {
 
     data class Stripe(
         val apiKey: String,
@@ -16,7 +22,14 @@ data class ConsoleProperties(val stripe: Stripe, val server: Server, val gitHubA
 
     data class Server(val basename: String, val noReplyAddress: String, val emailReturnPath: String)
 
-    data class GitHubApp(val privateKey: String, val identifier: String, val webhookSecret: String)
+    data class GitHubApp(
+        val privateKey: String,
+        val identifier: Long,
+        val webhookSecret: String,
+        val clientId: String,
+        val clientSecret: String,
+        val installUrl: String
+    )
 
     data class Cognito(val identityProviderName: String, val identityPoolId: String, val userPoolId: String)
 

@@ -3,6 +3,7 @@ import {CdApi,
   CheckoutApi,
   CiApi,
   Configuration,
+  GitHubAppApi,
   LogsApi,
   OrganizationApi,
   ProjectApi,
@@ -41,3 +42,4 @@ export const ciApi = buildAuthdApi<CiApi>(CiApi);
 export const cdApi = buildAuthdApi<CdApi>(CdApi);
 export const usageApi = buildAuthdApi<UsageApi>(UsageApi);
 export const userApi = buildAuthdApi<UserApi>(UserApi);
+export const gitHubAppApi = buildAuthdApi<GitHubAppApi>(GitHubAppApi);
