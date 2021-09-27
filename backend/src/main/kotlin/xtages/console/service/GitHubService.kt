@@ -294,7 +294,7 @@ class GitHubService(
         private fun buildGitHubClient(): GitHub {
             expirationTime = Date().toInstant().plus(10, ChronoUnit.MINUTES)
             val claimsSet = JWTClaimsSet.Builder()
-                .issuer(consoleProperties.gitHubApp.identifier)
+                .issuer(consoleProperties.gitHubApp.identifier.toString())
                 .issueTime(Date())
                 .expirationTime(Date.from(expirationTime))
                 .build()

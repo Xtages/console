@@ -1,5 +1,6 @@
 package xtages.console.controller.api
 
+import mu.KotlinLogging
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Controller
@@ -12,12 +13,13 @@ import xtages.console.controller.model.buildPojoToDeployment
 import xtages.console.controller.model.organizationPojoToOrganizationConverter
 import xtages.console.controller.model.projectPojoTypeToProjectTypeConverter
 import xtages.console.dao.fetchLatestDeploymentsByOrg
-import xtages.console.dao.fetchOneByCognitoUserId
 import xtages.console.dao.findFromBuilds
 import xtages.console.dao.maybeFetchOneByCognitoUserId
 import xtages.console.query.tables.daos.*
 import xtages.console.service.AuthenticationService
 import xtages.console.service.UserService
+
+private val logger = KotlinLogging.logger { }
 
 @Controller
 class OrganizationApiController(
@@ -35,24 +37,26 @@ class OrganizationApiController(
 
     override fun getOrganization(): ResponseEntity<Organization> {
         val organization = organizationDao.maybeFetchOneByCognitoUserId(authenticationService.currentCognitoUserId)
-        return if (organization != null) {
-            ResponseEntity.ok(organizationPojoToOrganizationConverter.convert(organization))
-        } else {
-            ResponseEntity(HttpStatus.NOT_FOUND)
+        organization ?: run {
+            return ResponseEntity(HttpStatus.NOT_FOUND)
         }
+        return ResponseEntity.ok(organizationPojoToOrganizationConverter.convert(organization))
     }
 
     override fun getOrganizationEligibility(orgEligibleReq: OrgEligibleReq): ResponseEntity<Unit> {
         val organization = organizationDao.fetchOneByName(orgEligibleReq.name)
-        return if (organization != null) {
-            ResponseEntity(HttpStatus.CONFLICT)
-        } else {
+        organization ?: run {
             ResponseEntity.ok(Unit)
         }
+        return ResponseEntity(HttpStatus.CONFLICT)
     }
 
     override fun projectsDeployed(): ResponseEntity<Projects> {
-        val organization = organizationDao.fetchOneByCognitoUserId(authenticationService.currentCognitoUserId)
+        val organization = organizationDao.maybeFetchOneByCognitoUserId(authenticationService.currentCognitoUserId)
+        organization ?: run {
+            logger.warn { "No project deployed as the user doesn't have an organization linked" }
+            return ResponseEntity.ok(Projects(emptyList()))
+        }
         val latestDeployments = projectDeploymentDao.fetchLatestDeploymentsByOrg(organization = organization)
         val deploysPerProjectId = latestDeployments.groupBy { deployment -> deployment.projectId }
         val projectPojos = projectDao.fetchById(*deploysPerProjectId.keys.filterNotNull().toIntArray())

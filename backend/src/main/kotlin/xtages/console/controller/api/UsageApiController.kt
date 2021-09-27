@@ -6,6 +6,7 @@ import xtages.console.controller.api.model.ResourceType
 import xtages.console.controller.api.model.UsageDetail
 import xtages.console.controller.model.usageDetailPojoToUsageDetail
 import xtages.console.dao.fetchOneByCognitoUserId
+import xtages.console.dao.maybeFetchOneByCognitoUserId
 import xtages.console.query.tables.daos.OrganizationDao
 import xtages.console.query.tables.pojos.Organization
 import xtages.console.service.AuthenticationService
@@ -27,7 +28,10 @@ class UsageApiController(
 ) : UsageApiControllerBase {
 
     override fun getAllUsageDetails(): ResponseEntity<List<UsageDetail>> {
-        val organization = organizationDao.fetchOneByCognitoUserId(authenticationService.currentCognitoUserId)
+        val organization = organizationDao.maybeFetchOneByCognitoUserId(authenticationService.currentCognitoUserId)
+        organization ?: run {
+            return ResponseEntity.ok(emptyList())
+        }
         val usageFutures = ResourceType.values().map { resourceType ->
             CompletableFuture.supplyAsync {
                 getUsageDetail(organization, resourceType = resourceType)
@@ -48,7 +52,7 @@ class UsageApiController(
 
     private fun getUsageDetail(organization: Organization, resourceType: ResourceType): UsageDetailPojo {
         return usageService.getUsageDetail(
-            organization,
+            organization = organization,
             resourceType = ResourceTypePojo.valueOf(resourceType.value)
         )
     }
