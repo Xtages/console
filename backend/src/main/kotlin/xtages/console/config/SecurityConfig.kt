@@ -1,6 +1,6 @@
 package xtages.console.config
 
-import mu.KotlinLogging
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Configuration
 import org.springframework.http.HttpMethod
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
@@ -13,7 +13,15 @@ import xtages.console.exception.ensure
 
 @Configuration
 @EnableWebSecurity
-class SecurityConfig : WebSecurityConfigurerAdapter() {
+class SecurityConfig(
+    @Value("\${spring.profiles.active}")
+    private val activeProfile: String,
+) : WebSecurityConfigurerAdapter() {
+
+    val actuatorEndpointsAccessPerEnv = mapOf(
+        "dev" to "/actuator/**",
+        "prod" to "",
+    )
 
     override fun configure(http: HttpSecurity) {
         http {
@@ -27,7 +35,7 @@ class SecurityConfig : WebSecurityConfigurerAdapter() {
                 disable()
             }
             csrf {
-                ignoringAntMatchers("/api/v1/*/webhook", "/api/v1/organization/eligibility")
+                ignoringAntMatchers("/api/v1/*/webhook")
             }
             sessionManagement {
                 // Don't create an HTTPSession and instead always rely on the
@@ -45,11 +53,11 @@ class SecurityConfig : WebSecurityConfigurerAdapter() {
             authorize
                 .mvcMatchers("/**").permitAll()
                 .mvcMatchers("/api/**").authenticated()
-                // This endpoint is called from the signup page so we don't have JWT yet.
-                .mvcMatchers(HttpMethod.PUT, "/api/v1/organization/eligibility").permitAll()
                 // Allow all access to POSTs made to webhook paths because those will be cryptographically authenticated
                 // via signature
                 .mvcMatchers(HttpMethod.POST, "/api/v1/*/webhook").permitAll()
+                // Denied access to actuator endpoints for prod allow for dev
+                .mvcMatchers(actuatorEndpointsAccessPerEnv[activeProfile])
         }
     }
 }

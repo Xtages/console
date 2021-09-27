@@ -12,6 +12,7 @@ import xtages.console.controller.api.model.*
 import xtages.console.controller.model.*
 import xtages.console.dao.*
 import xtages.console.exception.ExceptionCode.*
+import xtages.console.exception.UserNeedsToLinkOrganizationException
 import xtages.console.exception.ensure
 import xtages.console.query.enums.*
 import xtages.console.query.enums.BuildType
@@ -127,7 +128,10 @@ class ProjectApiController(
     }
 
     override fun getProjects(includeLastBuild: Boolean): ResponseEntity<List<Project>> {
-        val organization = organizationDao.fetchOneByCognitoUserId(authenticationService.currentCognitoUserId)
+        val organization = organizationDao.maybeFetchOneByCognitoUserId(authenticationService.currentCognitoUserId)
+        organization ?: run {
+            return ResponseEntity.ok(emptyList())
+        }
         val projects = projectDao.fetchByOrganization(organization.name!!).toMutableList()
         if (includeLastBuild) {
             val projectIdToLatestBuild = buildDao
@@ -261,7 +265,11 @@ class ProjectApiController(
         deployment.status == DeployStatus.DEPLOYED || deployment.status == DeployStatus.DRAINED
 
     override fun createProject(createProjectReq: CreateProjectReq): ResponseEntity<Project> {
-        val organization = organizationDao.fetchOneByCognitoUserId(authenticationService.currentCognitoUserId)
+        val organization = organizationDao.maybeFetchOneByCognitoUserId(authenticationService.currentCognitoUserId)
+        organization ?: run {
+            logger.warn { "User trying to create a project without having an organization linked" }
+            throw UserNeedsToLinkOrganizationException("Unable to create project without an Organization")
+        }
         usageService.checkUsageIsBelowLimit(organization = organization, resourceType = ResourceType.PROJECT)
         val user = ensure.foundOne(
             operation = { userDao.fetchOneByCognitoUserId(authenticationService.currentCognitoUserId.id) },
@@ -423,9 +431,17 @@ class ProjectApiController(
     /**
      * Retrieve logs from CloudWatch given a [Project] an [BuildEvent] id and
      * an operation id ([CodeBuildType])
+     *
+     * If the [User] doesn't have an [Organization] linked the results will be empty
      */
     override fun buildLogs(projectName: String, buildId: Long): ResponseEntity<Logs> {
-        val (_, organization, project) = checkRepoBelongsToOrg(projectName)
+        val organization = organizationDao.maybeFetchOneByCognitoUserId(authenticationService.currentCognitoUserId)
+        organization ?: run {
+            return ResponseEntity.ok(Logs(emptyList()))
+        }
+
+        val project = projectDao.fetchOneByNameAndOrganization(organization.name!!, projectName)
+
         val build = ensure.foundOne(
             operation = { buildDao.fetchById(buildId).first() },
             code = BUILD_NOT_FOUND,
