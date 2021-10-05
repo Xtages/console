@@ -92,7 +92,7 @@ class CognitoService(
                 .userAttributes(
                     buildAttribute(name = "email", value = username),
                     buildAttribute(name = "name", value = name),
-                    buildAttribute(name = "custom:organization", value = organization.name!!)
+                    buildAttribute(name = "custom:organization-hash", value = organization.hash!!)
                 )
                 .desiredDeliveryMediums(DeliveryMediumType.EMAIL)
                 .build()
