@@ -13,7 +13,6 @@ import org.springframework.web.bind.annotation.RequestHeader
 import xtages.console.config.ConsoleProperties
 import xtages.console.controller.api.model.CreateCheckoutSessionReq
 import xtages.console.controller.api.model.RecordCheckoutReq
-import xtages.console.dao.fetchOneByCognitoUserId
 import xtages.console.dao.maybeFetchOneByCognitoUserId
 import xtages.console.pojo.isSubscriptionInGoodStanding
 import xtages.console.query.tables.daos.OrganizationDao
