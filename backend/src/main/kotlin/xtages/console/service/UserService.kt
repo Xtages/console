@@ -1,10 +1,7 @@
 package xtages.console.service
 
 import mu.KotlinLogging
-import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
-import software.amazon.awssdk.services.cognitoidentity.CognitoIdentityAsyncClient
-import software.amazon.awssdk.services.cognitoidentity.model.GetIdRequest
 import software.amazon.awssdk.services.cognitoidentityprovider.CognitoIdentityProviderAsyncClient
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminGetUserRequest
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AttributeType
@@ -33,10 +30,7 @@ class UserService(
     private val userDao: XtagesUserDao,
     private val githubUserDao: GithubUserDao,
     private val consoleProperties: ConsoleProperties,
-    @Qualifier("anonymousCognitoIdentityClient")
-    private val anonymousCognitoIdentityClient: CognitoIdentityAsyncClient,
     private val cognitoIdentityProviderAsyncClient: CognitoIdentityProviderAsyncClient,
-    private val authenticationService: AuthenticationService,
     private val cognitoService: CognitoService,
 ) {
 
@@ -63,6 +57,10 @@ class UserService(
      */
     fun registerUserFromCognito(cognitoUserId: String, organization: Organization, isOwner: Boolean = false) {
         cognitoService.addUserToGroup(username = cognitoUserId, groupName = organization.name!!)
+        cognitoService.setUserAttributes(
+            username = cognitoUserId,
+            attributes = mapOf("custom:organization-hash" to organization.hash!!)
+        )
         val owner = XtagesUser(
             cognitoUserId = cognitoUserId,
             organizationName = organization.name!!,
@@ -76,7 +74,8 @@ class UserService(
      * saves the user data to the database.
      */
     fun inviteUser(username: String, name: String, organization: Organization): XtagesUserWithCognitoAttributes {
-        val cognitoUser = cognitoService.createCognitoUser(username = username, name = name, organization = organization)
+        val cognitoUser =
+            cognitoService.createCognitoUser(username = username, name = name, organization = organization)
         val user = XtagesUser(
             cognitoUserId = cognitoUser.username(),
             organizationName = organization.name!!,

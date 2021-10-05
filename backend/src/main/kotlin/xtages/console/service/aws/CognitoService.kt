@@ -24,7 +24,7 @@ class CognitoService(
                 .userPoolId(consoleProperties.aws.cognito.userPoolId)
                 .groupName(groupName)
                 .build()
-        )
+        ).get()
     }
 
     /**
@@ -61,6 +61,22 @@ class CognitoService(
                 .userPoolId(consoleProperties.aws.cognito.userPoolId)
                 .groupName(groupName)
                 .username(username)
+                .build()
+        )
+    }
+
+    /**
+     * Updates the [attributes] for [username].
+     */
+    fun setUserAttributes(username: String, attributes: Map<String, String>) {
+        cognitoIdentityProviderClient.adminUpdateUserAttributes(
+            AdminUpdateUserAttributesRequest
+                .builder()
+                .userPoolId(consoleProperties.aws.cognito.userPoolId)
+                .username(username)
+                .userAttributes(attributes.map { entry ->
+                    AttributeType.builder().name(entry.key).value(entry.value).build()
+                })
                 .build()
         )
     }

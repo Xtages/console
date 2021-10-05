@@ -1,0 +1,21 @@
+.planSelector {
+  .billingCycleToggle {
+    :global(.btn-group-sm) {
+      :global(.badge-floating) {
+        transform: translate(80%, 20%) !important;
+      }
+    }
+  }
+
+  :global(.card-pricing) {
+    :global(.list-unstyled) {
+      :global(li) {
+        padding: 0.3rem 0;
+      }
+    }
+
+    .subtitle {
+      font-size: 75%;
+    }
+  }
+}

@@ -1,7 +1,7 @@
 import React, {Children, ReactNode} from 'react';
 import ReactIs from 'react-is';
 import cx from 'classnames';
-import {GitHubIntegrationSection} from 'components/github/GitHubIntegrationSection';
+import {SetupWizardSection} from 'components/wizard/SetupWizard';
 import {LoadIndicatingSection, Section} from './Section';
 import NavBar from '../nav/NavBar';
 
@@ -20,16 +20,16 @@ export default function Page({children, width = 'wide'} : PageProps) {
     if (!ReactIs.isElement(child)
         || (child.type !== Section
             && child.type !== LoadIndicatingSection
-            && child.type !== GitHubIntegrationSection)) {
+            && child.type !== SetupWizardSection)) {
       throw Error('All children of Page must be Sections');
     }
   });
   return (
     <>
-      <header className="pb-4">
+      <header className="pb-1">
         <NavBar />
       </header>
-      <div className="slice slice-sm bg-section-secondary">
+      <div className="slice slice pt-3 bg-section-secondary">
         <div className="container">
           <div className="row justify-content-center">
             <div className={cx({'col-12': width === 'wide', 'col-9': width === 'narrow'})}>

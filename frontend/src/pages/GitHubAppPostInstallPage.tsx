@@ -1,8 +1,10 @@
 import React from 'react';
 import {useQueryParams} from 'hooks/useQueryParams';
-import {useMutation} from 'react-query';
+import {useIsMutating, useMutation} from 'react-query';
 import {gitHubAppApi} from 'service/Services';
 import {useHistory} from 'react-router-dom';
+
+const MUTATION_KEY = 'recordInstall';
 
 /**
  * Page to handle the installation of the GH App. We send the installation to the server to record
@@ -10,6 +12,7 @@ import {useHistory} from 'react-router-dom';
  */
 export default function GitHubAppPostInstallPage() {
   const queryParams = useQueryParams();
+  const isMutating = useIsMutating({mutationKey: MUTATION_KEY});
   const history = useHistory();
 
   const {
@@ -22,10 +25,11 @@ export default function GitHubAppPostInstallPage() {
     setupAction: queryParams.get('setup_action')!,
     state: queryParams.get('state')!,
   }), {
+    mutationKey: MUTATION_KEY,
     retry: false,
   });
 
-  if (isIdle) {
+  if (!isMutating && isIdle) {
     mutate();
   }
 

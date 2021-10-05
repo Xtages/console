@@ -16,7 +16,7 @@ CognitoAuth.configure({
 });
 
 // Marker to designate that a user hasn't specified their name.
-const NAME_NOT_SPECIFIED = '__u_n_d_e_f_i_n_e_d__';
+export const NAME_NOT_SPECIFIED = '__u_n_d_e_f_i_n_e_d__';
 
 /**
  * Object representing the currently authenticated user.

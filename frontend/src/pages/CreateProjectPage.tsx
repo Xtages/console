@@ -12,6 +12,7 @@ import {DocsLink} from 'components/link/XtagesLink';
 import {useAuth} from 'hooks/useAuth';
 import {projectApi} from 'service/Services';
 import {CreateProjectReqTypeEnum, UsageDetail} from 'gen/api';
+import {useOrganization} from 'hooks/useOrganization';
 import LabeledFormField from '../components/form/LabeledFormField';
 
 const createProjectFormValuesSchema = z.object({
@@ -32,7 +33,8 @@ export default function CreateProjectPage() {
   };
   const [errorMsg, setErrorMsg] = useState<ReactNode>(null);
   const auth = useAuth();
-  const organization = auth.principal?.org ?? 'UNKNOWN';
+  const {organization, orgNotFound, isFetching} = useOrganization();
+  const organizationName = orgNotFound ? 'UNKNOWN' : organization?.name;
   const history = useHistory();
 
   async function createProject(
@@ -51,12 +53,12 @@ export default function CreateProjectPage() {
       const {status, data} = response;
       if (isAxiosError) {
         if (status === 409) {
-          setErrorMsg(`A GitHub repository named "${organization}/${values.projectName}" already exists.`);
+          setErrorMsg(`A GitHub repository named "${organizationName}/${values.projectName}" already exists.`);
         } else if (status === 400 && data.error_code === 'USAGE_OVER_LIMIT') {
           const usageDetail: UsageDetail = data.details;
           setErrorMsg(
             <>
-              {organization}
+              {organizationName}
               {' '}
               has reached the limit (
               {usageDetail.limit}
@@ -88,6 +90,10 @@ export default function CreateProjectPage() {
     } catch (error) {
       return error.formErrors.fieldErrors;
     }
+  }
+
+  if (isFetching) {
+    return (<></>);
   }
 
   return (
@@ -145,7 +151,7 @@ export default function CreateProjectPage() {
                             label="Name"
                             addOn={(
                               <span className="text-muted font-weight-bold">
-                                {organization}
+                                {organizationName}
                                 {' '}
                                 /
                               </span>

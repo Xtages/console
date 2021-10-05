@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestHeader
 import xtages.console.config.ConsoleProperties
 import xtages.console.controller.api.model.CreateCheckoutSessionReq
+import xtages.console.controller.api.model.RecordCheckoutReq
 import xtages.console.query.tables.daos.XtagesUserDao
 import xtages.console.service.AuthenticationService
 import xtages.console.service.StripeService
@@ -34,8 +35,6 @@ class CheckoutApiController(
         return ResponseEntity.status(CREATED).body(
             stripeService.createCheckoutSession(
                 priceIds = createCheckoutSessionReq.priceIds,
-                organizationName = createCheckoutSessionReq.organizationName,
-                ownerCognitoUserId = createCheckoutSessionReq.ownerCognitoUserId,
             )
         )
     }
@@ -46,6 +45,11 @@ class CheckoutApiController(
             return ResponseEntity.ok(stripeService.createCustomerPortalSession())
         }
         return ResponseEntity(HttpStatus.FORBIDDEN)
+    }
+
+    override fun recordCheckoutOutcome(recordCheckoutReq: RecordCheckoutReq): ResponseEntity<Unit> {
+        stripeService.recordCheckoutOutcome(recordCheckoutReq.checkoutSessionId)
+        return ResponseEntity.ok().build()
     }
 
     @PostMapping("/checkout/webhook")
