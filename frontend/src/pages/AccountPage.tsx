@@ -7,7 +7,6 @@ import {LoadIndicatingSection, SectionTitle} from 'components/layout/Section';
 import {UsageDashboard} from 'components/usage/UsageDashboard';
 import {UserTable} from 'components/user/UserTable';
 import {InviteUserFormCard} from 'components/user/InviteUserFormCard';
-import {usePriceId} from 'hooks/usePriceId';
 import {DocsLink} from 'components/link/XtagesLink';
 import Page from '../components/layout/Page';
 
@@ -22,9 +21,6 @@ export default function AccountPage() {
     } = error;
     return isAxiosError && response.status === 403;
   }
-  const {clearPriceId} = usePriceId();
-  // When we come to the account page clear the priceId if one was stored.
-  clearPriceId();
 
   const customerPortalLinkQueryResult = useQuery(
     'customerPortalLink',
