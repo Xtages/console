@@ -47,7 +47,8 @@ class CodestarNotificationsService(
                 .status(NotificationRuleStatus.ENABLED)
                 .tags(mapOf(
                     "organization" to organizationHash,
-                    "organizatio-name" to organizationName
+                    "organization-hash" to organizationHash,
+                    "organization-name" to organizationName
                 ))
                 .build()
         ).get().arn()
