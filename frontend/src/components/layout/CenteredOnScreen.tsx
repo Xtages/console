@@ -4,7 +4,7 @@ import React, {ReactNode} from 'react';
 /**
  * A page that renders {@link children} in the middle of the screen.
  */
-export function FullScreenErrorPage({children} : {children: ReactNode | ReactNode[]}) {
+export function CenteredOnScreen({children} : {children: ReactNode | ReactNode[]}) {
   return (
     <Container>
       <Row>

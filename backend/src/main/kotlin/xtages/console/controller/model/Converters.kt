@@ -7,10 +7,9 @@ import software.amazon.awssdk.services.cognitoidentityprovider.model.UserStatusT
 import xtages.console.controller.GitHubAvatarUrl
 import xtages.console.controller.GitHubUrl
 import xtages.console.controller.api.model.*
-import xtages.console.query.enums.DeployStatus
-import xtages.console.query.enums.GithubAppInstallationStatus
-import xtages.console.query.enums.OrganizationSubscriptionStatus
-import xtages.console.query.enums.ProjectType
+import xtages.console.controller.api.model.BuildType
+import xtages.console.controller.api.model.ResourceType
+import xtages.console.query.enums.*
 import xtages.console.query.tables.pojos.BuildEvent
 import xtages.console.query.tables.pojos.GithubUser
 import xtages.console.query.tables.pojos.ProjectDeployment
@@ -41,9 +40,19 @@ val organizationPojoToOrganizationConverter =
                 source.subscriptionStatus!!
             )!!,
             githubAppInstalled = source.githubAppInstallationId != null
-                    && source.githubAppInstallationStatus == GithubAppInstallationStatus.ACTIVE
+                    && source.githubAppInstallationStatus == GithubAppInstallationStatus.ACTIVE,
+            gitHubOrganizationType = githubOrganizationTypePojoToGithubOrganizationType
+                .convert(source.githubOrganizationType!!)!!
         )
     }
+
+/** Converts a [GithubOrganizationType] into a [Organization.GitHubOrganizationType]. */
+val githubOrganizationTypePojoToGithubOrganizationType = Converter { source: GithubOrganizationType ->
+    when (source) {
+        GithubOrganizationType.INDIVIDUAL -> Organization.GitHubOrganizationType.INDIVIDUAL
+        GithubOrganizationType.ORGANIZATION -> Organization.GitHubOrganizationType.ORGANIZATION
+    }
+}
 
 /** Converts a [ProjectType] into a [Project.Type]. */
 val projectPojoTypeToProjectTypeConverter = Converter { source: ProjectType -> Project.Type.valueOf(source.name) }

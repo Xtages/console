@@ -477,31 +477,50 @@ export interface ErrorDesc {
 /**
  * Request sent when the GitHub App is installed
  * @export
- * @interface GitHubInstallReq
+ * @interface GitHubAppInstallReq
  */
-export interface GitHubInstallReq {
+export interface GitHubAppInstallReq {
     /**
      * 
      * @type {string}
-     * @memberof GitHubInstallReq
+     * @memberof GitHubAppInstallReq
      */
     code: string;
     /**
      * 
      * @type {number}
-     * @memberof GitHubInstallReq
+     * @memberof GitHubAppInstallReq
      */
     installationId?: number;
     /**
      * 
      * @type {string}
-     * @memberof GitHubInstallReq
+     * @memberof GitHubAppInstallReq
      */
     setupAction?: string;
     /**
      * 
      * @type {string}
-     * @memberof GitHubInstallReq
+     * @memberof GitHubAppInstallReq
+     */
+    state: string;
+}
+/**
+ * Request sent when the GitHub OAuth App is installed
+ * @export
+ * @interface GitHubOauthInstallReq
+ */
+export interface GitHubOauthInstallReq {
+    /**
+     * 
+     * @type {string}
+     * @memberof GitHubOauthInstallReq
+     */
+    code: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof GitHubOauthInstallReq
      */
     state: string;
 }
@@ -580,6 +599,12 @@ export interface Organization {
      * @memberof Organization
      */
     githubAppInstalled: boolean;
+    /**
+     * 
+     * @type {string}
+     * @memberof Organization
+     */
+    gitHubOrganizationType: OrganizationGitHubOrganizationTypeEnum;
 }
 
 /**
@@ -592,6 +617,14 @@ export enum OrganizationSubscriptionStatusEnum {
     Suspended = 'SUSPENDED',
     PendingCancellation = 'PENDING_CANCELLATION',
     Cancelled = 'CANCELLED'
+}
+/**
+    * @export
+    * @enum {string}
+    */
+export enum OrganizationGitHubOrganizationTypeEnum {
+    Organization = 'ORGANIZATION',
+    Individual = 'INDIVIDUAL'
 }
 
 /**
@@ -728,6 +761,15 @@ export interface RecordCheckoutReq {
      */
     checkoutSessionId: string;
 }
+/**
+ * 
+ * @export
+ * @enum {string}
+ */
+export enum Resource {
+    Db = 'DB'
+}
+
 /**
  * Enum of resources
  * @export
@@ -1604,13 +1646,13 @@ export const GitHubAppApiAxiosParamCreator = function (configuration?: Configura
         /**
          * 
          * @summary Records the GitHub App installation and creates an Organization based on it
-         * @param {GitHubInstallReq} gitHubInstallReq 
+         * @param {GitHubAppInstallReq} gitHubAppInstallReq 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        recordInstall: async (gitHubInstallReq: GitHubInstallReq, options: any = {}): Promise<RequestArgs> => {
-            // verify required parameter 'gitHubInstallReq' is not null or undefined
-            assertParamExists('recordInstall', 'gitHubInstallReq', gitHubInstallReq)
+        recordInstall: async (gitHubAppInstallReq: GitHubAppInstallReq, options: any = {}): Promise<RequestArgs> => {
+            // verify required parameter 'gitHubAppInstallReq' is not null or undefined
+            assertParamExists('recordInstall', 'gitHubAppInstallReq', gitHubAppInstallReq)
             const localVarPath = `/github/app/install`;
             // use dummy base URL string because the URL constructor only accepts absolute URLs.
             const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
@@ -1634,7 +1676,47 @@ export const GitHubAppApiAxiosParamCreator = function (configuration?: Configura
             setSearchParams(localVarUrlObj, localVarQueryParameter, options.query);
             let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
             localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
-            localVarRequestOptions.data = serializeDataIfNeeded(gitHubInstallReq, localVarRequestOptions, configuration)
+            localVarRequestOptions.data = serializeDataIfNeeded(gitHubAppInstallReq, localVarRequestOptions, configuration)
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
+         * 
+         * @summary Records the GitHub OAuth installation
+         * @param {GitHubOauthInstallReq} gitHubOauthInstallReq 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        recordOauthInstall: async (gitHubOauthInstallReq: GitHubOauthInstallReq, options: any = {}): Promise<RequestArgs> => {
+            // verify required parameter 'gitHubOauthInstallReq' is not null or undefined
+            assertParamExists('recordOauthInstall', 'gitHubOauthInstallReq', gitHubOauthInstallReq)
+            const localVarPath = `/github/oauth/install`;
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'POST', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            // authentication bearerAuth required
+            // http bearer authentication required
+            await setBearerAuthToObject(localVarHeaderParameter, configuration)
+
+
+    
+            localVarHeaderParameter['Content-Type'] = 'application/json';
+
+            setSearchParams(localVarUrlObj, localVarQueryParameter, options.query);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+            localVarRequestOptions.data = serializeDataIfNeeded(gitHubOauthInstallReq, localVarRequestOptions, configuration)
 
             return {
                 url: toPathString(localVarUrlObj),
@@ -1664,12 +1746,23 @@ export const GitHubAppApiFp = function(configuration?: Configuration) {
         /**
          * 
          * @summary Records the GitHub App installation and creates an Organization based on it
-         * @param {GitHubInstallReq} gitHubInstallReq 
+         * @param {GitHubAppInstallReq} gitHubAppInstallReq 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async recordInstall(gitHubInstallReq: GitHubInstallReq, options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Organization>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.recordInstall(gitHubInstallReq, options);
+        async recordInstall(gitHubAppInstallReq: GitHubAppInstallReq, options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Organization>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.recordInstall(gitHubAppInstallReq, options);
+            return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
+        },
+        /**
+         * 
+         * @summary Records the GitHub OAuth installation
+         * @param {GitHubOauthInstallReq} gitHubOauthInstallReq 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async recordOauthInstall(gitHubOauthInstallReq: GitHubOauthInstallReq, options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Organization>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.recordOauthInstall(gitHubOauthInstallReq, options);
             return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
         },
     }
@@ -1694,12 +1787,22 @@ export const GitHubAppApiFactory = function (configuration?: Configuration, base
         /**
          * 
          * @summary Records the GitHub App installation and creates an Organization based on it
-         * @param {GitHubInstallReq} gitHubInstallReq 
+         * @param {GitHubAppInstallReq} gitHubAppInstallReq 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        recordInstall(gitHubInstallReq: GitHubInstallReq, options?: any): AxiosPromise<Organization> {
-            return localVarFp.recordInstall(gitHubInstallReq, options).then((request) => request(axios, basePath));
+        recordInstall(gitHubAppInstallReq: GitHubAppInstallReq, options?: any): AxiosPromise<Organization> {
+            return localVarFp.recordInstall(gitHubAppInstallReq, options).then((request) => request(axios, basePath));
+        },
+        /**
+         * 
+         * @summary Records the GitHub OAuth installation
+         * @param {GitHubOauthInstallReq} gitHubOauthInstallReq 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        recordOauthInstall(gitHubOauthInstallReq: GitHubOauthInstallReq, options?: any): AxiosPromise<Organization> {
+            return localVarFp.recordOauthInstall(gitHubOauthInstallReq, options).then((request) => request(axios, basePath));
         },
     };
 };
@@ -1725,13 +1828,25 @@ export class GitHubAppApi extends BaseAPI {
     /**
      * 
      * @summary Records the GitHub App installation and creates an Organization based on it
-     * @param {GitHubInstallReq} gitHubInstallReq 
+     * @param {GitHubAppInstallReq} gitHubAppInstallReq 
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      * @memberof GitHubAppApi
      */
-    public recordInstall(gitHubInstallReq: GitHubInstallReq, options?: any) {
-        return GitHubAppApiFp(this.configuration).recordInstall(gitHubInstallReq, options).then((request) => request(this.axios, this.basePath));
+    public recordInstall(gitHubAppInstallReq: GitHubAppInstallReq, options?: any) {
+        return GitHubAppApiFp(this.configuration).recordInstall(gitHubAppInstallReq, options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * 
+     * @summary Records the GitHub OAuth installation
+     * @param {GitHubOauthInstallReq} gitHubOauthInstallReq 
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof GitHubAppApi
+     */
+    public recordOauthInstall(gitHubOauthInstallReq: GitHubOauthInstallReq, options?: any) {
+        return GitHubAppApiFp(this.configuration).recordOauthInstall(gitHubOauthInstallReq, options).then((request) => request(this.axios, this.basePath));
     }
 }
 
@@ -2628,6 +2743,115 @@ export class ProjectApi extends BaseAPI {
      */
     public updateProjectSettings(projectName: string, updateProjectSettingsReq: UpdateProjectSettingsReq, options?: any) {
         return ProjectApiFp(this.configuration).updateProjectSettings(projectName, updateProjectSettingsReq, options).then((request) => request(this.axios, this.basePath));
+    }
+}
+
+
+/**
+ * ProvisionApi - axios parameter creator
+ * @export
+ */
+export const ProvisionApiAxiosParamCreator = function (configuration?: Configuration) {
+    return {
+        /**
+         * 
+         * @summary Provisions a resource
+         * @param {Resource} resource 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        provisionResource: async (resource: Resource, options: any = {}): Promise<RequestArgs> => {
+            // verify required parameter 'resource' is not null or undefined
+            assertParamExists('provisionResource', 'resource', resource)
+            const localVarPath = `/resources/provision/{resource}`
+                .replace(`{${"resource"}}`, encodeURIComponent(String(resource)));
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'POST', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            // authentication bearerAuth required
+            // http bearer authentication required
+            await setBearerAuthToObject(localVarHeaderParameter, configuration)
+
+
+    
+            setSearchParams(localVarUrlObj, localVarQueryParameter, options.query);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+    }
+};
+
+/**
+ * ProvisionApi - functional programming interface
+ * @export
+ */
+export const ProvisionApiFp = function(configuration?: Configuration) {
+    const localVarAxiosParamCreator = ProvisionApiAxiosParamCreator(configuration)
+    return {
+        /**
+         * 
+         * @summary Provisions a resource
+         * @param {Resource} resource 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async provisionResource(resource: Resource, options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<void>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.provisionResource(resource, options);
+            return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
+        },
+    }
+};
+
+/**
+ * ProvisionApi - factory interface
+ * @export
+ */
+export const ProvisionApiFactory = function (configuration?: Configuration, basePath?: string, axios?: AxiosInstance) {
+    const localVarFp = ProvisionApiFp(configuration)
+    return {
+        /**
+         * 
+         * @summary Provisions a resource
+         * @param {Resource} resource 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        provisionResource(resource: Resource, options?: any): AxiosPromise<void> {
+            return localVarFp.provisionResource(resource, options).then((request) => request(axios, basePath));
+        },
+    };
+};
+
+/**
+ * ProvisionApi - object-oriented interface
+ * @export
+ * @class ProvisionApi
+ * @extends {BaseAPI}
+ */
+export class ProvisionApi extends BaseAPI {
+    /**
+     * 
+     * @summary Provisions a resource
+     * @param {Resource} resource 
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof ProvisionApi
+     */
+    public provisionResource(resource: Resource, options?: any) {
+        return ProvisionApiFp(this.configuration).provisionResource(resource, options).then((request) => request(this.axios, this.basePath));
     }
 }
 

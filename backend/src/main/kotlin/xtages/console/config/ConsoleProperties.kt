@@ -9,6 +9,7 @@ data class ConsoleProperties(
     val stripe: Stripe,
     val server: Server,
     val gitHubApp: GitHubApp,
+    val gitHubOauth: GitHubOauth,
     val aws: Aws,
     val customerDeploymentDomain: String
 ) {
@@ -31,6 +32,11 @@ data class ConsoleProperties(
         val installUrl: String
     )
 
+    data class GitHubOauth(
+        val clientId: String,
+        val clientSecret: String,
+    )
+
     data class Cognito(val identityProviderName: String, val identityPoolId: String, val userPoolId: String)
 
     data class CodeBuild(
@@ -49,7 +55,8 @@ data class ConsoleProperties(
         val codeBuild: CodeBuild,
         val cloudWatch: CloudWatch,
         val rds: Rds,
-        val vpc: Vpc
+        val vpc: Vpc,
+        val ssm: Ssm,
     )
 
     data class Vpc(
@@ -66,7 +73,6 @@ data class ConsoleProperties(
         val kmsKeyId: String,
         val performanceInsightsRetentionPeriod: Int,
         val publiclyAccessible: Boolean,
-        val ssmPrefix: String,
         val dbSubnetGroupName: String,
     )
 
@@ -92,5 +98,9 @@ data class ConsoleProperties(
         val maxCapacity: Int,
         val secondsUntilAutoPause: Int,
         val autoPauseEnable: Boolean,
+    )
+
+    data class Ssm(
+        val orgConfigPrefix: String,
     )
 }
