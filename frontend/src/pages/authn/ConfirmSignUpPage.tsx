@@ -12,7 +12,6 @@ import {Alert, Button} from 'react-bootstrap';
 import {EmailField, PasswordField} from 'components/user/AuthFields';
 import {useFormValidator} from 'hooks/useFormValidator';
 import {useTracking} from 'hooks/useTracking';
-import {usePriceId} from 'hooks/usePriceId';
 import {SignUpFormValues} from './SignUpPage';
 
 const formValuesSchema = z.object({
@@ -94,12 +93,7 @@ export default function ConfirmSignUpPage() {
   } = useTracking();
   const auth = useAuth();
   const [errorOccurred, setErrorOccurred] = useState(false);
-  const {priceId} = usePriceId();
   const validate = useFormValidator('ConfirmSignUpPage', formValuesSchema);
-
-  if (!priceId) {
-    trackComponentEvent('ConfirmSignUpPage', 'PriceId not set');
-  }
 
   function buildFormValues(): FormValues {
     const {state} = location;
@@ -126,9 +120,7 @@ export default function ConfirmSignUpPage() {
         email: values.email,
         code: values.code,
       });
-      trackComponentEvent('ConfirmSignUpPage', 'Confirmed Signed Up', {
-        priceId,
-      });
+      trackComponentEvent('ConfirmSignUpPage', 'Confirmed Signed Up');
     } catch (e) {
       trackComponentApiError('ConfirmSignUpPage', 'cognito.confirmSignUp', e);
       setErrorOccurred(true);
@@ -182,19 +174,6 @@ export default function ConfirmSignUpPage() {
                       </div>
                     </Alert>
                     )}
-                    {!priceId && (
-                      <Alert className="alert-outline-danger">
-                        <div className="d-flex justify-content-center">
-                          <strong>
-                            You must first select a
-                            {' '}
-                            <a href="https://www.xtages.com/pricing.html">plan</a>
-                            {' '}
-                            before signing up.
-                          </strong>
-                        </div>
-                      </Alert>
-                    )}
                     {haveUserAndPass
                       && (
                       <>
@@ -223,7 +202,7 @@ export default function ConfirmSignUpPage() {
                       <button
                         type="submit"
                         className="btn btn-block btn-primary"
-                        disabled={isSubmitting || !priceId}
+                        disabled={isSubmitting}
                       >
                         Confirm
                       </button>

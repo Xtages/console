@@ -57,14 +57,17 @@ interface SectionProps {
    * Children for the section. Only 0 or 1 [SectionTitle] may appear here.
    * The rest of the children will will be wrapped in a `<div class="row">`.
    * */
-  children: ReactNode | ReactNode[]
+  children: ReactNode | ReactNode[];
 
-  last?: boolean,
+  last?: boolean;
+
+  className?: string;
 }
 
 /** A section in a page */
 export function Section({
   children,
+  className = '',
   last = false,
 }: SectionProps) {
   let sectionTitle: ReactNode | undefined;
@@ -83,7 +86,7 @@ export function Section({
   return (
     <>
       {sectionTitle}
-      <div className="row mx-n2">
+      <div className={`row mx-n2 ${className}`}>
         {restOfChildren}
       </div>
       {!last

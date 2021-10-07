@@ -10,7 +10,6 @@ import {Alert} from 'react-bootstrap';
 import {EmailField, PasswordField} from 'components/user/AuthFields';
 import {useTracking} from 'hooks/useTracking';
 import {useFormValidator} from 'hooks/useFormValidator';
-import {usePriceId} from 'hooks/usePriceId';
 import {Nullable} from 'types/nullable';
 
 const signUpFormValuesSchema = z.object({
@@ -37,15 +36,11 @@ export default function SignUpPage() {
   };
   const auth = useAuth();
   const history = useHistory();
-  const {priceId} = usePriceId();
   const {
     identifyPrincipal,
     trackComponentApiError,
     trackComponentEvent,
   } = useTracking();
-  if (!priceId) {
-    trackComponentEvent('SignUpPage', 'PriceId not set');
-  }
   const [errorMsg, setErrorMsg] = useState<ReactNode>(null);
   const validate = useFormValidator('SignUpPage', signUpFormValuesSchema);
 
@@ -57,9 +52,7 @@ export default function SignUpPage() {
         username: values.email,
         password: values.password,
       });
-      trackComponentEvent('SignUpPage', 'Signed Up', {
-        priceId,
-      });
+      trackComponentEvent('SignUpPage', 'Signed Up');
     } catch (e: any) {
       if (e.code === 'UsernameExistsException') {
         setErrorMsg('Invalid email, or an account with the given email already exists.');
@@ -97,19 +90,6 @@ export default function SignUpPage() {
                       <Alert className="alert-outline-danger">
                         <div className="d-flex justify-content-center">
                           <strong>{errorMsg}</strong>
-                        </div>
-                      </Alert>
-                    )}
-                    {!priceId && (
-                      <Alert className="alert-outline-danger">
-                        <div className="d-flex justify-content-center">
-                          <strong>
-                            You must first select a
-                            {' '}
-                            <a href="https://www.xtages.com/pricing.html">plan</a>
-                            {' '}
-                            before signing up.
-                          </strong>
                         </div>
                       </Alert>
                     )}
@@ -161,7 +141,7 @@ export default function SignUpPage() {
                       <button
                         type="submit"
                         className="btn btn-block btn-primary"
-                        disabled={isSubmitting || !priceId}
+                        disabled={isSubmitting}
                       >
                         Create my account
                       </button>

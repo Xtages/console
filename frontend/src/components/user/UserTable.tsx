@@ -1,5 +1,6 @@
 import React from 'react';
 import {User} from 'gen/api';
+import {NAME_NOT_SPECIFIED} from 'hooks/useAuth';
 
 export type UserTableProps = {
   users: User[],
@@ -22,7 +23,7 @@ export function UserTable({users}: UserTableProps) {
         {users.map((user) => (
           <tr key={user.id}>
             <th scope="row">
-              <span className="h6 mb-0 text-sm">{user.name}</span>
+              <span className="h6 mb-0 text-sm"><UserName user={user} /></span>
             </th>
             <td>
               <a href={`mailto:${user.username}`} target="_blank" rel="noreferrer">{user.username}</a>
@@ -35,4 +36,11 @@ export function UserTable({users}: UserTableProps) {
       </tbody>
     </table>
   );
+}
+
+function UserName({user} : {user: User}) {
+  if (user.name === NAME_NOT_SPECIFIED) {
+    return (<span className="font-italic text-muted">Not provided</span>);
+  }
+  return <>user.name</>;
 }

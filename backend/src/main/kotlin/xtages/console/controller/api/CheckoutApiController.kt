@@ -12,6 +12,11 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestHeader
 import xtages.console.config.ConsoleProperties
 import xtages.console.controller.api.model.CreateCheckoutSessionReq
+import xtages.console.controller.api.model.RecordCheckoutReq
+import xtages.console.dao.fetchOneByCognitoUserId
+import xtages.console.dao.maybeFetchOneByCognitoUserId
+import xtages.console.pojo.isSubscriptionInGoodStanding
+import xtages.console.query.tables.daos.OrganizationDao
 import xtages.console.query.tables.daos.XtagesUserDao
 import xtages.console.service.AuthenticationService
 import xtages.console.service.StripeService
@@ -26,6 +31,7 @@ class CheckoutApiController(
     private val userDao: XtagesUserDao,
     private val authenticationService: AuthenticationService,
     private val stripeService: StripeService,
+    private val organizationDao: OrganizationDao,
     private val consoleProperties: ConsoleProperties,
 ) :
     CheckoutApiControllerBase {
@@ -34,18 +40,25 @@ class CheckoutApiController(
         return ResponseEntity.status(CREATED).body(
             stripeService.createCheckoutSession(
                 priceIds = createCheckoutSessionReq.priceIds,
-                organizationName = createCheckoutSessionReq.organizationName,
-                ownerCognitoUserId = createCheckoutSessionReq.ownerCognitoUserId,
             )
         )
     }
 
     override fun getCustomerPortalSession(): ResponseEntity<URI> {
         val user = userDao.fetchOneByCognitoUserId(authenticationService.currentCognitoUserId.id)
-        if (user!!.isOwner!!) {
-            return ResponseEntity.ok(stripeService.createCustomerPortalSession())
+        if (user?.isOwner == true) {
+            val organization =
+                organizationDao.maybeFetchOneByCognitoUserId(authenticationService.currentCognitoUserId)
+            if (organization?.stripeCustomerId != null && organization.isSubscriptionInGoodStanding) {
+                return ResponseEntity.ok(stripeService.createCustomerPortalSession())
+            }
         }
         return ResponseEntity(HttpStatus.FORBIDDEN)
+    }
+
+    override fun recordCheckoutOutcome(recordCheckoutReq: RecordCheckoutReq): ResponseEntity<Unit> {
+        stripeService.recordCheckoutOutcome(recordCheckoutReq.checkoutSessionId)
+        return ResponseEntity.ok().build()
     }
 
     @PostMapping("/checkout/webhook")

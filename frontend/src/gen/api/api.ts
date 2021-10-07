@@ -290,18 +290,6 @@ export interface CIReq {
 export interface CreateCheckoutSessionReq {
     /**
      * 
-     * @type {string}
-     * @memberof CreateCheckoutSessionReq
-     */
-    organizationName: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof CreateCheckoutSessionReq
-     */
-    ownerCognitoUserId: string;
-    /**
-     * 
      * @type {Array<string>}
      * @memberof CreateCheckoutSessionReq
      */
@@ -726,6 +714,19 @@ export interface QueryProjectReq {
      * @memberof QueryProjectReq
      */
     deployed: boolean;
+}
+/**
+ * Request made to POST /checkout/outcome
+ * @export
+ * @interface RecordCheckoutReq
+ */
+export interface RecordCheckoutReq {
+    /**
+     * 
+     * @type {string}
+     * @memberof RecordCheckoutReq
+     */
+    checkoutSessionId: string;
 }
 /**
  * Enum of resources
@@ -1210,6 +1211,46 @@ export const CheckoutApiAxiosParamCreator = function (configuration?: Configurat
                 options: localVarRequestOptions,
             };
         },
+        /**
+         * 
+         * @summary Record a checkout outcome
+         * @param {RecordCheckoutReq} recordCheckoutReq 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        recordCheckoutOutcome: async (recordCheckoutReq: RecordCheckoutReq, options: any = {}): Promise<RequestArgs> => {
+            // verify required parameter 'recordCheckoutReq' is not null or undefined
+            assertParamExists('recordCheckoutOutcome', 'recordCheckoutReq', recordCheckoutReq)
+            const localVarPath = `/checkout/outcome`;
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'POST', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            // authentication bearerAuth required
+            // http bearer authentication required
+            await setBearerAuthToObject(localVarHeaderParameter, configuration)
+
+
+    
+            localVarHeaderParameter['Content-Type'] = 'application/json';
+
+            setSearchParams(localVarUrlObj, localVarQueryParameter, options.query);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+            localVarRequestOptions.data = serializeDataIfNeeded(recordCheckoutReq, localVarRequestOptions, configuration)
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
     }
 };
 
@@ -1241,6 +1282,17 @@ export const CheckoutApiFp = function(configuration?: Configuration) {
             const localVarAxiosArgs = await localVarAxiosParamCreator.getCustomerPortalSession(options);
             return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
         },
+        /**
+         * 
+         * @summary Record a checkout outcome
+         * @param {RecordCheckoutReq} recordCheckoutReq 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async recordCheckoutOutcome(recordCheckoutReq: RecordCheckoutReq, options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<void>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.recordCheckoutOutcome(recordCheckoutReq, options);
+            return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
+        },
     }
 };
 
@@ -1269,6 +1321,16 @@ export const CheckoutApiFactory = function (configuration?: Configuration, baseP
          */
         getCustomerPortalSession(options?: any): AxiosPromise<string> {
             return localVarFp.getCustomerPortalSession(options).then((request) => request(axios, basePath));
+        },
+        /**
+         * 
+         * @summary Record a checkout outcome
+         * @param {RecordCheckoutReq} recordCheckoutReq 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        recordCheckoutOutcome(recordCheckoutReq: RecordCheckoutReq, options?: any): AxiosPromise<void> {
+            return localVarFp.recordCheckoutOutcome(recordCheckoutReq, options).then((request) => request(axios, basePath));
         },
     };
 };
@@ -1301,6 +1363,18 @@ export class CheckoutApi extends BaseAPI {
      */
     public getCustomerPortalSession(options?: any) {
         return CheckoutApiFp(this.configuration).getCustomerPortalSession(options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * 
+     * @summary Record a checkout outcome
+     * @param {RecordCheckoutReq} recordCheckoutReq 
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof CheckoutApi
+     */
+    public recordCheckoutOutcome(recordCheckoutReq: RecordCheckoutReq, options?: any) {
+        return CheckoutApiFp(this.configuration).recordCheckoutOutcome(recordCheckoutReq, options).then((request) => request(this.axios, this.basePath));
     }
 }
 
