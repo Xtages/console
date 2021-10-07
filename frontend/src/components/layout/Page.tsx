@@ -17,8 +17,8 @@ interface PageProps {
  */
 export default function Page({children, width = 'wide'} : PageProps) {
   Children.forEach(children, (child) => {
-    if (!ReactIs.isElement(child)
-        || (child.type !== Section
+    if (ReactIs.isElement(child)
+        && (child.type !== Section
             && child.type !== LoadIndicatingSection
             && child.type !== SetupWizardSection)) {
       throw Error('All children of Page must be Sections');
