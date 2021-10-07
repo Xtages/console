@@ -5,6 +5,7 @@ import software.amazon.awssdk.services.cognitoidentityprovider.CognitoIdentityPr
 import software.amazon.awssdk.services.cognitoidentityprovider.model.*
 import xtages.console.config.ConsoleProperties
 import xtages.console.query.tables.pojos.Organization
+import java.util.concurrent.ExecutionException
 
 /**
  * A [Service] to interact with Cognito.
@@ -19,12 +20,18 @@ class CognitoService(
      * Creates a new Cognito group.
      */
     fun createGroup(groupName: String) {
-        cognitoIdentityProviderClient.createGroup(
-            CreateGroupRequest.builder()
-                .userPoolId(consoleProperties.aws.cognito.userPoolId)
-                .groupName(groupName)
-                .build()
-        ).get()
+        try {
+            cognitoIdentityProviderClient.createGroup(
+                CreateGroupRequest.builder()
+                    .userPoolId(consoleProperties.aws.cognito.userPoolId)
+                    .groupName(groupName)
+                    .build()
+            ).get()
+        } catch (e: ExecutionException) {
+            if (e.cause !is GroupExistsException) {
+                throw e
+            }
+        }
     }
 
     /**

@@ -2,12 +2,13 @@ import React from 'react';
 import {useQuery} from 'react-query';
 import {checkoutApi, usageApi, userApi} from 'service/Services';
 import {Activity, User} from 'react-feather';
-import {Col} from 'react-bootstrap';
-import {LoadIndicatingSection, SectionTitle} from 'components/layout/Section';
+import {Alert, Col} from 'react-bootstrap';
+import {LoadIndicatingSection, Section, SectionTitle} from 'components/layout/Section';
 import {UsageDashboard} from 'components/usage/UsageDashboard';
 import {UserTable} from 'components/user/UserTable';
 import {InviteUserFormCard} from 'components/user/InviteUserFormCard';
 import {DocsLink} from 'components/link/XtagesLink';
+import {useOrganization} from 'hooks/useOrganization';
 import Page from '../components/layout/Page';
 
 /**
@@ -41,12 +42,24 @@ export default function AccountPage() {
     },
   );
 
+  const {orgNotFound} = useOrganization();
+
   function handleForbiddenError(error: any) {
     return is403Error(error) ? <></> : undefined;
   }
 
   return (
     <Page>
+      {orgNotFound && (
+        <Section className="justify-content-center">
+          <Col sm="auto">
+            <Alert variant="warning">
+              You must select a Plan before being able manage your
+              Organization&apos;s settings.
+            </Alert>
+          </Col>
+        </Section>
+      )}
       <LoadIndicatingSection
         queryResult={customerPortalLinkQueryResult}
         errorHandler={handleForbiddenError}
