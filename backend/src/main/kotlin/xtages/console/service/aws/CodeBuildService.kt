@@ -21,14 +21,13 @@ import software.amazon.awssdk.services.codebuild.CodeBuildAsyncClient
 import software.amazon.awssdk.services.codebuild.model.*
 import xtages.console.config.ConsoleProperties
 import xtages.console.controller.api.model.Logs
-import xtages.console.controller.model.CodeBuildType
-import xtages.console.controller.model.buildPojoToBuild
-import xtages.console.controller.model.organizationPojoToOrganizationConverter
-import xtages.console.controller.model.projectPojoToProject
+import xtages.console.controller.model.*
 import xtages.console.dao.findFromBuilds
 import xtages.console.dao.findPreviousCIBuild
+import xtages.console.dao.getTypeOfPlan
 import xtages.console.exception.ExceptionCode
 import xtages.console.exception.ExceptionCode.INVALID_ENVIRONMENT
+import xtages.console.exception.ExceptionCode.ORGANIZATION_TO_PLAN_NOT_FOUND
 import xtages.console.exception.ensure
 import xtages.console.pojo.*
 import xtages.console.query.enums.BuildStatus
@@ -86,6 +85,7 @@ class CodeBuildService(
     private val notificationService: NotificationService,
     private val userService: UserService,
     private val objectMapper: ObjectMapper,
+    private val organizationToPlanDao: OrganizationToPlanDao,
     @Value("\${spring.profiles.active}")
     private val activeProfile: String,
 ) {
@@ -270,7 +270,7 @@ class CodeBuildService(
     /**
      * Starts a CodeBuild project for a specific [Project]
      * codeBuildStarterRequest provides information about the [CodeBuildType] to run and
-     * al the necessary information to make the build run
+     * all the necessary information to make the build run
      */
     fun startCodeBuildProject(
         gitHubAppToken: String,
@@ -311,12 +311,12 @@ class CodeBuildService(
         logger.debug { "Build created with id: ${buildRecord.id}" }
 
         logger.info { "running CodeBuild:[$codeBuildType] for project:[${project.name}], commit:[$commitHash], organization: [${organization.name}]" }
-        val cbProjectName = if (codeBuildType == CodeBuildType.CI)
-            project.codeBuildCiProjectName
-        else
-            project.codeBuildCdProjectName
+        val cbProjectName =
+            if (codeBuildType == CodeBuildType.CI) project.codeBuildCiProjectName else project.codeBuildCdProjectName
 
         val codeBuildClient = if (fromGitHubApp) codeBuildAsyncClient else userSessionCodeBuildClient()
+
+        val plan = getPlanFrom(organization)
 
         val scriptPath = getScriptPath(recipe, previousGitHubProjectTag, environment)
         val isDeploy = environment == "production"
@@ -351,6 +351,7 @@ class CodeBuildService(
                         buildEnvVar("XTAGES_NODE_VER", recipe.version),
                         buildEnvVar("XTAGES_PREVIOUS_GH_PROJECT_TAG", previousGitHubProjectTag),
                         buildEnvVar("XTAGES_BUILD_ID", buildRecord.id.toString()),
+                        buildEnvVar("XTAGES_PLAN", plan.name),
                         conditionalEnvVar(isDeploy, "XTAGES_HOST_HEADER", project.associatedDomain),
                         conditionalEnvVar(isDeploy, "XTAGES_CUSTOMER_DOMAIN", project.associatedDomain),
                     )
@@ -366,6 +367,14 @@ class CodeBuildService(
 
         logger.info { "started CodeBuild project: $cbProjectName" }
         return Pair(startBuildResponse, buildRecord.into(Build::class.java))
+    }
+
+    private fun getPlanFrom(organization: Organization): PlanType {
+        return ensure.foundOne(
+            operation = { organizationToPlanDao.getTypeOfPlan(organization) },
+            code = ORGANIZATION_TO_PLAN_NOT_FOUND,
+            lazyMessage = { "Organization doesn't have a plan associated" }
+        )
     }
 
     private fun getScriptPath(
