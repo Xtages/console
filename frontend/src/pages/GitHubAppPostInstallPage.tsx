@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useEffect} from 'react';
 import {useQueryParams} from 'hooks/useQueryParams';
 import {useIsMutating, useMutation} from 'react-query';
 import {gitHubAppApi} from 'service/Services';
@@ -17,7 +17,6 @@ export default function GitHubAppPostInstallPage() {
 
   const {
     isIdle,
-    isSuccess,
     mutate,
   } = useMutation(() => gitHubAppApi.recordInstall({
     code: queryParams.get('code')!,
@@ -27,15 +26,16 @@ export default function GitHubAppPostInstallPage() {
   }), {
     mutationKey: MUTATION_KEY,
     retry: false,
+    onSuccess: () => {
+      history.push('/');
+    },
   });
 
-  if (!isMutating && isIdle) {
-    mutate();
-  }
-
-  if (isSuccess) {
-    history.push('/');
-  }
+  useEffect(() => {
+    if (!isMutating && isIdle) {
+      mutate();
+    }
+  }, []);
 
   // TODO(czuniga): Handle the errors cases: 1) when the state doesn't match 2) when the app is
   //  installed incorrectly. 3) Org already exists.

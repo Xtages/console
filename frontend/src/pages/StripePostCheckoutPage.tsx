@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useEffect} from 'react';
 import {useQueryParams} from 'hooks/useQueryParams';
 import {useHistory} from 'react-router-dom';
 import {useIsMutating, useMutation} from 'react-query';
@@ -13,21 +13,22 @@ export default function StripePostCheckoutPage() {
 
   const {
     isIdle,
-    isSuccess,
     mutate,
   } = useMutation(() => checkoutApi.recordCheckoutOutcome({
     checkoutSessionId: queryParams.get('checkoutSessionId')!,
   }), {
     mutationKey: MUTATION_KEY,
     retry: false,
+    onSuccess: () => {
+      history.push('/');
+    },
   });
 
-  if (!isMutating && isIdle) {
-    mutate();
-  }
+  useEffect(() => {
+    if (!isMutating && isIdle) {
+      mutate();
+    }
+  }, []);
 
-  if (isSuccess) {
-    history.push('/');
-  }
   return (<></>);
 }

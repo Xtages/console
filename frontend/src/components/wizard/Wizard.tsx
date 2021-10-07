@@ -1,8 +1,8 @@
-import React, {createContext, ReactNode, useContext} from 'react';
+import React, {createContext, ReactNode, useContext, useState} from 'react';
 import {Accordion, AccordionContext, Card} from 'react-bootstrap';
 import cx from 'classnames';
 import {Check} from 'react-feather';
-import {Undefinable} from 'types/nullable';
+import {Nullable, Undefinable} from 'types/nullable';
 import styles from './Wizard.module.scss';
 
 function makeStepEventKey(step: number | undefined) {
@@ -21,10 +21,17 @@ export function Wizard({
   currentStep,
 }: WizardProps) {
   const currentStepDefaultActiveKey = makeStepEventKey(currentStep);
+  const [openStep, setOpenStep] = useState(currentStepDefaultActiveKey);
+
+  function handleSelect(eventKey: Nullable<string>) {
+    return setOpenStep(eventKey === null ? undefined : eventKey);
+  }
+
   return (
     <Accordion
-      defaultActiveKey={currentStepDefaultActiveKey}
+      activeKey={openStep}
       className={cx('col-12', styles.wizard)}
+      onSelect={handleSelect}
     >
       <WizardContext.Provider value={currentStepDefaultActiveKey}>
         {children}
