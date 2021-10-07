@@ -6,12 +6,11 @@ import Page from 'components/layout/Page';
 import {Section, SectionTitle} from 'components/layout/Section';
 import ProjectTemplateCard from 'components/project/ProjectTemplateCard';
 import {FormikHelpers} from 'formik/dist/types';
-import {useHistory, Link} from 'react-router-dom';
+import {Link, useHistory} from 'react-router-dom';
 import {Alert, Button} from 'react-bootstrap';
 import {DocsLink} from 'components/link/XtagesLink';
-import {useAuth} from 'hooks/useAuth';
 import {projectApi} from 'service/Services';
-import {CreateProjectReqTypeEnum, UsageDetail} from 'gen/api';
+import {CreateProjectReqTypeEnum, OrganizationSubscriptionStatusEnum, UsageDetail} from 'gen/api';
 import {useOrganization} from 'hooks/useOrganization';
 import LabeledFormField from '../components/form/LabeledFormField';
 
@@ -32,7 +31,6 @@ export default function CreateProjectPage() {
     projectName: '',
   };
   const [errorMsg, setErrorMsg] = useState<ReactNode>(null);
-  const auth = useAuth();
   const {organization, orgNotFound, isFetching} = useOrganization();
   const organizationName = orgNotFound ? 'UNKNOWN' : organization?.name;
   const history = useHistory();
@@ -95,6 +93,11 @@ export default function CreateProjectPage() {
   if (isFetching) {
     return (<></>);
   }
+
+  const canCreateProjects = organization?.subscriptionStatus
+      === OrganizationSubscriptionStatusEnum.Active
+      || organization?.subscriptionStatus
+      === OrganizationSubscriptionStatusEnum.PendingCancellation;
 
   return (
     <Page width="narrow">
@@ -179,7 +182,12 @@ export default function CreateProjectPage() {
                     </div>
                     <div className="row">
                       <div className="col py-3 text-right">
-                        <Button type="submit" disabled={isSubmitting || auth.principal?.org !== null}>Create</Button>
+                        <Button
+                          type="submit"
+                          disabled={isSubmitting || !canCreateProjects}
+                        >
+                          Create
+                        </Button>
                       </div>
                     </div>
                   </Form>
