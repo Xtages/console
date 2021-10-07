@@ -8,9 +8,9 @@ import {LoadIndicatingSection, Section, SectionTitle} from 'components/layout/Se
 import Page from 'components/layout/Page';
 import {useHistory} from 'react-router-dom';
 import UsageChecker from 'components/usage/UsageChecker';
-import {GitHubIntegrationSection} from 'components/github/GitHubIntegrationSection';
 import {Col} from 'react-bootstrap';
 import {DocsLink} from 'components/link/XtagesLink';
+import {SetupWizardSection} from 'components/wizard/SetupWizard';
 
 export default function HomePage() {
   const getProjectsQueryResult = useQuery(
@@ -22,7 +22,7 @@ export default function HomePage() {
     <>
       <UsageChecker />
       <Page>
-        <GitHubIntegrationSection />
+        <SetupWizardSection />
         <Section>
           <SectionTitle
             icon={Copy}
@@ -56,7 +56,7 @@ export default function HomePage() {
                 {axiosResponse.data.length > 0 ? <ProjectTable projects={axiosResponse.data} />
                   : (
                     <div className="text-center">
-                      <h3 className="h5">Looks like don&apos;t have any Projects yet!</h3>
+                      <h3 className="h5">Looks like you don&apos;t have any Projects yet!</h3>
                       <p>
                         For documentation on how to get started take a look at our
                         {' '}

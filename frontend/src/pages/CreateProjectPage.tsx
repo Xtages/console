@@ -6,12 +6,12 @@ import Page from 'components/layout/Page';
 import {Section, SectionTitle} from 'components/layout/Section';
 import ProjectTemplateCard from 'components/project/ProjectTemplateCard';
 import {FormikHelpers} from 'formik/dist/types';
-import {useHistory, Link} from 'react-router-dom';
+import {Link, useHistory} from 'react-router-dom';
 import {Alert, Button} from 'react-bootstrap';
 import {DocsLink} from 'components/link/XtagesLink';
-import {useAuth} from 'hooks/useAuth';
 import {projectApi} from 'service/Services';
-import {CreateProjectReqTypeEnum, UsageDetail} from 'gen/api';
+import {CreateProjectReqTypeEnum, OrganizationSubscriptionStatusEnum, UsageDetail} from 'gen/api';
+import {useOrganization} from 'hooks/useOrganization';
 import LabeledFormField from '../components/form/LabeledFormField';
 
 const createProjectFormValuesSchema = z.object({
@@ -31,8 +31,8 @@ export default function CreateProjectPage() {
     projectName: '',
   };
   const [errorMsg, setErrorMsg] = useState<ReactNode>(null);
-  const auth = useAuth();
-  const organization = auth.principal?.org ?? 'UNKNOWN';
+  const {organization, orgNotFound, isFetching} = useOrganization();
+  const organizationName = orgNotFound ? 'UNKNOWN' : organization?.name;
   const history = useHistory();
 
   async function createProject(
@@ -51,12 +51,12 @@ export default function CreateProjectPage() {
       const {status, data} = response;
       if (isAxiosError) {
         if (status === 409) {
-          setErrorMsg(`A GitHub repository named "${organization}/${values.projectName}" already exists.`);
+          setErrorMsg(`A GitHub repository named "${organizationName}/${values.projectName}" already exists.`);
         } else if (status === 400 && data.error_code === 'USAGE_OVER_LIMIT') {
           const usageDetail: UsageDetail = data.details;
           setErrorMsg(
             <>
-              {organization}
+              {organizationName}
               {' '}
               has reached the limit (
               {usageDetail.limit}
@@ -89,6 +89,15 @@ export default function CreateProjectPage() {
       return error.formErrors.fieldErrors;
     }
   }
+
+  if (isFetching) {
+    return (<></>);
+  }
+
+  const canCreateProjects = organization?.subscriptionStatus
+      === OrganizationSubscriptionStatusEnum.Active
+      || organization?.subscriptionStatus
+      === OrganizationSubscriptionStatusEnum.PendingCancellation;
 
   return (
     <Page width="narrow">
@@ -145,7 +154,7 @@ export default function CreateProjectPage() {
                             label="Name"
                             addOn={(
                               <span className="text-muted font-weight-bold">
-                                {organization}
+                                {organizationName}
                                 {' '}
                                 /
                               </span>
@@ -173,7 +182,12 @@ export default function CreateProjectPage() {
                     </div>
                     <div className="row">
                       <div className="col py-3 text-right">
-                        <Button type="submit" disabled={isSubmitting || auth.principal?.org !== null}>Create</Button>
+                        <Button
+                          type="submit"
+                          disabled={isSubmitting || !canCreateProjects}
+                        >
+                          Create
+                        </Button>
                       </div>
                     </div>
                   </Form>

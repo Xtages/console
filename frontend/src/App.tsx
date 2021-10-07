@@ -29,6 +29,7 @@ const LoginPage = loadable(() => import('pages/authn/LoginPage'));
 const ProjectPage = loadable(() => import('pages/ProjectPage'));
 const ProjectSettingsPage = loadable(() => import('pages/ProjectSettingsPage'));
 const SignUpPage = loadable(() => import('pages/authn/SignUpPage'));
+const StripePostCheckoutPage = loadable(() => import('pages/StripePostCheckoutPage'));
 
 const queryClient = new QueryClient();
 const analytics = buildAnalytics();
@@ -78,6 +79,7 @@ function InstrumentedApp() {
           <UnauthdRoute path="/confirm" component={ConfirmSignUpPage} />
           <AuthdRoute path="/ghappinstalled" exact component={GitHubAppPostInstallPage} />
           <AuthdRoute path="/badorg" component={InvalidOrgPage} />
+          <AuthdRoute path="/checkoutdone" component={StripePostCheckoutPage} />
           <AuthdAndGoodStandingRoute path="/account" component={AccountPage} />
           <AuthdAndGoodStandingRoute path="/project/:name" exact component={ProjectPage} />
           <AuthdAndGoodStandingRoute

@@ -2,6 +2,7 @@ package xtages.console.pojo
 
 import xtages.console.controller.model.CodeBuildType
 import xtages.console.exception.ensure
+import xtages.console.query.enums.OrganizationSubscriptionStatus
 import xtages.console.query.tables.pojos.Organization
 
 /**
@@ -30,3 +31,10 @@ val Organization.dbUsername: String
  */
 val Organization.dbIdentifier: String
     get() = "db-$hash"
+
+/**
+ * Returns `true` iff the [Organization]'s subscription is in good standing (`ACTIVE` or `PENDING_CANCELLATION`).
+ */
+val Organization.isSubscriptionInGoodStanding: Boolean
+    get() = subscriptionStatus == OrganizationSubscriptionStatus.ACTIVE
+            || subscriptionStatus == OrganizationSubscriptionStatus.PENDING_CANCELLATION
