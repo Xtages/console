@@ -5,6 +5,7 @@ import {Organization, OrganizationSubscriptionStatusEnum} from 'gen/api';
  * @param organization
  */
 export function isOrgInGoodStanding(organization: Organization) {
-  return organization.subscriptionStatus === OrganizationSubscriptionStatusEnum.Active
+  return organization.subscriptionStatus === OrganizationSubscriptionStatusEnum.Unconfirmed
+      || organization.subscriptionStatus === OrganizationSubscriptionStatusEnum.Active
       || organization.subscriptionStatus === OrganizationSubscriptionStatusEnum.PendingCancellation;
 }

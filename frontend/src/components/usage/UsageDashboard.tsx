@@ -3,6 +3,7 @@ import {Card, CardDeck, ProgressBar} from 'react-bootstrap';
 import {Clock, Codesandbox, Database, DownloadCloud, IconProps} from 'react-feather';
 import {differenceInDays, toDate} from 'date-fns';
 import {ResourceType, UsageDetail, UsageDetailStatusEnum} from 'gen/api';
+import {Undefinable} from 'types/nullable';
 
 type ResourceMetadata = {
   icon: FC<IconProps>;
@@ -48,26 +49,44 @@ export function UsageDashboard({usageDetails}: UsageDashboardProps) {
   }, {} as Record<ResourceType, UsageDetail>);
   return (
     <CardDeck>
-      {Array.from(RESOURCE_TO_METADATA.keys()).map((resource) => (
-        <UsageCard key={resource} usageDetails={usagePerResourceType[resource]} />
-      ))}
+      {Array.from(RESOURCE_TO_METADATA.keys())
+        .map((resource) => (
+          <UsageCard
+            key={resource}
+            usageDetails={usagePerResourceType[resource]}
+            resourceType={resource}
+          />
+        ))}
     </CardDeck>
   );
 }
 
+type UsageCardProps = {
+  usageDetails: Undefinable<UsageDetail>;
+
+  resourceType: ResourceType;
+};
+
 /**
  * A {@link Card} that displays the usage of a {@link ResourceType}.
  */
-function UsageCard({usageDetails}: {usageDetails: UsageDetail}) {
-  const metaData = RESOURCE_TO_METADATA.get(usageDetails.resourceType)!;
-  const {title, icon, unit} = metaData;
+function UsageCard({
+  usageDetails,
+  resourceType,
+}: UsageCardProps) {
+  const metaData = RESOURCE_TO_METADATA.get(resourceType)!;
+  const {
+    title,
+    icon,
+    unit,
+  } = metaData;
   const iconEl = icon && React.createElement(icon);
-  const resetsInDays = usageDetails.resetTimestampInMillis
+  const resetsInDays = typeof usageDetails?.resetTimestampInMillis !== 'undefined'
     ? (differenceInDays(toDate(usageDetails.resetTimestampInMillis), Date.now()))
     : undefined;
   return (
     <Card
-      border={usageDetails.status === UsageDetailStatusEnum.OverLimit ? 'danger' : undefined}
+      border={usageDetails?.status === UsageDetailStatusEnum.OverLimit ? 'danger' : undefined}
     >
       <Card.Body>
         <Card.Title>
@@ -75,35 +94,39 @@ function UsageCard({usageDetails}: {usageDetails: UsageDetail}) {
           {' '}
           {title}
         </Card.Title>
-        <p>
-          Used:
-          {' '}
-          {usageDetails.usage}
-          {' '}
-          {unit}
-        </p>
-        <p>
-          Quota:
-          {' '}
-          {usageDetails.limit}
-          {' '}
-          {unit}
-        </p>
-        <p className="text-sm">
-          {resetsInDays ? (
-            <>
-              (Quota resets in
+        {usageDetails ? (
+          <>
+            <p>
+              Used:
               {' '}
-              {resetsInDays}
+              {usageDetails.usage}
               {' '}
-              days.)
-            </>
-          ) : <>&nbsp;</>}
-        </p>
-        <ProgressBar
-          variant={usageDetails.status === UsageDetailStatusEnum.OverLimit ? 'danger' : 'light-success'}
-          now={(usageDetails.usage * 100) / usageDetails.limit}
-        />
+              {unit}
+            </p>
+            <p>
+              Quota:
+              {' '}
+              {usageDetails.limit}
+              {' '}
+              {unit}
+            </p>
+            <p className="text-sm">
+              {resetsInDays ? (
+                <>
+                  (Quota resets in
+                  {' '}
+                  {resetsInDays}
+                  {' '}
+                  days.)
+                </>
+              ) : <>&nbsp;</>}
+            </p>
+            <ProgressBar
+              variant={usageDetails.status === UsageDetailStatusEnum.OverLimit ? 'danger' : 'light-success'}
+              now={(usageDetails.usage * 100) / usageDetails.limit}
+            />
+          </>
+        ) : <p>No associated Plan</p>}
       </Card.Body>
     </Card>
   );
