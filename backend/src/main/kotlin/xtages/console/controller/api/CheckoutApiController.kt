@@ -14,10 +14,14 @@ import xtages.console.config.ConsoleProperties
 import xtages.console.controller.api.model.CreateCheckoutSessionReq
 import xtages.console.controller.api.model.RecordCheckoutReq
 import xtages.console.dao.maybeFetchOneByCognitoUserId
+import xtages.console.exception.ExceptionCode
+import xtages.console.exception.ExceptionCode.ORG_NOT_FOUND
+import xtages.console.exception.ensure
 import xtages.console.pojo.isSubscriptionInGoodStanding
 import xtages.console.query.tables.daos.OrganizationDao
 import xtages.console.query.tables.daos.XtagesUserDao
 import xtages.console.service.AuthenticationService
+import xtages.console.service.FreeCheckoutService
 import xtages.console.service.StripeService
 import java.net.URI
 
@@ -32,6 +36,7 @@ class CheckoutApiController(
     private val stripeService: StripeService,
     private val organizationDao: OrganizationDao,
     private val consoleProperties: ConsoleProperties,
+    private val freeCheckoutService: FreeCheckoutService,
 ) :
     CheckoutApiControllerBase {
 
@@ -57,6 +62,17 @@ class CheckoutApiController(
 
     override fun recordCheckoutOutcome(recordCheckoutReq: RecordCheckoutReq): ResponseEntity<Unit> {
         stripeService.recordCheckoutOutcome(recordCheckoutReq.checkoutSessionId)
+        return ResponseEntity.ok().build()
+    }
+
+    override fun freeTierCheckout(): ResponseEntity<Unit> {
+        val organization = ensure.foundOne(
+            operation = { organizationDao.maybeFetchOneByCognitoUserId(authenticationService.currentCognitoUserId) },
+            code = ORG_NOT_FOUND,
+            lazyMessage = { "Organization not found for free tier" }
+        )
+
+        freeCheckoutService.provision(organization)
         return ResponseEntity.ok().build()
     }
 

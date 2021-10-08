@@ -1,5 +1,5 @@
 -- liquibase formatted sql
--- changeset mdellamerlina:25 logicalFilePath:xtages-console.xml
+-- changeset mdellamerlina:26 logicalFilePath:xtages-console.xml
 
 INSERT INTO recipe(project_type, version, repository, tag, build_script_path, deploy_script_path,
  promote_script_path, rollback_script_path)

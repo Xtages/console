@@ -8,6 +8,8 @@ import xtages.console.query.tables.pojos.Plan
 import xtages.console.query.tables.references.ORGANIZATION_TO_PLAN
 import xtages.console.query.tables.references.PLAN
 
+private val FREE_PLAN_NAME = PlanType.FREE.name.toLowerCase().capitalize()
+
 /**
  * Inserts a row in "organization_to_plan" table, if there's a conflict then it's a no-op.
  */
@@ -29,11 +31,15 @@ fun OrganizationToPlanDao.insertIfNotExists(organizationToPlan: OrganizationToPl
         .execute()
 }
 
+/**
+ * Given an [Organization] returns a [PlanType.FREE] if the plan is a free one,
+ * otherwise return a [PlanType.PAID]
+ */
 fun OrganizationToPlanDao.getTypeOfPlan(organization: Organization): PlanType {
     val plan = ctx().select(PLAN.NAME)
         .from(PLAN)
         .join(ORGANIZATION_TO_PLAN).on(PLAN.ID.eq(ORGANIZATION_TO_PLAN.PLAN_ID))
         .where(ORGANIZATION_TO_PLAN.ORGANIZATION_NAME.eq(organization.name))
         .fetchOneInto(Plan::class.java)
-    return if (plan?.name == "Free") PlanType.FREE else PlanType.PAID
+    return if (plan?.name == FREE_PLAN_NAME) PlanType.FREE else PlanType.PAID
 }
