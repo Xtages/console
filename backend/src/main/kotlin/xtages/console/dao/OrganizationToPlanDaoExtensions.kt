@@ -1,5 +1,6 @@
 package xtages.console.dao
 
+import org.springframework.cache.annotation.Cacheable
 import xtages.console.controller.model.PlanType
 import xtages.console.query.tables.daos.OrganizationToPlanDao
 import xtages.console.query.tables.pojos.Organization
@@ -32,14 +33,15 @@ fun OrganizationToPlanDao.insertIfNotExists(organizationToPlan: OrganizationToPl
 }
 
 /**
- * Given an [Organization] returns a [PlanType.FREE] if the plan is a free one,
- * otherwise return a [PlanType.PAID]
+ * Returns the latest [Plan] that an [Organization] has
  */
-fun OrganizationToPlanDao.getTypeOfPlan(organization: Organization): PlanType {
-    val plan = ctx().select(PLAN.NAME)
+@Cacheable
+fun OrganizationToPlanDao.fetchLatestPlan(organization: Organization): Plan? {
+    return ctx().select(PLAN.NAME)
         .from(PLAN)
         .join(ORGANIZATION_TO_PLAN).on(PLAN.ID.eq(ORGANIZATION_TO_PLAN.PLAN_ID))
         .where(ORGANIZATION_TO_PLAN.ORGANIZATION_NAME.eq(organization.name))
+        .orderBy(ORGANIZATION_TO_PLAN.START_TIME.desc())
+        .limit(1)
         .fetchOneInto(Plan::class.java)
-    return if (plan?.name == FREE_PLAN_NAME) PlanType.FREE else PlanType.PAID
 }

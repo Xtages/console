@@ -23,3 +23,10 @@ VALUES
      'db.t4g.micro',
      5,
      'N/A');
+
+-- changeset mdellamerlina:27 logicalFilePath:xtages-console.xml
+ALTER TABLE plan
+    ADD column paid BOOLEAN NOT NULL DEFAULT TRUE;
+
+UPDATE plan SET paid = TRUE WHERE plan.name != 'Free';
+UPDATE plan SET paid = FALSE WHERE plan.name = 'Free';
