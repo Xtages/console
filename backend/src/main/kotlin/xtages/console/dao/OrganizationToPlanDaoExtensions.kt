@@ -1,15 +1,12 @@
 package xtages.console.dao
 
 import org.springframework.cache.annotation.Cacheable
-import xtages.console.controller.model.PlanType
 import xtages.console.query.tables.daos.OrganizationToPlanDao
 import xtages.console.query.tables.pojos.Organization
 import xtages.console.query.tables.pojos.OrganizationToPlan
 import xtages.console.query.tables.pojos.Plan
 import xtages.console.query.tables.references.ORGANIZATION_TO_PLAN
 import xtages.console.query.tables.references.PLAN
-
-private val FREE_PLAN_NAME = PlanType.FREE.name.toLowerCase().capitalize()
 
 /**
  * Inserts a row in "organization_to_plan" table, if there's a conflict then it's a no-op.
@@ -37,7 +34,7 @@ fun OrganizationToPlanDao.insertIfNotExists(organizationToPlan: OrganizationToPl
  */
 @Cacheable
 fun OrganizationToPlanDao.fetchLatestPlan(organization: Organization): Plan? {
-    return ctx().select(PLAN.NAME)
+    return ctx().select(PLAN.asterisk())
         .from(PLAN)
         .join(ORGANIZATION_TO_PLAN).on(PLAN.ID.eq(ORGANIZATION_TO_PLAN.PLAN_ID))
         .where(ORGANIZATION_TO_PLAN.ORGANIZATION_NAME.eq(organization.name))

@@ -1,7 +1,5 @@
 package xtages.console.service
 
-import com.stripe.model.Subscription
-import xtages.console.config.ConsoleProperties
 import xtages.console.controller.model.PlanType
 import xtages.console.dao.insertIfNotExists
 import xtages.console.query.enums.OrganizationSubscriptionStatus
