@@ -315,7 +315,7 @@ class CodeBuildService(
 
         val codeBuildClient = if (fromGitHubApp) codeBuildAsyncClient else userSessionCodeBuildClient()
 
-        val plan = organizationToPlanDao.fetchLatestPlan(organization)
+        val plan = organizationToPlanDao.fetchLatestPlan(organization)!!
 
         val scriptPath = getScriptPath(recipe, previousGitHubProjectTag, environment)
         val isDeploy = environment == "production"
@@ -350,7 +350,7 @@ class CodeBuildService(
                         buildEnvVar("XTAGES_NODE_VER", recipe.version),
                         buildEnvVar("XTAGES_PREVIOUS_GH_PROJECT_TAG", previousGitHubProjectTag),
                         buildEnvVar("XTAGES_BUILD_ID", buildRecord.id.toString()),
-                        buildEnvVar("XTAGES_PLAN_PAID", plan?.paid.toString()),
+                        buildEnvVar("XTAGES_PLAN_PAID", plan.paid.toString()),
                         conditionalEnvVar(isDeploy, "XTAGES_HOST_HEADER", project.associatedDomain),
                         conditionalEnvVar(isDeploy, "XTAGES_CUSTOMER_DOMAIN", project.associatedDomain),
                     )

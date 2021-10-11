@@ -71,14 +71,10 @@ class CheckoutApiController(
     override fun freeTierCheckout(): ResponseEntity<Unit> {
         val organization =  organizationDao.fetchOneByCognitoUserId(authenticationService.currentCognitoUserId)
 
-        val plan = ensure.notNull(
-            organizationToPlanDao.fetchLatestPlan(organization),
-            valueDesc = "plan"
-        )
-
+        val plan = organizationToPlanDao.fetchLatestPlan(organization)
         // checking that the organization was not part of a paid plan
         // this is mostly to not break infrastructure at this point as migrations might need to happen.
-        if (!plan.paid!!) {
+        if (plan == null) {
             freeCheckoutService.provision(organization)
             return ResponseEntity.ok().build()
         }
