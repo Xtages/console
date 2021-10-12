@@ -4,12 +4,10 @@ import mu.KotlinLogging
 import org.apache.commons.lang3.RandomStringUtils
 import org.springframework.stereotype.Service
 import software.amazon.awssdk.services.rds.RdsAsyncClient
-import software.amazon.awssdk.services.rds.model.CreateDbInstanceRequest
-import software.amazon.awssdk.services.rds.model.DbInstanceNotFoundException
-import software.amazon.awssdk.services.rds.model.DescribeDbInstancesRequest
-import software.amazon.awssdk.services.rds.model.RdsException
+import software.amazon.awssdk.services.rds.model.*
 import software.amazon.awssdk.services.ssm.SsmAsyncClient
 import software.amazon.awssdk.services.ssm.model.*
+import software.amazon.awssdk.services.ssm.model.AddTagsToResourceRequest
 import xtages.console.config.ConsoleProperties
 import xtages.console.dao.fetchLatestByOrganizationName
 import xtages.console.pojo.dbIdentifier
@@ -36,20 +34,67 @@ class RdsService(
     private val organizationDao: OrganizationDao,
 ) {
     /**
-     * Async operation to not slow down the Organization setup
+     * Async operation that provision an Aurora Serverless cluster asynchronously
+     * By default the cluster will have a min of 2 ACUs and a max of 4 ACUs
+     * That's similar to 2 vCPU and 2 GB of RAM and 4 vCPU and 4 GB of RAM
+     * Also, by default the auto pause will be enable
      */
-    fun provision(organization: Organization) {
-        val plan = planDao.fetchLatestByOrganizationName(organization.name!!)?.plan
+    fun provisionServerless(organization: Organization) {
+        val plan = planDao.fetchLatestByOrganizationName(organization.name!!)?.plan!!
         val password = createAndStorePassInSsm(organization)
+        val cluster = CreateDbClusterRequest.builder()
+            .dbClusterIdentifier(organization.dbIdentifier)
+            .databaseName(organization.dbName)
+            .masterUserPassword(password)
+            .engine(consoleProperties.aws.rds.postgres.serverless.engine)
+            .engineVersion(consoleProperties.aws.rds.postgres.serverless.engineVersion)
+            .storageEncrypted(consoleProperties.aws.rds.storageEncrypted)
+            .kmsKeyId(consoleProperties.aws.rds.kmsKeyId)
+            .masterUsername(organization.dbUsername)
+            .vpcSecurityGroupIds(consoleProperties.aws.rds.dbSecurityGroup)
+            .backupRetentionPeriod(consoleProperties.aws.rds.backupRetentionPeriod)
+            .engineMode(consoleProperties.aws.rds.postgres.serverless.engineMode)
+            .dbSubnetGroupName(consoleProperties.aws.rds.dbSubnetGroupName)
+            .scalingConfiguration(
+                ScalingConfiguration.builder()
+                    .minCapacity(consoleProperties.aws.rds.postgres.serverless.scaling.minCapacity)
+                    .maxCapacity(consoleProperties.aws.rds.postgres.serverless.scaling.maxCapacity)
+                    .autoPause(consoleProperties.aws.rds.postgres.serverless.scaling.autoPauseEnable)
+                    .secondsUntilAutoPause(consoleProperties.aws.rds.postgres.serverless.scaling.secondsUntilAutoPause)
+                    .build()
+            )
+            .tags(
+                buildRdsTag("organization", organization.name!!),
+                buildRdsTag("organization-hash", organization.hash!!)
+            )
+            .build()
+        try {
+            val result = rdsAsyncClient.createDBCluster(cluster).get()
+            organization.rdsArn = result.dbCluster().dbClusterArn()
+            organizationDao.merge(organization)
+        } catch (e: RdsException) {
+            logger.error {
+                "There was an error while provisioning the DB for organization: ${organization.name}. Plan id used: ${plan.id}"
+            }
+            logger.error(e) {}
+            throw e;
+        }
+    }
 
+    /**
+     * Provisions a classic RDS instance with Postgres
+     */
+    fun provisionDbInstance(organization: Organization) {
+        val plan = planDao.fetchLatestByOrganizationName(organization.name!!)?.plan!!
+        val password = createAndStorePassInSsm(organization)
         val instanceRequest = CreateDbInstanceRequest.builder()
             .dbInstanceIdentifier(organization.dbIdentifier)
             .masterUserPassword(password)
             .allocatedStorage(plan?.dbStorageGbs!!.toInt())
             .dbName(organization.dbName)
-            .engine(consoleProperties.aws.rds.engine)
+            .engine(consoleProperties.aws.rds.postgres.instance.engine)
             .dbInstanceClass(plan.dbInstance)
-            .engineVersion(consoleProperties.aws.rds.engineVersion)
+            .engineVersion(consoleProperties.aws.rds.postgres.instance.engineVersion)
             .storageType(consoleProperties.aws.rds.storageType)
             .masterUsername(organization.dbUsername)
             .vpcSecurityGroupIds(consoleProperties.aws.rds.dbSecurityGroup)
@@ -89,19 +134,38 @@ class RdsService(
         return rdsResponse.dbInstances().firstOrNull()?.endpoint()?.address()
     }
 
-    fun dbInstanceExists(organization: Organization): Boolean {
-        try {
-            rdsAsyncClient.describeDBInstances(
-                DescribeDbInstancesRequest
-                    .builder()
-                    .dbInstanceIdentifier(organization.dbIdentifier)
-                    .build()
-            ).get()
-        } catch (e: ExecutionException) {
-            if (e.cause is DbInstanceNotFoundException) {
-                return false
-            } else {
-                throw e
+    fun dbInstanceExists(organization: Organization, paid: Boolean): Boolean {
+        if (paid) {
+            // serverless
+            try {
+                rdsAsyncClient.describeDBClusters(
+                    DescribeDbClustersRequest
+                        .builder()
+                        .dbClusterIdentifier(organization.dbIdentifier)
+                        .build()
+                ).get()
+            } catch (e: ExecutionException) {
+                if (e.cause is DbClusterNotFoundException) {
+                    return false
+                } else {
+                    throw e
+                }
+            }
+        } else {
+            // db instance
+            try {
+                rdsAsyncClient.describeDBInstances(
+                    DescribeDbInstancesRequest
+                        .builder()
+                        .dbInstanceIdentifier(organization.dbIdentifier)
+                        .build()
+                ).get()
+            } catch (e: ExecutionException) {
+                if (e.cause is DbInstanceNotFoundException) {
+                    return false
+                } else {
+                    throw e
+                }
             }
         }
         return true
