@@ -13,10 +13,11 @@ import {SelectedPlanContext, useSelectedPlan} from 'hooks/useSelectedPlan';
 import {Nullable} from 'types/nullable';
 import {useTracking} from 'hooks/useTracking';
 import redirectToStripeCheckoutSession from 'service/CheckoutService';
+import {checkoutApi} from 'service/Services';
+import {useQueryClient} from 'react-query';
 import styles from './PlanSelector.module.scss';
 
 type SkuDetails = {
-  sku: string;
   priceId: string;
   price: string;
   billingInfo?: string | null;
@@ -28,29 +29,24 @@ type Plan = Record<BillingCycle, SkuDetails>;
 type Plans = Record<PlanType, Plan>;
 
 let plans: Plans = {
-  trial: {
+  free: {
     monthly: {
-      priceId: 'price_1JF4NqIfxICi4AQgRTjmOWNf',
+      priceId: '',
       price: '0',
-      sku: 'trial-monthly',
-      callToAction: 'Start trial',
-      title: 'Trial',
-      subtitle: 'upgraded to Starter after 14 days',
+      callToAction: 'Get started',
+      title: 'Free',
     },
     yearly: {
-      priceId: 'price_1JF4NxIfxICi4AQgoeBWQ46u',
+      priceId: '',
       price: '0',
-      sku: 'trial-yearly',
-      callToAction: 'Start trial',
-      title: 'Trial',
-      subtitle: 'upgraded to Starter after 14 days',
+      callToAction: 'Get started',
+      title: 'Free',
     },
   },
   starter: {
     monthly: {
       priceId: 'price_1JF4NqIfxICi4AQgRTjmOWNf',
       price: '229',
-      sku: 'starter-monthly',
       billingInfo: 'per month',
       callToAction: 'Purchase Starter',
       title: 'Starter',
@@ -58,7 +54,6 @@ let plans: Plans = {
     yearly: {
       priceId: 'price_1JF4NxIfxICi4AQgoeBWQ46u',
       price: '199',
-      sku: 'starter-yearly',
       billingInfo: 'per month, paid yearly',
       callToAction: 'Purchase Starter',
       title: 'Starter',
@@ -68,7 +63,6 @@ let plans: Plans = {
     monthly: {
       priceId: 'price_1JF4MZIfxICi4AQgU4RtfIBc',
       price: '585',
-      sku: 'pro-monthly',
       billingInfo: 'per month',
       callToAction: 'Purchase Pro',
       title: 'Professional',
@@ -76,7 +70,6 @@ let plans: Plans = {
     yearly: {
       priceId: 'price_1JF4NiIfxICi4AQg9EsBpsl5',
       price: '509',
-      sku: 'pro-yearly',
       billingInfo: 'per month, paid yearly',
       callToAction: 'Purchase Pro',
       title: 'Professional',
@@ -86,29 +79,24 @@ let plans: Plans = {
 
 if (process.env.NODE_ENV !== 'production') {
   plans = {
-    trial: {
+    free: {
       monthly: {
-        priceId: 'price_1J7pjXIfxICi4AQgDarGp3Xp',
+        priceId: '',
         price: '0',
-        sku: 'trial-monthly',
-        callToAction: 'Start trial',
-        title: 'Trial',
-        subtitle: 'upgraded to Starter after 14 days',
+        callToAction: 'Get started',
+        title: 'Free',
       },
       yearly: {
-        priceId: 'price_1J7pfYIfxICi4AQgGUYHG2lM',
+        priceId: '',
         price: '0',
-        sku: 'trial-yearly',
-        callToAction: 'Start trial',
-        title: 'Trial',
-        subtitle: 'upgraded to Starter after 14 days',
+        callToAction: 'Get started',
+        title: 'Free',
       },
     },
     starter: {
       monthly: {
         priceId: 'price_1J7pjXIfxICi4AQgDarGp3Xp',
         price: '229',
-        sku: 'starter-monthly',
         billingInfo: 'per month',
         callToAction: 'Purchase Starter',
         title: 'Starter',
@@ -116,7 +104,6 @@ if (process.env.NODE_ENV !== 'production') {
       yearly: {
         priceId: 'price_1J7pfYIfxICi4AQgGUYHG2lM',
         price: '199',
-        sku: 'starter-yearly',
         billingInfo: 'per month, paid yearly',
         callToAction: 'Purchase Starter',
         title: 'Starter',
@@ -126,7 +113,6 @@ if (process.env.NODE_ENV !== 'production') {
       monthly: {
         priceId: 'price_1J7plxIfxICi4AQgd7XO8FA2',
         price: '585',
-        sku: 'pro-monthly',
         billingInfo: 'per month',
         callToAction: 'Purchase Pro',
         title: 'Professional',
@@ -134,7 +120,6 @@ if (process.env.NODE_ENV !== 'production') {
       yearly: {
         priceId: 'price_1J7pkVIfxICi4AQgee83lecL',
         price: '509',
-        sku: 'pro-yearly',
         billingInfo: 'per month, paid yearly',
         callToAction: 'Purchase Pro',
         title: 'Professional',
@@ -151,6 +136,7 @@ export function PlanSelector({purchaseEnabled = true}: PlanSelectorProps) {
   const [billingCycle, setBillingCycle] = useState<BillingCycle>('yearly');
   const [planType, setPlanType] = useState<PlanType>('pro');
   const {trackComponentEvent} = useTracking();
+  const queryClient = useQueryClient();
 
   function recordEnterprisePlanClick(e: MouseEvent<HTMLAnchorElement>) {
     if (purchaseEnabled) {
@@ -158,6 +144,11 @@ export function PlanSelector({purchaseEnabled = true}: PlanSelectorProps) {
     } else {
       e.preventDefault();
     }
+  }
+
+  async function freePlanClickHandler() {
+    await checkoutApi.freeTierCheckout();
+    await queryClient.invalidateQueries({queryKey: 'org'});
   }
 
   return (
@@ -172,15 +163,15 @@ export function PlanSelector({purchaseEnabled = true}: PlanSelectorProps) {
         <BillingCycleToggle size="sm" />
         <Row className="mb-3 mt-4 shadow-none">
           <Col lg={3}>
-            <PlanCard planType="trial" purchaseEnabled={purchaseEnabled}>
+            <PlanCard
+              planType="free"
+              purchaseEnabled={purchaseEnabled}
+              onClick={freePlanClickHandler}
+            >
               <ul className="list-unstyled text-sm mb-4">
-                <li>Deploy 1 app</li>
+                <li>Deploy 1 app (1 environment)</li>
                 <li>100 CI/CD credits (Linux)</li>
                 <li>Deploys to the Xtages Cloud</li>
-                <abbr title="Out-of-the-box">OOTB</abbr>
-                {' '}
-                metrics dashboard
-                <li>Log collection</li>
               </ul>
             </PlanCard>
           </Col>
@@ -251,6 +242,7 @@ type PlanCardProps = {
   highlighted?: boolean;
   purchaseEnabled?: boolean;
   children: ReactNode | ReactNode[];
+  onClick?: () => void;
 };
 
 function PlanCard({
@@ -258,6 +250,7 @@ function PlanCard({
   highlighted = false,
   purchaseEnabled = true,
   children,
+  onClick,
 }: PlanCardProps) {
   const {
     billingCycle,
@@ -275,7 +268,13 @@ function PlanCard({
           </p>
         )}
         {children}
-        {purchaseEnabled && <PurchaseButton planType={planType} highlighted={highlighted} />}
+        {purchaseEnabled && (
+        <PurchaseButton
+          planType={planType}
+          highlighted={highlighted}
+          onClick={onClick}
+        />
+        )}
       </Card.Body>
     </Card>
   );
@@ -333,11 +332,13 @@ function BillingCycleToggle({size}: BillingCycleToggleProps) {
 type PurchaseButtonProps = {
   planType: PlanType;
   highlighted?: boolean;
+  onClick?: () => void;
 };
 
 function PurchaseButton({
   planType,
   highlighted = false,
+  onClick,
 }: PurchaseButtonProps) {
   const {
     billingCycle,
@@ -357,9 +358,13 @@ function PurchaseButton({
       billingCycle,
       priceId,
     });
-    await redirectToStripeCheckoutSession({
-      priceIds: [priceId],
-    });
+    if (onClick) {
+      onClick();
+    } else {
+      await redirectToStripeCheckoutSession({
+        priceIds: [priceId],
+      });
+    }
     setSubmitting(false);
   }
 
