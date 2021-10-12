@@ -1,5 +1,6 @@
 package xtages.console.service
 
+import org.springframework.stereotype.Service
 import xtages.console.controller.model.PlanType
 import xtages.console.dao.insertIfNotExists
 import xtages.console.query.enums.OrganizationSubscriptionStatus
@@ -13,6 +14,7 @@ import java.time.LocalDateTime
 
 private val FREE_PLAN_NAME = PlanType.FREE.name.toLowerCase().capitalize()
 
+@Service
 class FreeCheckoutService(
     private val organizationDao: OrganizationDao,
     private val planDao: PlanDao,
@@ -22,7 +24,7 @@ class FreeCheckoutService(
 
     fun provision(organization: Organization) {
         organization.subscriptionStatus = OrganizationSubscriptionStatus.ACTIVE
-        organizationDao.update()
+        organizationDao.update(organization)
 
         val plan = planDao.fetchByName(FREE_PLAN_NAME).single()
 

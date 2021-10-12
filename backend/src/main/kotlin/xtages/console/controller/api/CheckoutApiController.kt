@@ -3,7 +3,6 @@ package xtages.console.controller.api
 import com.stripe.exception.SignatureVerificationException
 import com.stripe.net.Webhook
 import mu.KotlinLogging
-import org.springframework.http.HttpStatus
 import org.springframework.http.HttpStatus.CREATED
 import org.springframework.http.HttpStatus.FORBIDDEN
 import org.springframework.http.ResponseEntity
@@ -17,7 +16,6 @@ import xtages.console.controller.api.model.RecordCheckoutReq
 import xtages.console.dao.fetchLatestPlan
 import xtages.console.dao.fetchOneByCognitoUserId
 import xtages.console.dao.maybeFetchOneByCognitoUserId
-import xtages.console.exception.ensure
 import xtages.console.pojo.isSubscriptionInGoodStanding
 import xtages.console.query.tables.daos.OrganizationDao
 import xtages.console.query.tables.daos.OrganizationToPlanDao
@@ -60,7 +58,7 @@ class CheckoutApiController(
                 return ResponseEntity.ok(stripeService.createCustomerPortalSession())
             }
         }
-        return ResponseEntity(HttpStatus.FORBIDDEN)
+        return ResponseEntity(FORBIDDEN)
     }
 
     override fun recordCheckoutOutcome(recordCheckoutReq: RecordCheckoutReq): ResponseEntity<Unit> {
