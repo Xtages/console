@@ -54,10 +54,12 @@ Refs #133 """
             ConsoleProperties.CloudWatch(""),
 
             ConsoleProperties.Rds(
-                engine = ConsoleProperties.RdsEngine("postgres","aurora-postgresql","serverless"),
-                engineVersion = ConsoleProperties.RdsEngineVersion("13.2","10.14"),
+                postgres = ConsoleProperties.Postgres(
+                    ConsoleProperties.AuroraServerless("","","",
+                    ConsoleProperties.Scaling(1,1,10,true)),
+                    ConsoleProperties.DbInstance("","")
+                ),
                 "", "", 10, false, false, "", 10, false, "", "",
-                scaling = ConsoleProperties.ServerlessScaling(2,4,300,true),
             )
         ),
         customerDeploymentDomain = ""
