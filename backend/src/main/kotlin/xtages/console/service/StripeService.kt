@@ -238,7 +238,7 @@ class StripeService(
                 startTime = LocalDateTime.now()
             )
         )
-        if (!rdsService.dbInstanceExists(organization = organization)) {
+        if (!rdsService.dbInstanceExists(organization = organization, paid = plan.paid!!)) {
             rdsService.provisionServerless(organization = organization)
         }
     }

@@ -134,19 +134,38 @@ class RdsService(
         return rdsResponse.dbInstances().firstOrNull()?.endpoint()?.address()
     }
 
-    fun dbInstanceExists(organization: Organization): Boolean {
-        try {
-            rdsAsyncClient.describeDBClusters(
-                DescribeDbClustersRequest
-                    .builder()
-                    .dbClusterIdentifier(organization.dbIdentifier)
-                    .build()
-            ).get()
-        } catch (e: ExecutionException) {
-            if (e.cause is DbClusterNotFoundException) {
-                return false
-            } else {
-                throw e
+    fun dbInstanceExists(organization: Organization, paid: Boolean): Boolean {
+        if (paid) {
+            // serverless
+            try {
+                rdsAsyncClient.describeDBClusters(
+                    DescribeDbClustersRequest
+                        .builder()
+                        .dbClusterIdentifier(organization.dbIdentifier)
+                        .build()
+                ).get()
+            } catch (e: ExecutionException) {
+                if (e.cause is DbClusterNotFoundException) {
+                    return false
+                } else {
+                    throw e
+                }
+            }
+        } else {
+            // db instance
+            try {
+                rdsAsyncClient.describeDBInstances(
+                    DescribeDbInstancesRequest
+                        .builder()
+                        .dbInstanceIdentifier(organization.dbIdentifier)
+                        .build()
+                ).get()
+            } catch (e: ExecutionException) {
+                if (e.cause is DbInstanceNotFoundException) {
+                    return false
+                } else {
+                    throw e
+                }
             }
         }
         return true

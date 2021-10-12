@@ -35,7 +35,7 @@ class FreeCheckoutService(
                 startTime = LocalDateTime.now()
             )
         )
-        if (!rdsService.dbInstanceExists(organization = organization)) {
+        if (!rdsService.dbInstanceExists(organization = organization, paid = false)) {
             rdsService.provisionDbInstance(organization = organization)
         }
     }
