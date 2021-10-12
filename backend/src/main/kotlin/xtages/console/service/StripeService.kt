@@ -24,7 +24,6 @@ import xtages.console.query.tables.daos.OrganizationToPlanDao
 import xtages.console.query.tables.daos.PlanDao
 import xtages.console.query.tables.pojos.Organization
 import xtages.console.query.tables.pojos.OrganizationToPlan
-import xtages.console.service.aws.RdsService
 import java.net.URI
 import java.time.LocalDateTime
 import com.stripe.model.billingportal.Session as PortalSession
@@ -44,7 +43,6 @@ class StripeService(
     private val planDao: PlanDao,
     private val organizationToPlanDao: OrganizationToPlanDao,
     private val authenticationService: AuthenticationService,
-    private val rdsService: RdsService,
 ) {
     init {
         Stripe.apiKey = consoleProperties.stripe.apiKey
@@ -238,9 +236,7 @@ class StripeService(
                 startTime = LocalDateTime.now()
             )
         )
-        if (!rdsService.dbInstanceExists(organization = organization, paid = plan.paid!!)) {
-            rdsService.provisionServerless(organization = organization)
-        }
+
     }
 
     fun recordCheckoutOutcome(checkoutSessionId: String) {
