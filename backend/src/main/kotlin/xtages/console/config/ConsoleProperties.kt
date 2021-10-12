@@ -52,8 +52,7 @@ data class ConsoleProperties(
     )
 
     data class Rds(
-        val engine: String,
-        val engineVersion: String,
+        val postgres: Postgres,
         val storageType: String,
         val dbSecurityGroup: String,
         val backupRetentionPeriod: Int,
@@ -66,4 +65,27 @@ data class ConsoleProperties(
         val dbSubnetGroupName: String,
     )
 
+    data class Postgres(
+        val serverless: AuroraServerless,
+        val instance: DbInstance,
+    )
+
+    data class AuroraServerless(
+        val engine: String,
+        val engineVersion: String,
+        val engineMode: String,
+        val scaling: Scaling,
+    )
+
+    data class DbInstance(
+        val engineVersion: String,
+        val engine: String
+    )
+
+    data class Scaling(
+        val minCapacity: Int,
+        val maxCapacity: Int,
+        val secondsUntilAutoPause: Int,
+        val autoPauseEnable: Boolean,
+    )
 }
