@@ -36,7 +36,7 @@ class FreeCheckoutService(
             )
         )
         if (!rdsService.dbInstanceExists(organization = organization)) {
-            rdsService.provision(organization = organization)
+            rdsService.provisionDbInstance(organization = organization)
         }
     }
 }

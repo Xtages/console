@@ -52,8 +52,12 @@ Refs #133 """
             ConsoleProperties.Cognito("", "", ""),
             ConsoleProperties.CodeBuild("", "", "", ""),
             ConsoleProperties.CloudWatch(""),
+
             ConsoleProperties.Rds(
-                "", "", "", "", 10, false, false, "", 10, false, "", ""
+                engine = ConsoleProperties.RdsEngine("postgres","aurora-postgresql","serverless"),
+                engineVersion = ConsoleProperties.RdsEngineVersion("13.2","10.14"),
+                "", "", 10, false, false, "", 10, false, "", "",
+                scaling = ConsoleProperties.ServerlessScaling(2,4,300,true),
             )
         ),
         customerDeploymentDomain = ""

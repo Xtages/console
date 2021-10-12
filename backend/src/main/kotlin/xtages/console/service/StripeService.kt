@@ -239,7 +239,7 @@ class StripeService(
             )
         )
         if (!rdsService.dbInstanceExists(organization = organization)) {
-            rdsService.provision(organization = organization)
+            rdsService.provisionServerless(organization = organization)
         }
     }
 
