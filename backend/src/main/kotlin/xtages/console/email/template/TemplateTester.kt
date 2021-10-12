@@ -52,8 +52,14 @@ Refs #133 """
             ConsoleProperties.Cognito("", "", ""),
             ConsoleProperties.CodeBuild("", "", "", ""),
             ConsoleProperties.CloudWatch(""),
+
             ConsoleProperties.Rds(
-                "", "", "", "", 10, false, false, "", 10, false, "", ""
+                postgres = ConsoleProperties.Postgres(
+                    ConsoleProperties.AuroraServerless("","","",
+                    ConsoleProperties.Scaling(1,1,10,true)),
+                    ConsoleProperties.DbInstance("","")
+                ),
+                "", "", 10, false, false, "", 10, false, "", "",
             )
         ),
         customerDeploymentDomain = ""
