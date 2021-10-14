@@ -16,6 +16,7 @@ import xtages.console.pojo.dbUsername
 import xtages.console.query.tables.daos.OrganizationDao
 import xtages.console.query.tables.daos.PlanDao
 import xtages.console.query.tables.pojos.Organization
+import xtages.console.query.tables.pojos.Plan
 import java.util.concurrent.ExecutionException
 import software.amazon.awssdk.services.rds.model.Tag as TagRds
 
@@ -33,13 +34,22 @@ class RdsService(
     private val planDao: PlanDao,
     private val organizationDao: OrganizationDao,
 ) {
+
+    fun provisionDb(organization: Organization, plan: Plan) {
+        if(plan.paid!!) {
+            provisionServerless(organization)
+        } else {
+            provisionDbInstance(organization)
+        }
+    }
+    
     /**
      * Async operation that provision an Aurora Serverless cluster asynchronously
      * By default the cluster will have a min of 2 ACUs and a max of 4 ACUs
      * That's similar to 2 vCPU and 2 GB of RAM and 4 vCPU and 4 GB of RAM
      * Also, by default the auto pause will be enable
      */
-    fun provisionServerless(organization: Organization) {
+    private fun provisionServerless(organization: Organization) {
         val plan = planDao.fetchLatestByOrganizationName(organization.name!!)?.plan!!
         val password = createAndStorePassInSsm(organization)
         val cluster = CreateDbClusterRequest.builder()
@@ -84,7 +94,7 @@ class RdsService(
     /**
      * Provisions a classic RDS instance with Postgres
      */
-    fun provisionDbInstance(organization: Organization) {
+    private fun provisionDbInstance(organization: Organization) {
         val plan = planDao.fetchLatestByOrganizationName(organization.name!!)?.plan!!
         val password = createAndStorePassInSsm(organization)
         val instanceRequest = CreateDbInstanceRequest.builder()

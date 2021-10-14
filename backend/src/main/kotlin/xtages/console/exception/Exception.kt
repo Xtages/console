@@ -3,6 +3,7 @@ package xtages.console.exception
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.ResponseStatus
 import xtages.console.controller.model.usageDetailPojoToUsageDetail
+import xtages.console.exception.ExceptionCode.*
 import xtages.console.query.enums.ResourceType
 import xtages.console.service.UsageOverLimit
 import xtages.console.service.UsageOverLimitBecauseOfSubscriptionStatus
@@ -33,7 +34,7 @@ enum class ExceptionCode {
     INVALID_GITHUB_APP_INSTALL_NOT_ALL_REPOS_SELECTED,
     ORG_ALREADY_EXISTS,
     USER_NEEDS_TO_LINK_ORG_FORBIDDEN,
-    ORGANIZATION_TO_PLAN_NOT_FOUND,
+    USER_NEEDS_TO_HAVE_PLAN_ASSOCIATED,
 }
 
 /**
@@ -86,12 +87,16 @@ class UsageOverLimitException(usageDetails: UsageOverLimit) :
 
 @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
 class CognitoException(innerMessage: String) :
-    XtagesConsoleException(code = ExceptionCode.COGNITO_ERROR, message = innerMessage)
+    XtagesConsoleException(code = COGNITO_ERROR, message = innerMessage)
 
 @ResponseStatus(HttpStatus.BAD_REQUEST)
 class UnknownProjectDeploymentStatus(innerMessage: String) :
-    XtagesConsoleException(code = ExceptionCode.PROJECT_DEPLOYMENT_NOT_FOUND, message = innerMessage)
+    XtagesConsoleException(code = PROJECT_DEPLOYMENT_NOT_FOUND, message = innerMessage)
 
 @ResponseStatus(HttpStatus.FORBIDDEN)
 class UserNeedsToLinkOrganizationException(innerMessage: String) :
-    XtagesConsoleException(code = ExceptionCode.USER_NEEDS_TO_LINK_ORG_FORBIDDEN, message = innerMessage)
+    XtagesConsoleException(code = USER_NEEDS_TO_LINK_ORG_FORBIDDEN, message = innerMessage)
+
+@ResponseStatus(HttpStatus.FORBIDDEN)
+class UserNeedsToHavePlanException(innerMessage: String) :
+    XtagesConsoleException(code = USER_NEEDS_TO_HAVE_PLAN_ASSOCIATED, message = innerMessage)
