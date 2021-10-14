@@ -17,9 +17,10 @@ class ResourcesApiController(
     private val organizationDao: OrganizationDao,
     private val authenticationService: AuthenticationService,
     private val organizationToPlanDao: OrganizationToPlanDao,
-): ResourcesApiControllerBase {
+) : ResourcesApiControllerBase {
 
-    override fun provisionResource( @PathVariable("resource") resource: Resource
+    override fun provisionResource(
+        @PathVariable("resource") resource: Resource
     ): ResponseEntity<Unit> {
         val organization = organizationDao.maybeFetchOneByCognitoUserId(authenticationService.currentCognitoUserId)
         organization ?: run {
@@ -28,10 +29,12 @@ class ResourcesApiController(
                     "User needs to have a plan associated to provision a DB"
                 )
             when (resource) {
-                Resource.DB -> {rdsService.provisionDb(organization, plan)}
+                Resource.DB -> {
+                    rdsService.provisionDb(organization, plan)
+                }
             }
             return ResponseEntity.ok().build()
         }
-     return ResponseEntity(FORBIDDEN)
+        return ResponseEntity(FORBIDDEN)
     }
 }

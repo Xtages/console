@@ -36,11 +36,13 @@ class RdsService(
 ) {
 
     fun provisionDb(organization: Organization, plan: Plan) {
-        when (plan.paid!!) {
-            true -> provisionServerless(organization)
-            false -> provisionDbInstance(organization)
+        if(plan.paid!!) {
+            provisionServerless(organization)
+        } else {
+            provisionDbInstance(organization)
         }
     }
+    
     /**
      * Async operation that provision an Aurora Serverless cluster asynchronously
      * By default the cluster will have a min of 2 ACUs and a max of 4 ACUs
