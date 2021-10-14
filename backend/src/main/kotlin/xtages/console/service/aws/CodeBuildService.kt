@@ -22,9 +22,9 @@ import software.amazon.awssdk.services.codebuild.model.*
 import xtages.console.config.ConsoleProperties
 import xtages.console.controller.api.model.Logs
 import xtages.console.controller.model.*
+import xtages.console.dao.fetchLatestPlan
 import xtages.console.dao.findFromBuilds
 import xtages.console.dao.findPreviousCIBuild
-import xtages.console.dao.fetchLatestPlan
 import xtages.console.exception.ExceptionCode
 import xtages.console.exception.ExceptionCode.INVALID_ENVIRONMENT
 import xtages.console.exception.ensure
@@ -506,6 +506,11 @@ class CodeBuildService(
                             .streamName(logsStreamName)
                             .build()
                     )
+                    .build()
+            )
+            .vpcConfig(
+                VpcConfig.builder()
+                    .subnets(consoleProperties.aws.vpc.privateSubnets)
                     .build()
             )
             .tags(

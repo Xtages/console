@@ -37,7 +37,7 @@ data class ConsoleProperties(
         val ecrRepository: String,
         val buildSpecsS3BucketArn: String,
         val buildEventsSnsTopicArn: String,
-        val buildEventsSqsQueueArn: String
+        val buildEventsSqsQueueArn: String,
     )
 
     data class CloudWatch(val egressBytesMetricName: String)
@@ -49,6 +49,11 @@ data class ConsoleProperties(
         val codeBuild: CodeBuild,
         val cloudWatch: CloudWatch,
         val rds: Rds,
+        val vpc: Vpc
+    )
+
+    data class Vpc(
+        val privateSubnets: List<String>
     )
 
     data class Rds(

@@ -484,6 +484,26 @@ paths:
           $ref: "#/components/responses/UnauthorizedError"
         default:
           $ref: "#/components/responses/DefaultError"
+  /resources/provision/{resource}:
+    post:
+      summary: Provisions a resource
+      operationId: provisionResource
+      tags:
+        - provision
+      parameters:
+        - name: resource
+          in: path
+          required: true
+          schema:
+            "$ref": "#/components/schemas/Resource"
+      responses:
+        '200':
+          description: OK
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        default:
+          $ref: "#/components/responses/DefaultError"
+
   /usage:
     get:
       summary: Gets the usage for a certain resource type across all projects across all resource types
@@ -1119,6 +1139,11 @@ components:
         - installation_id
         - setup_action
         - state
+    Resource:
+      enum:
+        - DB
+      type: string
+      minLength: 1
   responses:
     DefaultError:
       description: Default error
