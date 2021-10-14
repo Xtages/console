@@ -9,7 +9,6 @@ import xtages.console.query.tables.daos.OrganizationToPlanDao
 import xtages.console.query.tables.daos.PlanDao
 import xtages.console.query.tables.pojos.Organization
 import xtages.console.query.tables.pojos.OrganizationToPlan
-import xtages.console.service.aws.RdsService
 import java.time.LocalDateTime
 
 private val FREE_PLAN_NAME = PlanType.FREE.name.toLowerCase().capitalize()
@@ -19,7 +18,6 @@ class FreeCheckoutService(
     private val organizationDao: OrganizationDao,
     private val planDao: PlanDao,
     private val organizationToPlanDao: OrganizationToPlanDao,
-    private val rdsService: RdsService,
 ) {
 
     fun provision(organization: Organization) {
@@ -35,8 +33,5 @@ class FreeCheckoutService(
                 startTime = LocalDateTime.now()
             )
         )
-        if (!rdsService.dbInstanceExists(organization = organization, paid = false)) {
-            rdsService.provisionDbInstance(organization = organization)
-        }
     }
 }

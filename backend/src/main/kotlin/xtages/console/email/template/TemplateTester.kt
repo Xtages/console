@@ -60,7 +60,8 @@ Refs #133 """
                     ConsoleProperties.DbInstance("","")
                 ),
                 "", "", 10, false, false, "", 10, false, "", "",
-            )
+            ),
+            vpc = ConsoleProperties.Vpc(emptyList())
         ),
         customerDeploymentDomain = ""
     )
