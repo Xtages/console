@@ -32,6 +32,7 @@ class OrganizationService(
         githubAppInstallationId: Long?,
         githubAppInstallationStatus: GithubAppInstallationStatus?,
         githubOrganizationType: GithubOrganizationType?,
+        githubOauthAuthorized: Boolean,
     ): Organization {
         cognitoService.createGroup(groupName = organizationName)
         val organization = Organization(
@@ -42,6 +43,8 @@ class OrganizationService(
             githubAppInstallationId = githubAppInstallationId,
             githubAppInstallationStatus = githubAppInstallationStatus,
             githubOrganizationType = githubOrganizationType,
+            githubOauthAuthorized =
+            if (githubOrganizationType == GithubOrganizationType.ORGANIZATION) null else githubOauthAuthorized
         )
         organizationDao.insert(organization)
         userService.registerUserFromCognito(

@@ -601,6 +601,12 @@ export interface Organization {
     githubAppInstalled: boolean;
     /**
      * 
+     * @type {boolean}
+     * @memberof Organization
+     */
+    githubOauthAuthorized?: boolean;
+    /**
+     * 
      * @type {string}
      * @memberof Organization
      */

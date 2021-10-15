@@ -42,7 +42,8 @@ val organizationPojoToOrganizationConverter =
             githubAppInstalled = source.githubAppInstallationId != null
                     && source.githubAppInstallationStatus == GithubAppInstallationStatus.ACTIVE,
             gitHubOrganizationType = githubOrganizationTypePojoToGithubOrganizationType
-                .convert(source.githubOrganizationType!!)!!
+                .convert(source.githubOrganizationType!!)!!,
+            githubOauthAuthorized = source.githubOauthAuthorized,
         )
     }
 

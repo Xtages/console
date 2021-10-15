@@ -9,6 +9,7 @@ import {Alert, Button, Col, Container, Row, Spinner} from 'react-bootstrap';
 import Logos from 'components/Logos';
 import {Organization, OrganizationGitHubOrganizationTypeEnum} from 'gen/api';
 import {useAuth} from 'hooks/useAuth';
+import {buildOauthUrl} from 'helpers/github';
 
 const MUTATION_KEY = 'recordInstall';
 
@@ -38,12 +39,7 @@ export default function GitHubAppPostInstallPage() {
     onSuccess: (response: AxiosResponse<Organization>) => {
       const {gitHubOrganizationType, name} = response.data;
       if (gitHubOrganizationType === OrganizationGitHubOrganizationTypeEnum.Individual) {
-        const url = new URL('https://github.com/login/oauth/authorize');
-        url.searchParams.set('client_id', process.env.REACT_APP_GIT_HUB_OAUTH_CLIENT_ID!!);
-        url.searchParams.set('login', name);
-        url.searchParams.set('scope', 'repo user');
-        url.searchParams.set('state', principal?.id!!);
-        url.searchParams.set('allow_signup', false.toString());
+        const url = buildOauthUrl(name, principal?.id!!);
         window.location.assign(url.toString());
       } else {
         backToHome();

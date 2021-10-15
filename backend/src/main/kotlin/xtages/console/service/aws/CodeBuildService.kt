@@ -21,7 +21,10 @@ import software.amazon.awssdk.services.codebuild.CodeBuildAsyncClient
 import software.amazon.awssdk.services.codebuild.model.*
 import xtages.console.config.ConsoleProperties
 import xtages.console.controller.api.model.Logs
-import xtages.console.controller.model.*
+import xtages.console.controller.model.CodeBuildType
+import xtages.console.controller.model.buildPojoToBuild
+import xtages.console.controller.model.organizationPojoToOrganizationConverter
+import xtages.console.controller.model.projectPojoToProject
 import xtages.console.dao.fetchLatestPlan
 import xtages.console.dao.findFromBuilds
 import xtages.console.dao.findPreviousCIBuild
@@ -519,7 +522,8 @@ class CodeBuildService(
             .tags(
                 xtagesCodeBuildTag,
                 buildCodeBuildProjectTag(key = "organization", value = project.organization!!),
-                buildCodeBuildProjectTag(key = "organization-hash", value = organization.hash!!)
+                buildCodeBuildProjectTag(key = "organization-hash", value = organization.hash!!),
+                buildCodeBuildProjectTag(key = "project-hash", value = project.hash!!)
             )
             .badgeEnabled(false)
         if (concurrentBuildLimit != null) {

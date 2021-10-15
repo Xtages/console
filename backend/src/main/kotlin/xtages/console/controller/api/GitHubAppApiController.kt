@@ -89,6 +89,7 @@ class GitHubAppApiController(
             githubAppInstallationStatus = GithubAppInstallationStatus.ACTIVE,
             githubOrganizationType = if (installation.targetType == GHTargetType.ORGANIZATION)
                 GithubOrganizationType.ORGANIZATION else GithubOrganizationType.INDIVIDUAL,
+            githubOauthAuthorized = false,
         )
         gitHubService.saveGitHubUser(
             ghUser = gitHubUser,
@@ -100,19 +101,25 @@ class GitHubAppApiController(
 
     @Transactional
     override fun recordOauthInstall(gitHubOauthInstallReq: GitHubOauthInstallReq): ResponseEntity<Organization> {
+        val organization =
+            organizationDao.fetchOneByCognitoUserId(authenticationService.currentCognitoUserId)
+        ensure.isTrue(
+            value = organization.githubOrganizationType == GithubOrganizationType.INDIVIDUAL,
+            code = ExceptionCode.INVALID_ORG_TYPE
+        )
         val accessTokenResponse = gitHubService.exchangeTempCodeForAuthToken(
             code = gitHubOauthInstallReq.code,
             state = gitHubOauthInstallReq.state,
             codeFromOauthApp = true,
         )
         val gitHubUser = GitHub.connectUsingOAuth(accessTokenResponse.accessToken).myself
-        val organization =
-            organizationDao.fetchOneByCognitoUserId(authenticationService.currentCognitoUserId)
         gitHubService.saveGitHubUser(
             ghUser = gitHubUser,
             organization = organization,
             response = accessTokenResponse
         )
+        organization.githubOauthAuthorized = true
+        organizationDao.merge(organization)
         return ResponseEntity.ok(organizationPojoToOrganizationConverter.convert(organization))
     }
 

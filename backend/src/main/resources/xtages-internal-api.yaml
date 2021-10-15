@@ -693,6 +693,8 @@ components:
             - CANCELLED
         githubAppInstalled:
           type: boolean
+        githubOauthAuthorized:
+          type: boolean
         gitHubOrganizationType:
           type: string
           enum:

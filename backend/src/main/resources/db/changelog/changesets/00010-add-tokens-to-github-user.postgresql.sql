@@ -45,7 +45,7 @@ ALTER TABLE "organization"
 
 -- changeset czuniga:57 logicalFilePath:xtages-console.xml
 ALTER TABLE "github_user"
-    ADD COLUMN "oauth_token_ssm_param"                 TEXT,
+    ADD COLUMN "oauth_token_ssm_param"       TEXT,
     ADD COLUMN "oauth_token_expiration_date" TIMESTAMP,
     ADD CONSTRAINT "oauth_token_has_expiration_date" CHECK (("oauth_token_ssm_param" IS NULL) =
                                                             ("oauth_token_expiration_date" IS NULL));
@@ -53,3 +53,21 @@ ALTER TABLE "github_user"
 -- changeset czuniga:58 logicalFilePath:xtages-console.xml
 ALTER TABLE "github_user"
     ALTER COLUMN "email" DROP NOT NULL;
+
+-- changeset czuniga:59 logicalFilePath:xtages-console.xml
+ALTER TABLE "github_user"
+    ALTER COLUMN "name" DROP NOT NULL;
+
+-- changeset czuniga:60 logicalFilePath:xtages-console.xml
+ALTER TABLE "organization"
+    ADD COLUMN "github_oauth_authorized" BOOLEAN;
+UPDATE "organization"
+SET "github_oauth_authorized" = FALSE
+WHERE "github_organization_type" = 'INDIVIDUAL';
+ALTER TABLE "organization"
+    ADD CONSTRAINT "github_oauth_authorized_only_true_for_individuals" CHECK (("github_organization_type" =
+                                                                               'ORGANIZATION' AND
+                                                                               "github_oauth_authorized" IS NULL) OR
+                                                                              ("github_organization_type" =
+                                                                               'INDIVIDUAL' AND
+                                                                               "github_oauth_authorized" IS NOT NULL));
