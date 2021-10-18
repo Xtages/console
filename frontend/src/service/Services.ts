@@ -7,7 +7,7 @@ import {CdApi,
   LogsApi,
   OrganizationApi,
   ProjectApi,
-  UsageApi,
+  ResourceApi,
   UserApi} from 'gen/api';
 import {BaseAPI} from 'gen/api/base';
 
@@ -34,5 +34,5 @@ export const gitHubAppApi = buildAuthdApi<GitHubAppApi>(GitHubAppApi);
 export const logsApi = buildAuthdApi<LogsApi>(LogsApi);
 export const organizationApi = buildAuthdApi<OrganizationApi>(OrganizationApi);
 export const projectApi = buildAuthdApi<ProjectApi>(ProjectApi);
-export const usageApi = buildAuthdApi<UsageApi>(UsageApi);
+export const resourceApi = buildAuthdApi<ResourceApi>(ResourceApi);
 export const userApi = buildAuthdApi<UserApi>(UserApi);

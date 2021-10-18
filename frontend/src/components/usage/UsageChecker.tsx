@@ -3,27 +3,27 @@ import {useQuery} from 'react-query';
 import {Toast} from 'react-bootstrap';
 import {AlertOctagon} from 'react-feather';
 import {Link} from 'react-router-dom';
-import {usageApi} from 'service/Services';
+import {resourceApi} from 'service/Services';
 import {ResourceType, UsageDetail, UsageDetailStatusEnum} from 'gen/api';
 import styles from './UsageChecker.module.scss';
 
 const ALERTABLE_RESOURCES_METADATA = new Map([
   [
-    ResourceType.MonthlyBuildMinutes,
+    ResourceType.BuildMinutes,
     [
       'The build minutes quota allowed by your plan has been exceeded.',
       'No new builds will be scheduled.',
     ],
   ],
   [
-    ResourceType.MonthlyDataTransferGbs,
+    ResourceType.DataTransfer,
     [
       'The data transfer quota allowed by your plan has been exceeded.',
       'Requests to your running apps will be rejected.',
     ],
   ],
   [
-    ResourceType.DbStorageGbs,
+    ResourceType.Postgresql,
     [
       'The storage quota, allowed by your plan, for your DB has been exceeded.',
       'Queries to the DB will start failing',
@@ -75,7 +75,7 @@ export default function UsageChecker() {
     data,
   } = useQuery(
     'usage',
-    () => usageApi.getAllUsageDetails(), {
+    () => resourceApi.getAllUsageDetails(), {
       refetchOnWindowFocus: false,
       refetchInterval: false,
       refetchIntervalInBackground: false,

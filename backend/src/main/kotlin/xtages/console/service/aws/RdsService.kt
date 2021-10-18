@@ -8,6 +8,7 @@ import software.amazon.awssdk.services.rds.model.*
 import software.amazon.awssdk.services.ssm.model.*
 import xtages.console.config.ConsoleProperties
 import xtages.console.dao.fetchLatestByOrganizationName
+import xtages.console.exception.ensure
 import xtages.console.pojo.dbIdentifier
 import xtages.console.pojo.dbName
 import xtages.console.pojo.dbUsername
@@ -34,7 +35,7 @@ class RdsService(
     private val organizationService: OrganizationService,
 ) {
 
-    fun provisionDb(organization: Organization, plan: Plan) {
+    fun provisionPostgreSql(organization: Organization, plan: Plan) {
         if(plan.paid!!) {
             provisionServerless(organization)
         } else {
@@ -178,6 +179,16 @@ class RdsService(
             }
         }
         return true
+    }
+
+    fun checkIfDbIsProvisioned(organization: Organization) {
+        if (organization.rdsEndpoint == null) {
+            val endpoint = getEndpoint(organization)
+            if (endpoint != null) {
+                organization.rdsEndpoint = endpoint
+                organizationDao.merge(organization)
+            }
+        }
     }
 
     /**

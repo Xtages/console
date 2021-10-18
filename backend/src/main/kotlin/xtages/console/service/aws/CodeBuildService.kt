@@ -318,15 +318,13 @@ class CodeBuildService(
         val cbProjectName =
             if (codeBuildType == CodeBuildType.CI) project.codeBuildCiProjectName else project.codeBuildCdProjectName
 
-        val codeBuildClient = if (fromGitHubApp) codeBuildAsyncClient else userSessionCodeBuildClient()
-
         val plan = organizationToPlanDao.fetchLatestPlan(organization)!!
 
         val scriptPath = getScriptPath(recipe, previousGitHubProjectTag, environment)
         val isDeploy = environment == "production"
 
         val xtagesEnv = if (activeProfile == "prod") "production" else "development"
-        val startBuildResponse = codeBuildClient.startBuild(
+        val startBuildResponse = codeBuildAsyncClient.startBuild(
             StartBuildRequest.builder()
                 .projectName(cbProjectName)
                 .environmentVariablesOverride(
