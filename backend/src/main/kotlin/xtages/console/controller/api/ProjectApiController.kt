@@ -53,6 +53,7 @@ class ProjectApiController(
     private val ecsService: EcsService,
     private val projectDeploymentDao: ProjectDeploymentDao,
     private val consoleProperties: ConsoleProperties,
+    private val organizationToPlanDao: OrganizationToPlanDao,
 ) : ProjectApiControllerBase {
 
     override fun getProject(
@@ -311,12 +312,12 @@ class ProjectApiController(
     }
 
     override fun ci(projectName: String, ciReq: CIReq): ResponseEntity<CI> {
-        val (user, organization, project) = checkRepoBelongsToOrg(projectName)
+        val (organization, plan, project, user) = checkRepoBelongsToOrg(projectName)
         val recipe = ensure.foundOne(
             operation = { recipeDao.fetchOneById(project.recipe!!) },
             code = RECIPE_NOT_FOUND
         )
-        rdsService.checkIfDbIsProvisioned(organization)
+        rdsService.postgreSqlInstanceIsProvisioned(organization, plan)
         val commitHash = if (ciReq.commitHash == "HEAD") {
             gitHubService.findHeadCommitRevision(organization = organization, project = project)
         } else {
@@ -337,14 +338,14 @@ class ProjectApiController(
     }
 
     override fun deploy(projectName: String, cdReq: CDReq): ResponseEntity<CD> {
-        val (user, organization, project) = checkRepoBelongsToOrg(projectName)
+        val (organization, plan, project, user) = checkRepoBelongsToOrg(projectName)
 
         val userName = ensure.notNull(
             authenticationService.jwt.getClaim<String>("name"),
             "name"
         )
 
-        rdsService.checkIfDbIsProvisioned(organization)
+        rdsService.postgreSqlInstanceIsProvisioned(organization, plan)
 
         val tag = gitHubService.tagProject(
             organization = organization,
@@ -374,7 +375,7 @@ class ProjectApiController(
     }
 
     override fun promote(projectName: String): ResponseEntity<CD> {
-        val (user, organization, project) = checkRepoBelongsToOrg(projectName)
+        val (organization, _, project, user) = checkRepoBelongsToOrg(projectName)
 
         val recipe = ensure.foundOne(
             operation = { recipeDao.fetchOneById(project.recipe!!) },
@@ -403,7 +404,7 @@ class ProjectApiController(
     }
 
     override fun rollback(projectName: String): ResponseEntity<CD> {
-        val (user, organization, project) = checkRepoBelongsToOrg(projectName)
+        val (organization, _, project, user) = checkRepoBelongsToOrg(projectName)
 
         val recipe = ensure.foundOne(
             operation = { recipeDao.fetchOneById(project.recipe!!) },
@@ -471,7 +472,7 @@ class ProjectApiController(
         endTimeInMillis: Long?,
         token: String?
     ): ResponseEntity<Logs> {
-        val (_, _, project) = checkRepoBelongsToOrg(projectName)
+        val (_, _, project, _) = checkRepoBelongsToOrg(projectName)
         val logs = ecsService.getLogsFor(
             env = env,
             buildId = buildId,
@@ -487,7 +488,7 @@ class ProjectApiController(
         projectName: String,
         updateProjectSettingsReq: UpdateProjectSettingsReq
     ): ResponseEntity<ProjectSettings> {
-        val (_, _, project) = checkRepoBelongsToOrg(projectName)
+        val (_, _, project, _) = checkRepoBelongsToOrg(projectName)
         if (project.associatedDomain != null) {
             return ResponseEntity(CONFLICT)
         }
@@ -521,7 +522,7 @@ class ProjectApiController(
     }
 
     override fun getProjectSettings(projectName: String): ResponseEntity<ProjectSettings> {
-        val (_, _, project) = checkRepoBelongsToOrg(projectName)
+        val (_, _, project, _) = checkRepoBelongsToOrg(projectName)
         if (project.certArn != null) {
             val certificateDetail = acmService.getCertificateDetail(certificateArn = project.certArn!!)
             ensure.isTrue(
@@ -539,7 +540,7 @@ class ProjectApiController(
         return ResponseEntity.ok(ProjectSettings(projectId = project.id!!))
     }
 
-    private fun checkRepoBelongsToOrg(projectName: String): Triple<XtagesUser, Organization, ProjectPojo> {
+    private fun checkRepoBelongsToOrg(projectName: String): OrganizationWithPlanAndProjectAndUser {
         val user = ensure.foundOne(
             operation = { userDao.fetchOneByCognitoUserId(authenticationService.currentCognitoUserId.id) },
             code = USER_NOT_FOUND,
@@ -547,7 +548,8 @@ class ProjectApiController(
         )
         val organization = organizationDao.fetchOneByCognitoUserId(authenticationService.currentCognitoUserId)
         val project = projectDao.fetchOneByNameAndOrganization(organization = organization, projectName = projectName)
-        return Triple(user, organization, project)
+        val plan = organizationToPlanDao.fetchLatestPlan(organization = organization)!!
+        return OrganizationWithPlanAndProjectAndUser(organization, plan, project, user)
     }
 
     /** Converts a [xtages.console.query.tables.pojos.Project] into a [Project]. */
@@ -589,3 +591,10 @@ object BuildComparator : Comparator<BuildPojo> {
         }
     }
 }
+
+private data class OrganizationWithPlanAndProjectAndUser(
+    val organization: Organization,
+    val plan: Plan,
+    val project: xtages.console.query.tables.pojos.Project,
+    val user: XtagesUser,
+)

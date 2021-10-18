@@ -8,7 +8,6 @@ import software.amazon.awssdk.services.rds.model.*
 import software.amazon.awssdk.services.ssm.model.*
 import xtages.console.config.ConsoleProperties
 import xtages.console.dao.fetchLatestByOrganizationName
-import xtages.console.exception.ensure
 import xtages.console.pojo.dbIdentifier
 import xtages.console.pojo.dbName
 import xtages.console.pojo.dbUsername
@@ -36,10 +35,10 @@ class RdsService(
 ) {
 
     fun provisionPostgreSql(organization: Organization, plan: Plan) {
-        if(plan.paid!!) {
-            provisionServerless(organization)
+        if (plan.paid!!) {
+            provisionPostgreSqlServerlessCluster(organization)
         } else {
-            provisionDbInstance(organization)
+            provisionPostgreSqlDbInstance(organization)
         }
     }
 
@@ -49,7 +48,7 @@ class RdsService(
      * That's similar to 2 vCPU and 2 GB of RAM and 4 vCPU and 4 GB of RAM
      * Also, by default the auto pause will be enable
      */
-    private fun provisionServerless(organization: Organization) {
+    private fun provisionPostgreSqlServerlessCluster(organization: Organization) {
         val plan = planDao.fetchLatestByOrganizationName(organization.name!!)?.plan!!
         val password = createAndStorePassInSsm(organization)
         val cluster = CreateDbClusterRequest.builder()
@@ -94,7 +93,7 @@ class RdsService(
     /**
      * Provisions a classic RDS instance with Postgres
      */
-    private fun provisionDbInstance(organization: Organization) {
+    private fun provisionPostgreSqlDbInstance(organization: Organization) {
         val plan = planDao.fetchLatestByOrganizationName(organization.name!!)?.plan!!
         val password = createAndStorePassInSsm(organization)
         val instanceRequest = CreateDbInstanceRequest.builder()
@@ -133,62 +132,59 @@ class RdsService(
         }
     }
 
-    fun getEndpoint(organization: Organization): String? {
-        val rdsResponse = rdsAsyncClient.describeDBInstances(
-            DescribeDbInstancesRequest
-                .builder()
-                .dbInstanceIdentifier(organization.dbIdentifier)
-                .build()
-        ).get()
-
-        return rdsResponse.dbInstances().firstOrNull()?.endpoint()?.address()
-    }
-
-    fun dbInstanceExists(organization: Organization, paid: Boolean): Boolean {
-        if (paid) {
-            // serverless
-            try {
-                rdsAsyncClient.describeDBClusters(
-                    DescribeDbClustersRequest
-                        .builder()
-                        .dbClusterIdentifier(organization.dbIdentifier)
-                        .build()
-                ).get()
-            } catch (e: ExecutionException) {
-                if (e.cause is DbClusterNotFoundException) {
-                    return false
-                } else {
-                    throw e
-                }
-            }
-        } else {
-            // db instance
-            try {
-                rdsAsyncClient.describeDBInstances(
-                    DescribeDbInstancesRequest
-                        .builder()
-                        .dbInstanceIdentifier(organization.dbIdentifier)
-                        .build()
-                ).get()
-            } catch (e: ExecutionException) {
-                if (e.cause is DbInstanceNotFoundException) {
-                    return false
-                } else {
-                    throw e
-                }
+    /**
+     * Checks if a PostgreSQL DB instance/cluster exists for the [organization]. NB: The instance/cluster might be in
+     * the process of being provisioned by AWS.
+     */
+    fun postgreSqlInstanceExists(organization: Organization, plan: Plan): Boolean {
+        try {
+            getEndpoint(organization = organization, paid = plan.paid!!)
+        } catch (e: ExecutionException) {
+            if (e.cause is DbClusterNotFoundException || e.cause is DbInstanceNotFoundException) {
+                return false
+            } else {
+                throw e
             }
         }
         return true
     }
 
-    fun checkIfDbIsProvisioned(organization: Organization) {
+    /**
+     * Checks if a PostgreSQL DB instance/cluster exists for the [organization] and has been provisioned. Records in our
+     * DB the endpoint for the instance/cluster.
+     */
+    fun postgreSqlInstanceIsProvisioned(organization: Organization, plan: Plan): Boolean {
         if (organization.rdsEndpoint == null) {
-            val endpoint = getEndpoint(organization)
+            val endpoint = getEndpoint(organization = organization, paid = plan.paid!!)
             if (endpoint != null) {
                 organization.rdsEndpoint = endpoint
                 organizationDao.merge(organization)
+                return true
             }
+            return false
         }
+        return true
+    }
+
+    private fun getEndpoint(organization: Organization, paid: Boolean): String? {
+        if (paid) {
+            // serverless
+            val response = rdsAsyncClient.describeDBClusters(
+                DescribeDbClustersRequest
+                    .builder()
+                    .dbClusterIdentifier(organization.dbIdentifier)
+                    .build()
+            ).get()
+            return response.dbClusters().firstOrNull()?.endpoint()
+        }
+        // db instance
+        val response = rdsAsyncClient.describeDBInstances(
+            DescribeDbInstancesRequest
+                .builder()
+                .dbInstanceIdentifier(organization.dbIdentifier)
+                .build()
+        ).get()
+        return response.dbInstances().firstOrNull()?.endpoint()?.address()
     }
 
     /**
