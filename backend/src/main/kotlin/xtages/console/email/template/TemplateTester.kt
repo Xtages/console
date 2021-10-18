@@ -68,7 +68,7 @@ Refs #133 """
                 buildEventsSnsTopicArn = "",
                 buildEventsSqsQueueArn = ""
             ),
-            cloudWatch = CloudWatch(egressBytesMetricName = ""),
+            cloudWatch = CloudWatch(egressBytesMetricName = "", customerNamespace = ""),
 
             rds = Rds(
                 postgres = Postgres(
@@ -93,7 +93,7 @@ Refs #133 """
                 publiclyAccessible = false,
                 dbSubnetGroupName = "",
             ),
-            vpc = Vpc(emptyList()),
+            vpc = Vpc("",emptyList()),
             ssm = Ssm(orgConfigPrefix = "")
         ),
         customerDeploymentDomain = ""
