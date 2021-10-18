@@ -5,8 +5,7 @@ import org.springframework.http.HttpStatus.FORBIDDEN
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Controller
 import org.springframework.web.bind.annotation.PathVariable
-import xtages.console.controller.api.model.ResourceType
-import xtages.console.controller.api.model.UsageDetail
+import xtages.console.controller.api.model.*
 import xtages.console.controller.model.resourceTypeToResourceTypePojo
 import xtages.console.controller.model.usageDetailPojoToUsageDetail
 import xtages.console.dao.fetchLatestPlan
@@ -37,6 +36,37 @@ class ResourceApiController(
     private val usageService: UsageService,
     private val organizationToPlanDao: OrganizationToPlanDao,
 ) : ResourceApiControllerBase {
+
+    override fun getResources(): ResponseEntity<List<Resource>> {
+        val organization = organizationDao.maybeFetchOneByCognitoUserId(authenticationService.currentCognitoUserId)
+        organization ?: run {
+            val plan = organizationToPlanDao.fetchLatestPlan(organization!!)
+            if (plan != null && rdsService.postgreSqlInstanceExists(organization = organization, plan = plan)) {
+                if (rdsService.postgreSqlInstanceIsProvisioned(organization = organization, plan = plan)) {
+                    return ResponseEntity.ok(
+                        listOf(
+                            Resource(
+                                resourceType = ResourceType.POSTGRESQL,
+                                billingModel = ResourceBillingModel.TOTAL_GB,
+                                provisioningStatus = ResourceProvisioningStatus.PROVISIONED
+                            )
+                        )
+                    )
+                }
+                return ResponseEntity.ok(
+                    listOf(
+                        Resource(
+                            resourceType = ResourceType.POSTGRESQL,
+                            billingModel = ResourceBillingModel.TOTAL_GB,
+                            provisioningStatus = ResourceProvisioningStatus.REQUESTED
+                        )
+                    )
+                )
+            }
+            return ResponseEntity.ok(emptyList())
+        }
+        return ResponseEntity(FORBIDDEN)
+    }
 
     override fun provisionResource(@PathVariable(value = "resource") resource: ResourceType): ResponseEntity<Unit> {
         val organization = organizationDao.maybeFetchOneByCognitoUserId(authenticationService.currentCognitoUserId)
