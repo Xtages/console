@@ -484,18 +484,18 @@ paths:
           $ref: "#/components/responses/UnauthorizedError"
         default:
           $ref: "#/components/responses/DefaultError"
-  /resources/provision/{resource}:
+  /resource/{resource}:
     post:
       summary: Provisions a resource
       operationId: provisionResource
       tags:
-        - provision
+        - resource
       parameters:
         - name: resource
           in: path
           required: true
           schema:
-            "$ref": "#/components/schemas/Resource"
+            "$ref": "#/components/schemas/ResourceType"
       responses:
         '200':
           description: OK
@@ -504,12 +504,12 @@ paths:
         default:
           $ref: "#/components/responses/DefaultError"
 
-  /usage:
+  /resource/usage:
     get:
       summary: Gets the usage for a certain resource type across all projects across all resource types
       operationId: getAllUsageDetails
       tags:
-        - usage
+        - resource
       responses:
         '200':
           description: The usage for the resource type
@@ -523,12 +523,12 @@ paths:
           $ref: "#/components/responses/UnauthorizedError"
         default:
           $ref: "#/components/responses/DefaultError"
-  /usage/{resourceType}:
+  /resource/{resourceType}/usage/:
     get:
       summary: Gets the usage for a certain resource type across all projects
       operationId: getUsageDetail
       tags:
-        - usage
+        - resource
       parameters:
         - in: path
           name: resourceType
@@ -1073,16 +1073,31 @@ components:
     ResourceType:
       description: Enum of resources
       type: string
+      minLength: 1
       enum:
         - PROJECT
-        - MONTHLY_BUILD_MINUTES
-        - MONTHLY_DATA_TRANSFER_GBS
-        - DB_STORAGE_GBS
+        - BUILD_MINUTES
+        - DATA_TRANSFER
+        - POSTGRESQL
+        - MONGODB
+        - REDIS
+        - MYSQL
+    ResourceBillingModel:
+      description: How a Resource is billed
+      type: string
+      minLength: 1
+      enum:
+        - MINUTES_PER_MONTH
+        - GB_PER_MONTH
+        - TOTAL_GB
+        - TOTAL_NUMBER
     UsageDetail:
       description: The usage for a certain resource
       properties:
         resourceType:
           $ref: "#/components/schemas/ResourceType"
+        billingModel:
+          $ref: "#/components/schemas/ResourceBillingModel"
         status:
           type: string
           minLength: 1
@@ -1105,6 +1120,7 @@ components:
           format: int64
       required:
         - resourceType
+        - billingModel
         - status
         - limit
         - usage
@@ -1182,11 +1198,6 @@ components:
       required:
         - code
         - state
-    Resource:
-      enum:
-        - DB
-      type: string
-      minLength: 1
   responses:
     DefaultError:
       description: Default error
