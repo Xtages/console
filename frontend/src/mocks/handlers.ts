@@ -19,6 +19,7 @@ import {AssociatedDomainCertificateStatusEnum,
   Projects,
   ProjectSettings,
   ProjectTypeEnum,
+  ResourceBillingModel,
   ResourceType,
   UsageDetail,
   UsageDetailStatusEnum} from 'gen/api';
@@ -238,23 +239,27 @@ const projectWithBuildsAndDeployments: Project = {
 
 const usage: Array<UsageDetail> = [{
   resourceType: ResourceType.Project,
+  billingModel: ResourceBillingModel.TotalNumber,
   status: UsageDetailStatusEnum.UnderLimit,
   limit: 5,
   usage: 3,
 }, {
-  resourceType: ResourceType.MonthlyBuildMinutes,
+  resourceType: ResourceType.BuildMinutes,
+  billingModel: ResourceBillingModel.MinutesPerMonth,
   status: UsageDetailStatusEnum.UnderLimit,
   limit: 7500,
   usage: 15,
   resetTimestampInMillis: 1630799999999,
 }, {
-  resourceType: ResourceType.MonthlyDataTransferGbs,
+  resourceType: ResourceType.DataTransfer,
+  billingModel: ResourceBillingModel.GbPerMonth,
   status: UsageDetailStatusEnum.UnderLimit,
   limit: 500,
   usage: 0,
   resetTimestampInMillis: 1630799999999,
 }, {
-  resourceType: ResourceType.DbStorageGbs,
+  resourceType: ResourceType.Postgresql,
+  billingModel: ResourceBillingModel.TotalGb,
   status: UsageDetailStatusEnum.UnderLimit,
   limit: 20,
   usage: 1,

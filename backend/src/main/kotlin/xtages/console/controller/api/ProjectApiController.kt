@@ -316,7 +316,7 @@ class ProjectApiController(
             operation = { recipeDao.fetchOneById(project.recipe!!) },
             code = RECIPE_NOT_FOUND
         )
-        ensureDbIsAvailable(organization)
+        rdsService.checkIfDbIsProvisioned(organization)
         val commitHash = if (ciReq.commitHash == "HEAD") {
             gitHubService.findHeadCommitRevision(organization = organization, project = project)
         } else {
@@ -344,7 +344,7 @@ class ProjectApiController(
             "name"
         )
 
-        ensureDbIsAvailable(organization)
+        rdsService.checkIfDbIsProvisioned(organization)
 
         val tag = gitHubService.tagProject(
             organization = organization,
@@ -560,17 +560,6 @@ class ProjectApiController(
     ): Project {
         val recipe = recipeDao.fetchOneById(source.recipe!!)
         return projectPojoToProject(source, recipe, percentageOfSuccessfulBuildsInTheLastMonth, builds, deployments)
-    }
-
-    private fun ensureDbIsAvailable(organization: Organization) {
-        if (organization.rdsEndpoint == null) {
-            val endpoint = ensure.notNull(
-                rdsService.getEndpoint(organization),
-                "Database it's still being provisioned. Please try again in 5 minutes"
-            )
-            organization.rdsEndpoint = endpoint
-            organizationDao.merge(organization)
-        }
     }
 }
 
