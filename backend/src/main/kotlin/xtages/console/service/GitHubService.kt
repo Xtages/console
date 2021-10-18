@@ -1,6 +1,8 @@
 package xtages.console.service
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.PropertyNamingStrategy
+import com.fasterxml.jackson.databind.annotation.JsonNaming
 import com.nimbusds.jose.JWSAlgorithm
 import com.nimbusds.jose.JWSHeader
 import com.nimbusds.jose.crypto.RSASSASigner
@@ -10,9 +12,10 @@ import com.nimbusds.jwt.SignedJWT
 import mu.KotlinLogging
 import org.kohsuke.github.*
 import org.springframework.context.annotation.Lazy
+import org.springframework.http.MediaType
 import org.springframework.stereotype.Service
+import org.springframework.web.reactive.function.client.WebClient
 import xtages.console.config.ConsoleProperties
-import xtages.console.controller.GitHubAvatarUrl
 import xtages.console.controller.model.CodeBuildType
 import xtages.console.dao.fetchOneByNameAndOrganization
 import xtages.console.exception.ExceptionCode.*
@@ -34,6 +37,8 @@ import xtages.console.service.aws.CodeBuildService
 import xtages.console.time.toUtcLocalDateTime
 import java.io.IOException
 import java.time.Instant
+import java.time.LocalDateTime
+import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 import java.util.*
@@ -43,13 +48,16 @@ private val logger = KotlinLogging.logger { }
 
 @Service
 class GitHubService(
-    consoleProperties: ConsoleProperties,
+    private val consoleProperties: ConsoleProperties,
     private val objectMapper: ObjectMapper,
+    private val webClientBuilder: WebClient.Builder,
     private val organizationDao: OrganizationDao,
     private val projectDao: ProjectDao,
     private val githubUserDao: GithubUserDao,
+    private val authenticationService: AuthenticationService,
     private val userService: UserService,
     @param:Lazy private val codeBuildService: CodeBuildService,
+    private val organizationService: OrganizationService,
     private val recipeDao: RecipeDao,
 ) {
     private val gitHubClient by GitHubClientDelegate(consoleProperties)
@@ -62,20 +70,17 @@ class GitHubService(
     }
 
     private fun onPush(eventId: String, eventJson: String) {
-        val push = gitHubClient.parseEventPayload(eventJson.reader(), GHEventPayload.Push::class.java)
+        val push = GitHub.offline().parseEventPayload(eventJson.reader(), GHEventPayload.Push::class.java)
         logger.debug { "Handling GitHub Push event for commit [${push.head}]" }
         if (push.ref.endsWith("/main") || push.ref.endsWith("/master")) {
             if (push.commits.isNotEmpty()) {
-                // TODO(czuniga): Don't look up based on the push.organization.login instead use
-                // push.installation.id against organization.installationId, that way the Xtages' Org name is not
-                // linked to the GitHub's Org name.
                 val organization = ensure.foundOne(
-                    operation = { organizationDao.fetchOneByName(push.organization.login) },
+                    operation = { organizationDao.fetchOneByGithubAppInstallationId(push.installation.id) },
                     code = ORG_NOT_FOUND
                 )
                 val appToken = appToken(organization)
                 val project = projectDao.fetchOneByNameAndOrganization(
-                    orgName = push.organization.login,
+                    organization = organization,
                     projectName = push.repository.name
                 )
                 val recipe = ensure.foundOne(
@@ -84,18 +89,12 @@ class GitHubService(
                 )
 
                 val committer = push.commits.single { commit -> commit.sha == push.head }.author
-                val pusherXtagesUser = userService.findUserByEmail(committer.email)
-                val githubUser = GithubUser(
-                    email = committer.email,
-                    name = committer.name,
-                    username = committer.username,
-                    avatarUrl = GitHubAvatarUrl(username = committer.username).toUriString(),
-                )
-                githubUserDao.merge(githubUser)
+                val committerXtagesUser = userService.findUserByEmail(committer.email)
+                val githubUser = saveGitHubUser(push.sender)
 
                 codeBuildService.startCodeBuildProject(
                     gitHubAppToken = appToken,
-                    user = pusherXtagesUser?.user,
+                    user = committerXtagesUser?.user,
                     githubUser = githubUser,
                     project = project,
                     recipe = recipe,
@@ -121,15 +120,15 @@ class GitHubService(
         val jsonBody = objectMapper.readTree(eventJson)
         val action = jsonBody.get("action").asText()
         val installation = jsonBody.get("installation")
-        val organizationName = installation.get("account").get("login").asText()
         val installationId = installation.get("id").asLong()
         val organization = ensure.foundOne(
-            operation = { organizationDao.fetchOneByName(organizationName) },
+            operation = { organizationDao.fetchOneByGithubAppInstallationId(installationId) },
             code = ORG_NOT_FOUND,
-            message = "Organization [$organizationName] is not registered on Xtages"
+            message = "Organization with installationId [$installationId] is not registered on Xtages"
         )
         /*
         See https://docs.github.com/en/developers/webhooks-and-events/webhook-events-and-payloads#installation
+        created - Someone installs a GitHub App.
         deleted - Someone uninstalls a GitHub App
         suspend - Someone suspends a GitHub App installation.
         unsuspend - Someone unsuspends a GitHub App installation.
@@ -138,6 +137,20 @@ class GitHubService(
             the new permissions request.
         */
         when (action) {
+            "created" -> {
+                val repositorySelection = installation.get("repository_selection").asText()
+                ensure.isTrue(
+                    value = repositorySelection == "all",
+                    code = GH_APP_NOT_ALL_REPOSITORIES_SELECTED,
+                    message = "GitHub app was not installed on all repositories"
+                )
+                organizationDao.update(
+                    organization.copy(
+                        githubAppInstallationId = installationId,
+                        githubAppInstallationStatus = ACTIVE
+                    )
+                )
+            }
             "deleted" -> {
                 organizationDao.update(
                     organization.copy(
@@ -172,13 +185,51 @@ class GitHubService(
     }
 
     /**
+     * Exchanges a temporary [code] from GitHub for an [AccessTokenResponse]. The [state] is validated against the
+     * currently logged in cognito user id.
+     * If [codeFromOauthApp] is `true` then the `clientId` and `clientSecret` for the GitHub OAuth app are used,
+     * otherwise the `clientId` and `clientSecret` for the GitHub App are used.
+     */
+    fun exchangeTempCodeForAuthToken(
+        code: String,
+        state: String,
+        codeFromOauthApp: Boolean = false,
+    ): AccessTokenResponse {
+        ensure.isTrue(
+            value = state == authenticationService.currentCognitoUserId.id,
+            code = INVALID_GITHUB_APP_INSTALL_STATE
+        )
+        val clientId =
+            if (codeFromOauthApp) consoleProperties.gitHubOauth.clientId else consoleProperties.gitHubApp.clientId
+        val clientSecret =
+            if (codeFromOauthApp) consoleProperties.gitHubOauth.clientSecret
+            else consoleProperties.gitHubApp.clientSecret
+        return webClientBuilder.baseUrl("https://github.com")
+            .build()
+            .post()
+            .uri { uri ->
+                uri.path("login/oauth/access_token")
+                    .queryParam("client_id", clientId)
+                    .queryParam("client_secret", clientSecret)
+                    .queryParam("code", code)
+                    .queryParam("state", state)
+                    .build()
+            }
+            .accept(MediaType.APPLICATION_JSON)
+            .retrieve()
+            .toEntity(AccessTokenResponse::class.java)
+            .block()!!
+            .body!!
+    }
+
+    /**
      * Returns a [GHRepository] for the [project] in [organization].
      */
     fun getRepositoryForProject(project: Project, organization: Organization): GHRepository? {
-        val gitHubAppClient = buildGitHubAppClient(organization)
+        val installation = fetchAppInstallation(organization)
         return try {
-            // TODO(czuniga): Don't assume that Xtages' organization.name is the same as GitHub's organization name
-            gitHubAppClient.getRepository("${organization.name}/${project.name}")
+            val gitHubAppClient = buildGitHubAppClient(organization)
+            gitHubAppClient.getRepository("${installation.account.login}/${project.name}")
         } catch (e: IOException) {
             null
         }
@@ -190,11 +241,15 @@ class GitHubService(
      */
     @Suppress("DEPRECATION")
     fun createRepoForProject(project: Project, recipe: Recipe, organization: Organization, description: String?) {
-        val gitHubAppClient = buildGitHubAppClient(organization)
+        val installation = fetchAppInstallation(organization = organization)
+        val gitHubAppClient = if (installation.targetType == GHTargetType.ORGANIZATION) {
+            buildGitHubAppClient(organization = organization)
+        } else {
+            buildGitHubClientWithAuthToken(userLogin = installation.account.login, organization = organization)
+        }
         val repository = gitHubAppClient
             .createRepository(project.name)
-            // TODO(czuniga): Don't assume that Xtages' organization.name is the same as GitHub's organization name
-            .owner(organization.name)
+            .owner(installation.account.login)
             .private_(true)
             .description(description ?: "")
             .fromTemplateRepository("Xtages", recipe.templateRepoName)
@@ -259,16 +314,105 @@ class GitHubService(
         return repository.getBranch(repository.defaultBranch).shA1
     }
 
-    @Suppress("DEPRECATION")
-    private fun buildGitHubAppClient(organization: Organization): GitHub {
+    fun fetchAppInstallation(organization: Organization): GHAppInstallation {
         val githubAppInstallationId = ensure.notNull(
             value = organization.githubAppInstallationId,
             valueDesc = "organization.githubAppInstallationId"
         )
+        return gitHubClient.app.getInstallationById(githubAppInstallationId)!!
+    }
+
+    @Suppress("DEPRECATION")
+    private fun buildGitHubAppClient(organization: Organization): GitHub {
         return GitHubBuilder().withAppInstallationToken(
-            gitHubClient.app.getInstallationById(githubAppInstallationId).createToken().create()
+            fetchAppInstallation(organization = organization)
+                .createToken()
+                .permissions(mapOf("administration" to GHPermissionType.WRITE, "contents" to GHPermissionType.WRITE))
+                .create()
                 .token
         ).build()!!
+    }
+
+    private fun buildGitHubClientWithAuthToken(userLogin: String, organization: Organization): GitHub {
+        val githubUser = ensure.notNull(
+            value = githubUserDao.fetchOneByUsername(value = userLogin),
+            valueDesc = "gitHubUser $userLogin"
+        )
+        val oauthTokenSsmParam = ensure.notNull(
+            value = githubUser.oauthTokenSsmParam,
+            valueDesc = "githubUser.oauthTokenSsmParam"
+        )
+        val oauthTokenExpirationDate = ensure.notNull(
+            value = githubUser.oauthTokenExpirationDate,
+            valueDesc = "githubUser.oauthTokenExpirationDate"
+        )
+        ensure.isTrue(
+            oauthTokenExpirationDate.isAfter(LocalDateTime.now(ZoneOffset.UTC)),
+            code = GITHUB_OAUTH_TOKEN_EXPIRED
+        )
+        val oAuthToken =
+            organizationService.getSsmParameter(organization = organization, name = oauthTokenSsmParam)
+        return GitHub.connectUsingOAuth(oAuthToken)!!
+    }
+
+    /**
+     * Saves a [GithubUser] to the database. If [response] is specified then the tokens are saved in SSM.
+     * Note that if [response] is not null, then [organization] must not be null either.
+     */
+    fun saveGitHubUser(
+        ghUser: GHUser,
+        organization: Organization? = null,
+        response: AccessTokenResponse? = null,
+    ): GithubUser {
+        val githubUser = githubUserDao.fetchOneByUsername(ghUser.login) ?: GithubUser(
+            githubId = ghUser.id,
+            username = ghUser.login,
+            email = ghUser.email,
+            name = if (ghUser.type == "Bot") ghUser.login else ghUser.name,
+            avatarUrl = ghUser.avatarUrl,
+        )
+        if (response != null) {
+            val org = ensure.notNull(organization, "organization")
+            val cognitoUserId = ensure.notNull(authenticationService.currentCognitoUserId, "cognitoUserId")
+            // If `response.refreshToken` is not `null` then we are dealing with temporary tokens that are issued to
+            // GitHub Apps. See https://docs.github.com/en/developers/apps/building-github-apps/identifying-and-authorizing-users-for-github-apps#identifying-users-on-your-site
+            if (response.refreshToken != null) {
+                val authTokenParamName = organizationService.storeSsmParameter(
+                    organization = org,
+                    name = "/${cognitoUserId.id}/gh/auth_token",
+                    value = response.accessToken
+                )
+                githubUser.authorizationTokenSsmParam = authTokenParamName
+                if (response.expiresIn != null) {
+                    githubUser.authorizationTokenExpirationDate =
+                        LocalDateTime.now(ZoneOffset.UTC).plusSeconds(response.expiresIn)
+                            .minusMinutes(10)
+                }
+                val refreshTokenParamName = organizationService.storeSsmParameter(
+                    organization = org,
+                    name = "/${cognitoUserId.id}/gh/refresh_token",
+                    value = response.refreshToken
+                )
+                githubUser.refreshTokenSsmParam = refreshTokenParamName
+                githubUser.refreshTokenExpirationDate = LocalDateTime
+                    .now(ZoneOffset.UTC)
+                    .plusSeconds(response.refreshTokenExpiresIn!!)
+                    .minusDays(1)
+            } else {
+                // If `response.refreshToken` is `null` then we have an GitHub OAuth token
+                val oauthTokenParamName = organizationService.storeSsmParameter(
+                    organization = org,
+                    name = "/${cognitoUserId.id}/gh/oauth_token",
+                    value = response.accessToken
+                )
+                githubUser.oauthTokenSsmParam = oauthTokenParamName
+                // OAuth tokens expire when it hasn't been used in one year.
+                // See https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/token-expiration-and-revocation#token-expired-due-to-lack-of-use
+                githubUser.oauthTokenExpirationDate = LocalDateTime.now(ZoneOffset.UTC).plusYears(1).minusDays(2)
+            }
+        }
+        githubUserDao.merge(githubUser)
+        return githubUser
     }
 
     private class GitHubClientDelegate(val consoleProperties: ConsoleProperties) {
@@ -303,6 +447,7 @@ class GitHubService(
             val signedJwt = SignedJWT(JWSHeader.Builder(JWSAlgorithm.RS256).keyID(rsaKey.keyID).build(), claimsSet)
             signedJwt.sign(signer)
             val jwtString = signedJwt.serialize()
+            println("jwtString = $jwtString")
             return GitHubBuilder().withJwtToken(jwtString).build()!!
         }
     }
@@ -317,3 +462,13 @@ enum class GitHubWebhookEventType {
             values().find { it.name.equals(stripeEvent, ignoreCase = true) }
     }
 }
+
+@JsonNaming(PropertyNamingStrategy.SnakeCaseStrategy::class)
+data class AccessTokenResponse(
+    val accessToken: String,
+    val expiresIn: Long?,
+    val refreshToken: String?,
+    val refreshTokenExpiresIn: Long?,
+    val scope: String,
+    val tokenType: String
+)
