@@ -768,12 +768,15 @@ export interface RecordCheckoutReq {
     checkoutSessionId: string;
 }
 /**
- * 
+ * How a Resource is billed
  * @export
  * @enum {string}
  */
-export enum Resource {
-    Db = 'DB'
+export enum ResourceBillingModel {
+    MinutesPerMonth = 'MINUTES_PER_MONTH',
+    GbPerMonth = 'GB_PER_MONTH',
+    TotalGb = 'TOTAL_GB',
+    TotalNumber = 'TOTAL_NUMBER'
 }
 
 /**
@@ -783,9 +786,12 @@ export enum Resource {
  */
 export enum ResourceType {
     Project = 'PROJECT',
-    MonthlyBuildMinutes = 'MONTHLY_BUILD_MINUTES',
-    MonthlyDataTransferGbs = 'MONTHLY_DATA_TRANSFER_GBS',
-    DbStorageGbs = 'DB_STORAGE_GBS'
+    BuildMinutes = 'BUILD_MINUTES',
+    DataTransfer = 'DATA_TRANSFER',
+    Postgresql = 'POSTGRESQL',
+    Mongodb = 'MONGODB',
+    Redis = 'REDIS',
+    Mysql = 'MYSQL'
 }
 
 /**
@@ -813,6 +819,12 @@ export interface UsageDetail {
      * @memberof UsageDetail
      */
     resourceType: ResourceType;
+    /**
+     * 
+     * @type {ResourceBillingModel}
+     * @memberof UsageDetail
+     */
+    billingModel: ResourceBillingModel;
     /**
      * 
      * @type {string}
@@ -2754,119 +2766,10 @@ export class ProjectApi extends BaseAPI {
 
 
 /**
- * ProvisionApi - axios parameter creator
+ * ResourceApi - axios parameter creator
  * @export
  */
-export const ProvisionApiAxiosParamCreator = function (configuration?: Configuration) {
-    return {
-        /**
-         * 
-         * @summary Provisions a resource
-         * @param {Resource} resource 
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        provisionResource: async (resource: Resource, options: any = {}): Promise<RequestArgs> => {
-            // verify required parameter 'resource' is not null or undefined
-            assertParamExists('provisionResource', 'resource', resource)
-            const localVarPath = `/resources/provision/{resource}`
-                .replace(`{${"resource"}}`, encodeURIComponent(String(resource)));
-            // use dummy base URL string because the URL constructor only accepts absolute URLs.
-            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
-            let baseOptions;
-            if (configuration) {
-                baseOptions = configuration.baseOptions;
-            }
-
-            const localVarRequestOptions = { method: 'POST', ...baseOptions, ...options};
-            const localVarHeaderParameter = {} as any;
-            const localVarQueryParameter = {} as any;
-
-            // authentication bearerAuth required
-            // http bearer authentication required
-            await setBearerAuthToObject(localVarHeaderParameter, configuration)
-
-
-    
-            setSearchParams(localVarUrlObj, localVarQueryParameter, options.query);
-            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
-            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
-
-            return {
-                url: toPathString(localVarUrlObj),
-                options: localVarRequestOptions,
-            };
-        },
-    }
-};
-
-/**
- * ProvisionApi - functional programming interface
- * @export
- */
-export const ProvisionApiFp = function(configuration?: Configuration) {
-    const localVarAxiosParamCreator = ProvisionApiAxiosParamCreator(configuration)
-    return {
-        /**
-         * 
-         * @summary Provisions a resource
-         * @param {Resource} resource 
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        async provisionResource(resource: Resource, options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<void>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.provisionResource(resource, options);
-            return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
-        },
-    }
-};
-
-/**
- * ProvisionApi - factory interface
- * @export
- */
-export const ProvisionApiFactory = function (configuration?: Configuration, basePath?: string, axios?: AxiosInstance) {
-    const localVarFp = ProvisionApiFp(configuration)
-    return {
-        /**
-         * 
-         * @summary Provisions a resource
-         * @param {Resource} resource 
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        provisionResource(resource: Resource, options?: any): AxiosPromise<void> {
-            return localVarFp.provisionResource(resource, options).then((request) => request(axios, basePath));
-        },
-    };
-};
-
-/**
- * ProvisionApi - object-oriented interface
- * @export
- * @class ProvisionApi
- * @extends {BaseAPI}
- */
-export class ProvisionApi extends BaseAPI {
-    /**
-     * 
-     * @summary Provisions a resource
-     * @param {Resource} resource 
-     * @param {*} [options] Override http request option.
-     * @throws {RequiredError}
-     * @memberof ProvisionApi
-     */
-    public provisionResource(resource: Resource, options?: any) {
-        return ProvisionApiFp(this.configuration).provisionResource(resource, options).then((request) => request(this.axios, this.basePath));
-    }
-}
-
-
-/**
- * UsageApi - axios parameter creator
- * @export
- */
-export const UsageApiAxiosParamCreator = function (configuration?: Configuration) {
+export const ResourceApiAxiosParamCreator = function (configuration?: Configuration) {
     return {
         /**
          * 
@@ -2875,7 +2778,7 @@ export const UsageApiAxiosParamCreator = function (configuration?: Configuration
          * @throws {RequiredError}
          */
         getAllUsageDetails: async (options: any = {}): Promise<RequestArgs> => {
-            const localVarPath = `/usage`;
+            const localVarPath = `/resource/usage`;
             // use dummy base URL string because the URL constructor only accepts absolute URLs.
             const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
             let baseOptions;
@@ -2912,7 +2815,7 @@ export const UsageApiAxiosParamCreator = function (configuration?: Configuration
         getUsageDetail: async (resourceType: ResourceType, options: any = {}): Promise<RequestArgs> => {
             // verify required parameter 'resourceType' is not null or undefined
             assertParamExists('getUsageDetail', 'resourceType', resourceType)
-            const localVarPath = `/usage/{resourceType}`
+            const localVarPath = `/resource/{resourceType}/usage/`
                 .replace(`{${"resourceType"}}`, encodeURIComponent(String(resourceType)));
             // use dummy base URL string because the URL constructor only accepts absolute URLs.
             const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
@@ -2940,15 +2843,53 @@ export const UsageApiAxiosParamCreator = function (configuration?: Configuration
                 options: localVarRequestOptions,
             };
         },
+        /**
+         * 
+         * @summary Provisions a resource
+         * @param {ResourceType} resource 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        provisionResource: async (resource: ResourceType, options: any = {}): Promise<RequestArgs> => {
+            // verify required parameter 'resource' is not null or undefined
+            assertParamExists('provisionResource', 'resource', resource)
+            const localVarPath = `/resource/{resource}`
+                .replace(`{${"resource"}}`, encodeURIComponent(String(resource)));
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'POST', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            // authentication bearerAuth required
+            // http bearer authentication required
+            await setBearerAuthToObject(localVarHeaderParameter, configuration)
+
+
+    
+            setSearchParams(localVarUrlObj, localVarQueryParameter, options.query);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
     }
 };
 
 /**
- * UsageApi - functional programming interface
+ * ResourceApi - functional programming interface
  * @export
  */
-export const UsageApiFp = function(configuration?: Configuration) {
-    const localVarAxiosParamCreator = UsageApiAxiosParamCreator(configuration)
+export const ResourceApiFp = function(configuration?: Configuration) {
+    const localVarAxiosParamCreator = ResourceApiAxiosParamCreator(configuration)
     return {
         /**
          * 
@@ -2971,15 +2912,26 @@ export const UsageApiFp = function(configuration?: Configuration) {
             const localVarAxiosArgs = await localVarAxiosParamCreator.getUsageDetail(resourceType, options);
             return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
         },
+        /**
+         * 
+         * @summary Provisions a resource
+         * @param {ResourceType} resource 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async provisionResource(resource: ResourceType, options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<void>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.provisionResource(resource, options);
+            return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
+        },
     }
 };
 
 /**
- * UsageApi - factory interface
+ * ResourceApi - factory interface
  * @export
  */
-export const UsageApiFactory = function (configuration?: Configuration, basePath?: string, axios?: AxiosInstance) {
-    const localVarFp = UsageApiFp(configuration)
+export const ResourceApiFactory = function (configuration?: Configuration, basePath?: string, axios?: AxiosInstance) {
+    const localVarFp = ResourceApiFp(configuration)
     return {
         /**
          * 
@@ -3000,25 +2952,35 @@ export const UsageApiFactory = function (configuration?: Configuration, basePath
         getUsageDetail(resourceType: ResourceType, options?: any): AxiosPromise<UsageDetail> {
             return localVarFp.getUsageDetail(resourceType, options).then((request) => request(axios, basePath));
         },
+        /**
+         * 
+         * @summary Provisions a resource
+         * @param {ResourceType} resource 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        provisionResource(resource: ResourceType, options?: any): AxiosPromise<void> {
+            return localVarFp.provisionResource(resource, options).then((request) => request(axios, basePath));
+        },
     };
 };
 
 /**
- * UsageApi - object-oriented interface
+ * ResourceApi - object-oriented interface
  * @export
- * @class UsageApi
+ * @class ResourceApi
  * @extends {BaseAPI}
  */
-export class UsageApi extends BaseAPI {
+export class ResourceApi extends BaseAPI {
     /**
      * 
      * @summary Gets the usage for a certain resource type across all projects across all resource types
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
-     * @memberof UsageApi
+     * @memberof ResourceApi
      */
     public getAllUsageDetails(options?: any) {
-        return UsageApiFp(this.configuration).getAllUsageDetails(options).then((request) => request(this.axios, this.basePath));
+        return ResourceApiFp(this.configuration).getAllUsageDetails(options).then((request) => request(this.axios, this.basePath));
     }
 
     /**
@@ -3027,10 +2989,22 @@ export class UsageApi extends BaseAPI {
      * @param {ResourceType} resourceType 
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
-     * @memberof UsageApi
+     * @memberof ResourceApi
      */
     public getUsageDetail(resourceType: ResourceType, options?: any) {
-        return UsageApiFp(this.configuration).getUsageDetail(resourceType, options).then((request) => request(this.axios, this.basePath));
+        return ResourceApiFp(this.configuration).getUsageDetail(resourceType, options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * 
+     * @summary Provisions a resource
+     * @param {ResourceType} resource 
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof ResourceApi
+     */
+    public provisionResource(resource: ResourceType, options?: any) {
+        return ResourceApiFp(this.configuration).provisionResource(resource, options).then((request) => request(this.axios, this.basePath));
     }
 }
 

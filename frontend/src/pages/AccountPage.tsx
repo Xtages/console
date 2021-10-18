@@ -1,6 +1,6 @@
 import React from 'react';
 import {useQuery} from 'react-query';
-import {checkoutApi, usageApi, userApi} from 'service/Services';
+import {checkoutApi, resourceApi, userApi} from 'service/Services';
 import {Activity, User} from 'react-feather';
 import {Alert, Col} from 'react-bootstrap';
 import {LoadIndicatingSection, Section, SectionTitle} from 'components/layout/Section';
@@ -32,7 +32,7 @@ export default function AccountPage() {
 
   const usageQueryResult = useQuery(
     'usage',
-    () => usageApi.getAllUsageDetails(),
+    () => resourceApi.getAllUsageDetails(),
   );
 
   const usersQueryResult = useQuery(

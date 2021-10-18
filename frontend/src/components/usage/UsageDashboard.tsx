@@ -17,17 +17,17 @@ const RESOURCE_TO_METADATA = new Map<ResourceType, ResourceMetadata>([
     title: 'Projects',
     unit: 'project(s)',
   }],
-  [ResourceType.MonthlyBuildMinutes, {
+  [ResourceType.BuildMinutes, {
     icon: Clock,
     title: 'Build minutes',
     unit: 'min',
   }],
-  [ResourceType.MonthlyDataTransferGbs, {
+  [ResourceType.DataTransfer, {
     icon: DownloadCloud,
     title: 'Data transfer (egress)',
     unit: 'GB',
   }],
-  [ResourceType.DbStorageGbs, {
+  [ResourceType.Postgresql, {
     icon: Database,
     title: 'DB Storage',
     unit: 'GB',
