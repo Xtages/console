@@ -484,6 +484,25 @@ paths:
           $ref: "#/components/responses/UnauthorizedError"
         default:
           $ref: "#/components/responses/DefaultError"
+  /resource:
+    get:
+      summary: Gets all the Resources that have been provisioned (or are in progress of being provisioned)
+      operationId: getResources
+      tags:
+        - resource
+      responses:
+        '200':
+          description: The provisioned resources
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Resource"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        default:
+          $ref: "#/components/responses/DefaultError"
   /resource/{resource}:
     post:
       summary: Provisions a resource
@@ -503,7 +522,6 @@ paths:
           $ref: "#/components/responses/UnauthorizedError"
         default:
           $ref: "#/components/responses/DefaultError"
-
   /resource/usage:
     get:
       summary: Gets the usage for a certain resource type across all projects across all resource types
@@ -1070,6 +1088,26 @@ components:
         - timestampInMillis
         - serviceUrls
         - status
+    Resource:
+      description: A provisioned (or in progress to be provisioned) resourced
+      properties:
+        resourceType:
+          $ref: "#/components/schemas/ResourceType"
+        billingModel:
+          $ref: "#/components/schemas/ResourceBillingModel"
+        provisioningStatus:
+          $ref: "#/components/schemas/ResourceProvisioningStatus"
+      required:
+        - resourceType
+        - billingModel
+        - provisioningStatus
+    ResourceProvisioningStatus:
+      description: The provisioning status of a resource
+      type: string
+      minLength: 1
+      enum:
+        - PROVISIONED
+        - REQUESTED
     ResourceType:
       description: Enum of resources
       type: string
