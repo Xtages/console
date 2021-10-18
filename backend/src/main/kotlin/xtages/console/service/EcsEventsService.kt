@@ -119,7 +119,8 @@ class EcsEventsService(
     private fun getBuildIdAndProject(event: GenericEvent, service: AwsEcsService?): Pair<Long?, Project> {
         val project = ensure.foundOne(
             operation = { projectDao.fetchByHash(event.serviceName()).singleOrNull() },
-            code = PROJECT_NOT_FOUND
+            code = PROJECT_NOT_FOUND,
+            message = event.serviceName(),
         )
         return Pair(service?.buildId(), project)
     }

@@ -9,10 +9,12 @@ import org.jooq.impl.DefaultExecuteListener
 import org.jooq.impl.DefaultExecuteListenerProvider
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.transaction.annotation.EnableTransactionManagement
 
 
 private val logger = KotlinLogging.logger { }
 
+@EnableTransactionManagement(proxyTargetClass = true)
 @Configuration
 class PersistenceConfig {
 
