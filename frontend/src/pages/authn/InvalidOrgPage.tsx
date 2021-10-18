@@ -2,7 +2,7 @@ import React from 'react';
 import {Alert, Button, Col, Container, Row} from 'react-bootstrap';
 import {useAuth} from 'hooks/useAuth';
 import {isOrgInGoodStanding} from 'helpers/organization';
-import {FullScreenErrorPage} from 'components/layout/FullScreenErrorPage';
+import {CenteredOnScreen} from 'components/layout/CenteredOnScreen';
 import {Redirect} from 'react-router-dom';
 import Logos from 'components/Logos';
 
@@ -19,7 +19,7 @@ export default function InvalidOrgPage() {
 
   if (organization !== null && !isOrgInGoodStanding(organization)) {
     return (
-      <FullScreenErrorPage>
+      <CenteredOnScreen>
         <Container>
           <Row>
             <Col sm="auto" className="pb-4">
@@ -50,7 +50,7 @@ export default function InvalidOrgPage() {
             </Col>
           </Row>
         </Container>
-      </FullScreenErrorPage>
+      </CenteredOnScreen>
     );
   }
   return <Redirect to="/" />;

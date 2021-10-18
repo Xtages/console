@@ -2,7 +2,7 @@ import {useQuery} from 'react-query';
 import {gitHubAppApi} from 'service/Services';
 import {ReactComponent as GitHubIcon} from 'assets/img/github-icon.svg';
 import {PlanSelector} from 'components/plan/PlanSelector';
-import {OrganizationSubscriptionStatusEnum} from 'gen/api';
+import {OrganizationGitHubOrganizationTypeEnum, OrganizationSubscriptionStatusEnum} from 'gen/api';
 import React, {ReactNode} from 'react';
 import {Wizard, WizardStep} from 'components/wizard/Wizard';
 import {Button, Col} from 'react-bootstrap';
@@ -10,6 +10,8 @@ import {Optional} from 'types/nullable';
 import {Section, SectionTitle} from 'components/layout/Section';
 import {Flag} from 'react-feather';
 import {useOrganization} from 'hooks/useOrganization';
+import {buildOauthUrl} from 'helpers/github';
+import {useAuth} from 'hooks/useAuth';
 
 export function SetupWizardSection() {
   return (
@@ -23,6 +25,7 @@ function SetupWizard() {
     orgNotFound,
     organization,
   } = useOrganization();
+  const {principal} = useAuth();
 
   const {
     data: installUrlData,
@@ -31,7 +34,14 @@ function SetupWizard() {
     enabled: orgNotFound,
   });
 
-  if (orgNotFound && installUrlIsSuccess) {
+  const needToInstallGitHubApp = orgNotFound && installUrlIsSuccess;
+  const needToAuthorizedGitHubOauth = organization?.gitHubOrganizationType
+      === OrganizationGitHubOrganizationTypeEnum.Individual
+      && organization?.githubOauthAuthorized === false;
+  if (needToInstallGitHubApp || needToAuthorizedGitHubOauth) {
+    const installUrl = needToInstallGitHubApp
+      ? installUrlData?.data!!
+      : buildOauthUrl(organization?.name!!, principal?.id!!).toString();
     return (
       <Section>
         <SectionTitle
@@ -41,7 +51,7 @@ function SetupWizard() {
         <Col sm={11}>
           <Wizard currentStep={2}>
             <NewAccountStep />
-            <InstallGitHubAppStep installUrl={installUrlData?.data!!} />
+            <InstallGitHubAppStep installUrl={installUrl} />
             <SelectPlanStep />
           </Wizard>
         </Col>

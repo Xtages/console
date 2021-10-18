@@ -62,7 +62,7 @@ class ProjectApiController(
         includeSuccessfulBuildPercentage: Boolean,
     ): ResponseEntity<Project> {
         val organization = organizationDao.fetchOneByCognitoUserId(authenticationService.currentCognitoUserId)
-        val project = projectDao.fetchOneByNameAndOrganization(orgName = organization.name!!, projectName = projectName)
+        val project = projectDao.fetchOneByNameAndOrganization(organization = organization, projectName = projectName)
         val percentageOfSuccessfulBuildsInTheLastMonth =
             when {
                 includeSuccessfulBuildPercentage -> buildDao.findPercentageOfSuccessfulBuildsInLast30Days(
@@ -289,7 +289,13 @@ class ProjectApiController(
             user = user.id,
             hash = MD5.md5("${organization.hash}${UUID.randomUUID()}"),
         )
-        if (gitHubService.getRepositoryForProject(project = projectPojo, organization = organization) == null) {
+        if (
+            projectDao.maybeFetchOneByNameAndOrganization(
+                organization = organization,
+                projectName = projectPojo.name!!
+            ) == null &&
+            gitHubService.getRepositoryForProject(project = projectPojo, organization = organization) == null
+        ) {
             projectDao.insert(projectPojo)
             gitHubService.createRepoForProject(
                 project = projectPojo,
@@ -440,7 +446,7 @@ class ProjectApiController(
             return ResponseEntity.ok(Logs(emptyList()))
         }
 
-        val project = projectDao.fetchOneByNameAndOrganization(organization.name!!, projectName)
+        val project = projectDao.fetchOneByNameAndOrganization(organization = organization, projectName = projectName)
 
         val build = ensure.foundOne(
             operation = { buildDao.fetchById(buildId).first() },
@@ -540,7 +546,7 @@ class ProjectApiController(
             message = "User not found"
         )
         val organization = organizationDao.fetchOneByCognitoUserId(authenticationService.currentCognitoUserId)
-        val project = projectDao.fetchOneByNameAndOrganization(organization.name!!, projectName)
+        val project = projectDao.fetchOneByNameAndOrganization(organization = organization, projectName = projectName)
         return Triple(user, organization, project)
     }
 

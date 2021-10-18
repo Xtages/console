@@ -10,7 +10,10 @@ import {Link, useHistory} from 'react-router-dom';
 import {Alert, Button} from 'react-bootstrap';
 import {DocsLink} from 'components/link/XtagesLink';
 import {projectApi} from 'service/Services';
-import {CreateProjectReqTypeEnum, OrganizationSubscriptionStatusEnum, UsageDetail} from 'gen/api';
+import {CreateProjectReqTypeEnum,
+  OrganizationGitHubOrganizationTypeEnum,
+  OrganizationSubscriptionStatusEnum,
+  UsageDetail} from 'gen/api';
 import {useOrganization} from 'hooks/useOrganization';
 import LabeledFormField from '../components/form/LabeledFormField';
 
@@ -94,10 +97,18 @@ export default function CreateProjectPage() {
     return (<></>);
   }
 
-  const canCreateProjects = organization?.subscriptionStatus
-      === OrganizationSubscriptionStatusEnum.Active
-      || organization?.subscriptionStatus
-      === OrganizationSubscriptionStatusEnum.PendingCancellation;
+  const validSubscription = (organization?.subscriptionStatus
+          === OrganizationSubscriptionStatusEnum.Active)
+      || (organization?.subscriptionStatus
+          === OrganizationSubscriptionStatusEnum.PendingCancellation);
+  const ghOrgIsForIndividual = organization?.gitHubOrganizationType
+      === OrganizationGitHubOrganizationTypeEnum.Individual;
+  const validOauthAuthorization = ghOrgIsForIndividual
+    ? organization?.githubOauthAuthorized === true
+    : true;
+  const canCreateProjects = validSubscription
+      && organization?.githubAppInstalled === true
+      && validOauthAuthorization;
 
   return (
     <Page width="narrow">

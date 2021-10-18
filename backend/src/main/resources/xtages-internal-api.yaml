@@ -616,7 +616,30 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/GitHubInstallReq"
+              $ref: "#/components/schemas/GitHubAppInstallReq"
+      responses:
+        '200':
+          description: The created Organization
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Organization"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        default:
+          $ref: "#/components/responses/DefaultError"
+  /github/oauth/install:
+    post:
+      summary: Records the GitHub OAuth installation
+      operationId: recordOauthInstall
+      tags:
+        - gitHubApp
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GitHubOauthInstallReq"
       responses:
         '200':
           description: The created Organization
@@ -670,10 +693,18 @@ components:
             - CANCELLED
         githubAppInstalled:
           type: boolean
+        githubOauthAuthorized:
+          type: boolean
+        gitHubOrganizationType:
+          type: string
+          enum:
+            - ORGANIZATION
+            - INDIVIDUAL
       required:
         - name
         - subscriptionStatus
         - githubAppInstalled
+        - gitHubOrganizationType
     QueryProjectReq:
       description: Query to retrieve projects
       properties:
@@ -1119,7 +1150,7 @@ components:
         - username
         - isOwner
         - status
-    GitHubInstallReq:
+    GitHubAppInstallReq:
       description: Request sent when the GitHub App is installed
       properties:
         code:
@@ -1138,6 +1169,18 @@ components:
         - code
         - installation_id
         - setup_action
+        - state
+    GitHubOauthInstallReq:
+      description: Request sent when the GitHub OAuth App is installed
+      properties:
+        code:
+          type: string
+          minLength: 1
+        state:
+          type: string
+          minLength: 1
+      required:
+        - code
         - state
     Resource:
       enum:
