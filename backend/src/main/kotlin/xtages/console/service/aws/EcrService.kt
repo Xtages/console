@@ -19,7 +19,7 @@ private val xtagesEcrTag: Tag = buildEcrTag(key = "XTAGES_CONSOLE_CREATED", valu
 class EcrService(
     private val ecrAsyncClient: EcrAsyncClient,
     private val projectDao: ProjectDao,
-    ) {
+) {
 
     /**
      * Creates an `ECR` repository for the [project] if one hasn't already been created. The repository's name is
@@ -39,12 +39,15 @@ class EcrService(
                     .encryptionConfiguration(
                         EncryptionConfiguration.builder().encryptionType(EncryptionType.KMS).build()
                     )
-                    .imageScanningConfiguration(ImageScanningConfiguration.builder()
-                        .scanOnPush(true).build()
+                    .imageScanningConfiguration(
+                        ImageScanningConfiguration.builder()
+                            .scanOnPush(true).build()
                     )
-                    .tags(xtagesEcrTag,
+                    .tags(
+                        xtagesEcrTag,
                         buildEcrTag("organization", orgName),
-                        buildEcrTag("organization-hash", orgHash)
+                        buildEcrTag("organization-hash", orgHash),
+                        buildEcrTag("project-hash", projectHash)
                     )
                     .build()
             ).get()

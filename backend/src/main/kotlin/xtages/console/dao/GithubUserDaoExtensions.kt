@@ -10,7 +10,7 @@ import xtages.console.query.tables.pojos.GithubUser
 fun GithubUserDao.findFromBuilds(vararg builds: Build): Map<String, GithubUser> {
     val githubUserNames = builds.mapNotNull { build -> build.githubUserUsername }
     return when {
-        githubUserNames.isNotEmpty() -> fetchByEmail(*githubUserNames.toSet().toTypedArray())
+        githubUserNames.isNotEmpty() -> fetchByUsername(*githubUserNames.toSet().toTypedArray())
             .associateBy { githubUser -> githubUser.username!! }
         else -> emptyMap()
     }

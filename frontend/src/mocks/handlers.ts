@@ -13,6 +13,7 @@ import {AssociatedDomainCertificateStatusEnum,
   DomainValidationRecordRecordTypeEnum,
   Logs,
   Organization,
+  OrganizationGitHubOrganizationTypeEnum,
   OrganizationSubscriptionStatusEnum,
   Project,
   Projects,
@@ -26,6 +27,7 @@ const organization: Organization = {
   name: 'Ghostbusters',
   subscriptionStatus: OrganizationSubscriptionStatusEnum.Active,
   githubAppInstalled: true,
+  gitHubOrganizationType: OrganizationGitHubOrganizationTypeEnum.Organization,
 };
 
 const projectsArray: Array<Project> = [{

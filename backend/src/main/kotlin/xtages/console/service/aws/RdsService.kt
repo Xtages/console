@@ -5,9 +5,7 @@ import org.apache.commons.lang3.RandomStringUtils
 import org.springframework.stereotype.Service
 import software.amazon.awssdk.services.rds.RdsAsyncClient
 import software.amazon.awssdk.services.rds.model.*
-import software.amazon.awssdk.services.ssm.SsmAsyncClient
 import software.amazon.awssdk.services.ssm.model.*
-import software.amazon.awssdk.services.ssm.model.AddTagsToResourceRequest
 import xtages.console.config.ConsoleProperties
 import xtages.console.dao.fetchLatestByOrganizationName
 import xtages.console.pojo.dbIdentifier
@@ -17,6 +15,7 @@ import xtages.console.query.tables.daos.OrganizationDao
 import xtages.console.query.tables.daos.PlanDao
 import xtages.console.query.tables.pojos.Organization
 import xtages.console.query.tables.pojos.Plan
+import xtages.console.service.OrganizationService
 import java.util.concurrent.ExecutionException
 import software.amazon.awssdk.services.rds.model.Tag as TagRds
 
@@ -29,10 +28,10 @@ private val charsNotAllowedInPasswordRegex: Regex = Regex("/|\"|@|\\s")
 @Service
 class RdsService(
     private val rdsAsyncClient: RdsAsyncClient,
-    private val ssmAsyncClient: SsmAsyncClient,
     private val consoleProperties: ConsoleProperties,
     private val planDao: PlanDao,
     private val organizationDao: OrganizationDao,
+    private val organizationService: OrganizationService,
 ) {
 
     fun provisionDb(organization: Organization, plan: Plan) {
@@ -42,7 +41,7 @@ class RdsService(
             provisionDbInstance(organization)
         }
     }
-    
+
     /**
      * Async operation that provision an Aurora Serverless cluster asynchronously
      * By default the cluster will have a min of 2 ACUs and a max of 4 ACUs
@@ -100,7 +99,7 @@ class RdsService(
         val instanceRequest = CreateDbInstanceRequest.builder()
             .dbInstanceIdentifier(organization.dbIdentifier)
             .masterUserPassword(password)
-            .allocatedStorage(plan?.dbStorageGbs!!.toInt())
+            .allocatedStorage(plan.dbStorageGbs!!.toInt())
             .dbName(organization.dbName)
             .engine(consoleProperties.aws.rds.postgres.instance.engine)
             .dbInstanceClass(plan.dbInstance)
@@ -188,31 +187,12 @@ class RdsService(
      */
     private fun createAndStorePassInSsm(organization: Organization): String {
         val password = RandomStringUtils.randomAscii(25).replace(charsNotAllowedInPasswordRegex, "")
-        organization.ssmDbPassPath = "${consoleProperties.aws.rds.ssmPrefix}${organization.hash}/rds/password"
-        val putParameterRequest = PutParameterRequest.builder()
-            .name(organization.ssmDbPassPath)
-            .type(ParameterType.SECURE_STRING)
-            .keyId("alias/aws/ssm")
-            .value(password)
-            .overwrite(true)
-            .build()
-        ssmAsyncClient.putParameter(putParameterRequest).get()
-
-        // Amazon doesn't allow setting `overwrite = true` in the `PutParameter` request above and adding tags at the
-        // same time. So we have to create the parameter first and then add the tags using `AddTagsToResource`.
-        val addTagsToResourceRequest = AddTagsToResourceRequest.builder()
-            .resourceId(organization.ssmDbPassPath)
-            .resourceType(ResourceTypeForTagging.PARAMETER)
-            .tags(
-                buildSsmTag("organization", organization.name!!),
-                buildSsmTag("organization-hash", organization.hash!!)
-            )
-            .build()
-        ssmAsyncClient.addTagsToResource(addTagsToResourceRequest)
+        val parameter =
+            organizationService.storeSsmParameter(organization = organization, name = "/rds/password", value = password)
+        organization.ssmDbPassPath = parameter
         organizationDao.merge(organization)
         return password
     }
 }
 
-private fun buildSsmTag(key: String, value: String) = Tag.builder().key(key).value(value).build()
 private fun buildRdsTag(key: String, value: String) = TagRds.builder().key(key).value(value).build()

@@ -14,7 +14,7 @@ import {useXmlHttpRequestInstrumentation} from 'hooks/useXmlHttpRequestInstrumen
 import {ReactQueryDevtools} from 'react-query/devtools';
 import {useSurvicate} from 'hooks/useSurvicate';
 import * as Sentry from '@sentry/react';
-import {FullScreenErrorPage} from 'components/layout/FullScreenErrorPage';
+import {CenteredOnScreen} from 'components/layout/CenteredOnScreen';
 import {Alert} from 'react-bootstrap';
 
 const AccountPage = loadable(() => import('pages/AccountPage'));
@@ -23,6 +23,7 @@ const ConfirmSignUpPage = loadable(() => import('pages/authn/ConfirmSignUpPage')
 const CreateProjectPage = loadable(() => import('pages/CreateProjectPage'));
 const DeploymentsPage = loadable(() => import('pages/DeploymentsPage'));
 const GitHubAppPostInstallPage = loadable(() => import('pages/GitHubAppPostInstallPage'));
+const GitHubOauthPostInstallPage = loadable(() => import('pages/GitHubOauthPostInstallPage'));
 const HomePage = loadable(() => import('pages/HomePage'));
 const InvalidOrgPage = loadable(() => import('pages/authn/InvalidOrgPage'));
 const LoginPage = loadable(() => import('pages/authn/LoginPage'));
@@ -37,11 +38,11 @@ const analytics = buildAnalytics();
 export default function App() {
   function errorFallback() {
     return (
-      <FullScreenErrorPage>
+      <CenteredOnScreen>
         <Alert variant="danger" className="text-lg">
           An unexpected error occurred. Please reload the page.
         </Alert>
-      </FullScreenErrorPage>
+      </CenteredOnScreen>
     );
   }
 
@@ -78,6 +79,7 @@ function InstrumentedApp() {
           <UnauthdRoute path="/changePassword" component={ChangePasswordPage} />
           <UnauthdRoute path="/confirm" component={ConfirmSignUpPage} />
           <AuthdRoute path="/ghappinstalled" exact component={GitHubAppPostInstallPage} />
+          <AuthdRoute path="/ghoauth" exact component={GitHubOauthPostInstallPage} />
           <AuthdRoute path="/badorg" component={InvalidOrgPage} />
           <AuthdRoute path="/checkoutdone" component={StripePostCheckoutPage} />
           <AuthdAndGoodStandingRoute path="/account" component={AccountPage} />

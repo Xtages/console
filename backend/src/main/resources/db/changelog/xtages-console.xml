@@ -55,5 +55,6 @@
     <include file="changesets/00008-upgrade-recipe-tag-version.postgresql.sql" relativeToChangelogFile="true" />
     <include file="changesets/00009-upgrade-recipe-tag-version.postgresql.sql" relativeToChangelogFile="true" />
     <include file="changesets/00009-add-free-plan.postgresql.sql" relativeToChangelogFile="true" />
+    <include file="changesets/00010-add-tokens-to-github-user.postgresql.sql" relativeToChangelogFile="true" />
 </databaseChangeLog>
 

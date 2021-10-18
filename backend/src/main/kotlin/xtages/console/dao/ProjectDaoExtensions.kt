@@ -12,15 +12,20 @@ import xtages.console.query.tables.references.PROJECT
  * Finds a [Project] given a name and an [Organization].
  */
 @Cacheable
-fun ProjectDao.fetchOneByNameAndOrganization(orgName: String, projectName: String): Project {
+fun ProjectDao.fetchOneByNameAndOrganization(organization: Organization, projectName: String): Project {
     return ensure.foundOne(
         operation = {
-            ctx().select(PROJECT.asterisk())
-                .from(PROJECT)
-                .where(PROJECT.NAME.eq(projectName).and(PROJECT.ORGANIZATION.eq(orgName)))
-                .fetchOneInto(Project::class.java)
+           maybeFetchOneByNameAndOrganization(organization = organization, projectName = projectName)
         },
         code = ExceptionCode.PROJECT_NOT_FOUND,
-        message = "Could not find project [$projectName] in organization [$orgName]"
+        message = "Could not find project [$projectName] in organization [${organization.name}]"
     )
+}
+
+
+fun ProjectDao.maybeFetchOneByNameAndOrganization(organization: Organization, projectName: String): Project? {
+    return ctx().select(PROJECT.asterisk())
+        .from(PROJECT)
+        .where(PROJECT.NAME.eq(projectName).and(PROJECT.ORGANIZATION.eq(organization.name!!)))
+        .fetchOneInto(Project::class.java)
 }
