@@ -22,6 +22,7 @@ import {Build, BuildActions, BuildPhase, BuildType, Project} from 'gen/api';
 import {durationString, formatDateTimeMed, formatDateTimeRelativeToNow} from 'helpers/time';
 import {cdApi, ciApi, logsApi} from 'service/Services';
 import {UseQueryLoaderElement} from 'components/layout/UseQueryLoaderElement';
+import {UserName} from 'components/user/UserName';
 import {BuildStatusIcon} from './BuildStatusIcon';
 import Avatar from '../avatar/Avatar';
 import {LogViewer} from '../logviewer/LogViewer';
@@ -132,13 +133,11 @@ export function BuildRowInner({
                 size="sm"
                 rounded
                 img={build.initiatorAvatarUrl ?? ''}
-                imgAltText={build.initiatorName}
+                imgAltText={build.initiatorName ?? ''}
               />
             </div>
             <div className="media-body ml-4">
-              <span className="name h6 mb-0 text-sm">
-                {build.initiatorName}
-              </span>
+              <UserName name={build.initiatorName} className="name h6 mb-0 text-sm" />
               {' '}
               <small className="d-block font-weight-bold">
                 {build.initiatorEmail}
