@@ -16,6 +16,7 @@ import xtages.console.query.tables.pojos.ProjectDeployment
 import xtages.console.query.tables.pojos.Recipe
 import xtages.console.service.*
 import xtages.console.time.toUtcMillis
+import xtages.console.query.enums.ResourceType as ResourceTypePojo
 import xtages.console.query.tables.pojos.Build as BuildPojo
 import xtages.console.query.tables.pojos.Organization as OrganizationPojo
 import xtages.console.query.tables.pojos.Project as ProjectPojo
@@ -114,12 +115,44 @@ val usageDetailPojoToUsageDetail = Converter { source: UsageDetailPojo ->
         }
     }
     UsageDetail(
-        resourceType = ResourceType.valueOf(source.resourceType.name),
+        resourceType = resourceTypePojoToResourceType.convert(source.resourceType)!!,
+        billingModel = resourceTypeToResourceBillingModel.convert(source.resourceType)!!,
         status = status,
         usage = usage,
         limit = limit,
         resetTimestampInMillis = source.resetDateTime?.toUtcMillis()
     )
+}
+
+/** Converts a [ResourceTypePojo] to a [ResourceType]. */
+val resourceTypePojoToResourceType = Converter { source: ResourceTypePojo ->
+    when (source) {
+        ResourceTypePojo.PROJECT -> ResourceType.PROJECT
+        ResourceTypePojo.MONTHLY_BUILD_MINUTES -> ResourceType.BUILD_MINUTES
+        ResourceTypePojo.MONTHLY_DATA_TRANSFER_GBS -> ResourceType.DATA_TRANSFER
+        ResourceTypePojo.DB_STORAGE_GBS -> ResourceType.POSTGRESQL
+    }
+}
+
+/** Converts a [ResourceType] to a [ResourceTypePojo]. */
+val resourceTypeToResourceTypePojo = Converter { source: ResourceType ->
+    when (source) {
+        ResourceType.PROJECT -> ResourceTypePojo.PROJECT
+        ResourceType.BUILD_MINUTES -> ResourceTypePojo.MONTHLY_BUILD_MINUTES
+        ResourceType.DATA_TRANSFER -> ResourceTypePojo.MONTHLY_DATA_TRANSFER_GBS
+        ResourceType.POSTGRESQL -> ResourceTypePojo.DB_STORAGE_GBS
+        else -> throw UnsupportedOperationException("Invalid ResourceType [$source]")
+    }
+}
+
+/** Converts a [ResourceType] to a [ResourceBillingModel]. */
+val resourceTypeToResourceBillingModel = Converter { source: ResourceTypePojo ->
+    when (source) {
+        ResourceTypePojo.PROJECT -> ResourceBillingModel.TOTAL_NUMBER
+        ResourceTypePojo.MONTHLY_BUILD_MINUTES -> ResourceBillingModel.MINUTES_PER_MONTH
+        ResourceTypePojo.MONTHLY_DATA_TRANSFER_GBS -> ResourceBillingModel.GB_PER_MONTH
+        ResourceTypePojo.DB_STORAGE_GBS -> ResourceBillingModel.TOTAL_GB
+    }
 }
 
 /**
