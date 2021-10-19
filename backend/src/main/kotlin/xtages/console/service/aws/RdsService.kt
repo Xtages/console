@@ -167,24 +167,32 @@ class RdsService(
     }
 
     private fun getEndpoint(organization: Organization, paid: Boolean): String? {
-        if (paid) {
-            // serverless
-            val response = rdsAsyncClient.describeDBClusters(
-                DescribeDbClustersRequest
+        return try {
+            if (paid) {
+                // serverless
+                val response = rdsAsyncClient.describeDBClusters(
+                    DescribeDbClustersRequest
+                        .builder()
+                        .dbClusterIdentifier(organization.dbIdentifier)
+                        .build()
+                ).get()
+                return response.dbClusters().firstOrNull()?.endpoint()
+            }
+            // db instance
+            val response = rdsAsyncClient.describeDBInstances(
+                DescribeDbInstancesRequest
                     .builder()
-                    .dbClusterIdentifier(organization.dbIdentifier)
+                    .dbInstanceIdentifier(organization.dbIdentifier)
                     .build()
             ).get()
-            return response.dbClusters().firstOrNull()?.endpoint()
+            response.dbInstances().firstOrNull()?.endpoint()?.address()
+        } catch (e: ExecutionException) {
+            if (e.cause is DbInstanceNotFoundException || e.cause is DbClusterNotFoundException) {
+                return null
+            } else {
+                throw e
+            }
         }
-        // db instance
-        val response = rdsAsyncClient.describeDBInstances(
-            DescribeDbInstancesRequest
-                .builder()
-                .dbInstanceIdentifier(organization.dbIdentifier)
-                .build()
-        ).get()
-        return response.dbInstances().firstOrNull()?.endpoint()?.address()
     }
 
     /**
