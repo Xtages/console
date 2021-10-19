@@ -91,8 +91,7 @@ dependencies {
 val frontendDir = file(projectDir).parentFile.resolve("frontend")
 val apiSpecFile = file("${sourceSets["main"].resources.srcDirs.first()}/xtages-internal-api.yaml")
 
-val env = System.getenv("ENV") ?: "local"
-val dbEndpoint = if (env == "local") "localhost" else "xtages-development.c9ijuglx54eu.us-east-1.rds.amazonaws.com"
+val dbEndpoint = "localhost"
 val dbPass: String? = System.getenv("DB_PASS")
 
 kotlin {
