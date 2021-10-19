@@ -46,7 +46,7 @@ data class ConsoleProperties(
         val buildEventsSqsQueueArn: String,
     )
 
-    data class CloudWatch(val egressBytesMetricName: String)
+    data class CloudWatch(val egressBytesMetricName: String, val customerNamespace: String)
 
     data class Aws(
         val accountId: String,
@@ -60,6 +60,7 @@ data class ConsoleProperties(
     )
 
     data class Vpc(
+        val id: String,
         val privateSubnets: List<String>
     )
 
