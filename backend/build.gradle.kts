@@ -91,9 +91,7 @@ dependencies {
 val frontendDir = file(projectDir).parentFile.resolve("frontend")
 val apiSpecFile = file("${sourceSets["main"].resources.srcDirs.first()}/xtages-internal-api.yaml")
 
-val env = System.getenv("ENV") ?: "local"
-val dbEndpoint = if (env == "local") "localhost" else "xtages-development.c9ijuglx54eu.us-east-1.rds.amazonaws.com"
-val dbPass: String? = System.getenv("DB_PASS")
+val dbEndpoint = "localhost"
 
 kotlin {
     sourceSets {
@@ -124,8 +122,7 @@ liquibase {
             "logLevel" to "info",
             "changeLogFile" to "src/main/resources/db/changelog/xtages-console.xml",
             "url" to "jdbc:postgresql://$dbEndpoint:5432/xtages_console",
-            "username" to "xtages_console",
-            "password" to dbPass
+            "username" to "xtages_console"
         )
     }
     activities.register("seed-dev-db") {
@@ -151,7 +148,6 @@ jooq {
                     driver = "org.postgresql.Driver"
                     user = "xtages_console"
                     url = "jdbc:postgresql://$dbEndpoint:5432/xtages_console"
-                    password = dbPass
                 }
                 generator.apply {
                     name = "org.jooq.codegen.KotlinGenerator"
