@@ -40,7 +40,7 @@ class AwsService(
         //   * Remove Project  (use project.codebuildCdProjectArn)
     }
 
-    private fun unregisterOrganization(organization: Organization) {
+    private fun unregisterOrganization(@Suppress("UNUSED_PARAMETER") organization: Organization) {
         TODO("(czuniga): Use the list below to implement this")
         // Remove ECR repository - mark them to delete them after a period of time
         // Remove CI log group - move the logs to S3 in a cheap storage
