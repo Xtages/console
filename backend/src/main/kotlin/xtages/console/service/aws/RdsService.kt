@@ -35,10 +35,12 @@ class RdsService(
 ) {
 
     fun provisionPostgreSql(organization: Organization, plan: Plan) {
-        if (plan.paid!!) {
-            provisionPostgreSqlServerlessCluster(organization)
-        } else {
-            provisionPostgreSqlDbInstance(organization)
+        if (!postgreSqlInstanceExists(organization = organization)) {
+            if (plan.paid!!) {
+                provisionPostgreSqlServerlessCluster(organization = organization)
+            } else {
+                provisionPostgreSqlDbInstance(organization = organization)
+            }
         }
     }
 
@@ -136,18 +138,7 @@ class RdsService(
      * Checks if a PostgreSQL DB instance/cluster exists for the [organization]. NB: The instance/cluster might be in
      * the process of being provisioned by AWS.
      */
-    fun postgreSqlInstanceExists(organization: Organization, plan: Plan): Boolean {
-        try {
-            getEndpoint(organization = organization, paid = plan.paid!!)
-        } catch (e: ExecutionException) {
-            if (e.cause is DbClusterNotFoundException || e.cause is DbInstanceNotFoundException) {
-                return false
-            } else {
-                throw e
-            }
-        }
-        return true
-    }
+    fun postgreSqlInstanceExists(organization: Organization): Boolean = organization.rdsArn != null
 
     /**
      * Checks if a PostgreSQL DB instance/cluster exists for the [organization] and has been provisioned. Records in our
