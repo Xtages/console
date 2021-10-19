@@ -93,7 +93,7 @@ Refs #133 """
                 publiclyAccessible = false,
                 dbSubnetGroupName = "",
             ),
-            vpc = Vpc("",emptyList()),
+            vpc = Vpc("", emptyList()),
             ssm = Ssm(orgConfigPrefix = "")
         ),
         customerDeploymentDomain = ""
