@@ -186,8 +186,12 @@ class RdsService(
                     .build()
             ).get()
             response.dbInstances().firstOrNull()?.endpoint()?.address()
-        } catch (e : DbInstanceNotFoundException) {
-            null
+        } catch (e: ExecutionException) {
+            if (e.cause is DbInstanceNotFoundException || e.cause is DbClusterNotFoundException) {
+                return null
+            } else {
+                throw e
+            }
         }
     }
 
