@@ -122,7 +122,7 @@ liquibase {
             "logLevel" to "info",
             "changeLogFile" to "src/main/resources/db/changelog/xtages-console.xml",
             "url" to "jdbc:postgresql://$dbEndpoint:5432/xtages_console",
-            "username" to "xtages_console",
+            "username" to "xtages_console"
         )
     }
     activities.register("seed-dev-db") {
