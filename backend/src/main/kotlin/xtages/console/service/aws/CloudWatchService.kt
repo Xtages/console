@@ -109,7 +109,7 @@ class CloudWatchService(
                     .metric(
                         Metric.builder()
                             .metricName(consoleProperties.aws.cloudWatch.egressBytesMetricName)
-                            .namespace(project.hash!!)
+                            .namespace(consoleProperties.aws.cloudWatch.customerNamespace)
                             .dimensions(
                                 getDimensions(
                                     env = env,
