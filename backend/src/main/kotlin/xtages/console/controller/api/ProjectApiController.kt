@@ -317,7 +317,7 @@ class ProjectApiController(
             operation = { recipeDao.fetchOneById(project.recipe!!) },
             code = RECIPE_NOT_FOUND
         )
-        rdsService.postgreSqlInstanceIsProvisioned(organization, plan)
+        rdsService.refreshPostgreSqlInstanceStatus(organization, plan)
         val commitHash = if (ciReq.commitHash == "HEAD") {
             gitHubService.findHeadCommitRevision(organization = organization, project = project)
         } else {
@@ -345,7 +345,7 @@ class ProjectApiController(
             "name"
         )
 
-        rdsService.postgreSqlInstanceIsProvisioned(organization, plan)
+        rdsService.refreshPostgreSqlInstanceStatus(organization, plan)
 
         val tag = gitHubService.tagProject(
             organization = organization,
