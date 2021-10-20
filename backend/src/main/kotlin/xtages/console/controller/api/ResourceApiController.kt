@@ -5,7 +5,10 @@ import org.springframework.http.HttpStatus.FORBIDDEN
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Controller
 import org.springframework.web.bind.annotation.PathVariable
-import xtages.console.controller.api.model.*
+import xtages.console.controller.api.model.Resource
+import xtages.console.controller.api.model.ResourceType
+import xtages.console.controller.api.model.UsageDetail
+import xtages.console.controller.model.resourcePojoToResource
 import xtages.console.controller.model.resourceTypeToResourceTypePojo
 import xtages.console.controller.model.usageDetailPojoToUsageDetail
 import xtages.console.dao.fetchLatestPlan
@@ -41,44 +44,34 @@ class ResourceApiController(
         val organization = organizationDao.maybeFetchOneByCognitoUserId(authenticationService.currentCognitoUserId)
         if (organization != null) {
             val plan = organizationToPlanDao.fetchLatestPlan(organization)
-            if (plan != null && rdsService.postgreSqlInstanceExists(organization = organization)) {
-                if (rdsService.postgreSqlInstanceIsProvisioned(organization = organization, plan = plan)) {
+            if (plan != null) {
+                val dbResource =
+                    rdsService.refreshPostgreSqlInstanceStatus(organization = organization, plan = plan)
+                if (dbResource != null) {
                     return ResponseEntity.ok(
                         listOf(
-                            Resource(
-                                resourceType = ResourceType.POSTGRESQL,
-                                billingModel = ResourceBillingModel.TOTAL_GB,
-                                provisioningStatus = ResourceProvisioningStatus.PROVISIONED
-                            )
+                            resourcePojoToResource.convert(dbResource)!!
                         )
                     )
                 }
-                return ResponseEntity.ok(
-                    listOf(
-                        Resource(
-                            resourceType = ResourceType.POSTGRESQL,
-                            billingModel = ResourceBillingModel.TOTAL_GB,
-                            provisioningStatus = ResourceProvisioningStatus.REQUESTED
-                        )
-                    )
-                )
+                return ResponseEntity.ok(emptyList())
             }
-            return ResponseEntity.ok(emptyList())
         }
         return ResponseEntity(FORBIDDEN)
     }
 
-    override fun provisionResource(@PathVariable(value = "resource") resource: ResourceType): ResponseEntity<Unit> {
+    override fun provisionResource(@PathVariable(value = "resourceType") resourceType: ResourceType):
+            ResponseEntity<Resource> {
         val organization = organizationDao.maybeFetchOneByCognitoUserId(authenticationService.currentCognitoUserId)
         if (organization != null) {
             val plan = organizationToPlanDao.fetchLatestPlan(organization)
                 ?: throw UserNeedsToHavePlanException(
                     "User needs to have a plan associated to provision a DB"
                 )
-            return when (resource) {
+            return when (resourceType) {
                 ResourceType.POSTGRESQL -> {
-                    rdsService.provisionPostgreSql(organization, plan)
-                    return ResponseEntity.ok().build()
+                    val resource = rdsService.provisionPostgreSql(organization, plan)
+                    return ResponseEntity.ok(resourcePojoToResource.convert(resource))
                 }
                 else -> ResponseEntity(BAD_REQUEST)
             }

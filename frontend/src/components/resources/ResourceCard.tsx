@@ -1,8 +1,8 @@
 import React, {ReactNode, useState} from 'react';
-import {ResourceProvisioningStatus, ResourceType} from 'gen/api';
+import {ResourceStatus, ResourceType} from 'gen/api';
 import {Alert, Button, Card, Col, Row, Spinner} from 'react-bootstrap';
 import cx from 'classnames';
-import {Check} from 'react-feather';
+import {AlertTriangle, Check} from 'react-feather';
 import styles from './ResourceCard.module.scss';
 
 export type ResourceCardProps = {
@@ -12,7 +12,7 @@ export type ResourceCardProps = {
 
   children?: ReactNode | ReactNode[];
 
-  provisioningStatus?: ResourceProvisioningStatus;
+  provisioningStatus?: ResourceStatus;
 
   comingSoon?: boolean;
 
@@ -35,18 +35,31 @@ export function ResourceCard({
   const imageName = resource.toLowerCase();
 
   let provisioningStatusText;
-  if (provisioningStatus === ResourceProvisioningStatus.Requested) {
+  if (provisioningStatus === ResourceStatus.Requested) {
     provisioningStatusText = (
       <Alert variant="warning" className="p-2">
         <Spinner animation="grow" size="sm" className="mr-2" aria-hidden />
         <span className="font-weight-bolder">Provisioning in progress</span>
       </Alert>
     );
-  } else if (provisioningStatus === ResourceProvisioningStatus.Provisioned) {
+  } else if (provisioningStatus === ResourceStatus.Provisioned) {
     provisioningStatusText = (
       <Alert variant="success" className="p-2">
         <Check size="1em" className="mr-2" />
         <span className="font-weight-bolder">Provisioning successful</span>
+      </Alert>
+    );
+  } else if (provisioningStatus === ResourceStatus.WaitListed) {
+    provisioningStatusText = (
+      <Alert variant="danger" className="p-2">
+        <Alert.Heading as="h2" className="h6 text-sm">
+          <AlertTriangle size="1em" className="mr-2" />
+          Provisioning on-hold
+        </Alert.Heading>
+        <p className="prose">
+          We are spinning up more capacity for you, we will send you an e-mail once
+          we are ready to provision your resource.
+        </p>
       </Alert>
     );
   }
