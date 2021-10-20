@@ -424,7 +424,7 @@ class CodeBuildService(
      * Creates a new `CodeBuild` [BuildType.CI] project for [organization] and [project].
      */
     fun createCodeBuildCiProject(organization: Organization, project: Project, recipe: Recipe) {
-        val plan = organizationToPlanDao.fetchLatestPlan(organization)
+        val plan = organizationToPlanDao.fetchLatestPlan(organization)!!
         val response = codeBuildAsyncClient.createProject(
             buildCreateProjectRequest(
                 organization = organization,
@@ -432,7 +432,7 @@ class CodeBuildService(
                 recipe = recipe,
                 codeBuildType = CodeBuildType.CI,
                 serviceRoleName = "xtages-codebuild-ci-role",
-                concurrentBuildLimit = plan?.concurrentBuildLimit,
+                concurrentBuildLimit = plan.concurrentBuildLimit,
             )
         ).get()
         val arn = response.project().arn()
@@ -449,10 +449,10 @@ class CodeBuildService(
      * Creates a new `CodeBuild` [BuildType.CD] project for [organization] and [project].
      */
     fun createCodeBuildCdProject(organization: Organization, project: Project, recipe: Recipe) {
-        val plan = organizationToPlanDao.fetchLatestPlan(organization)
+        val plan = organizationToPlanDao.fetchLatestPlan(organization)!!
         val maxConcurrentBuilds =
-            if (plan?.concurrentBuildLimit != null) {
-                min(2, plan?.concurrentBuildLimit!!)
+            if (plan.concurrentBuildLimit != null) {
+                min(2, plan.concurrentBuildLimit!!)
             } else {
                 null
             }
