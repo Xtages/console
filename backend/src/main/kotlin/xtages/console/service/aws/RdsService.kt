@@ -7,13 +7,15 @@ import software.amazon.awssdk.services.rds.RdsAsyncClient
 import software.amazon.awssdk.services.rds.model.*
 import software.amazon.awssdk.services.ssm.model.*
 import xtages.console.config.ConsoleProperties
+import xtages.console.dao.canAllocatedResource
 import xtages.console.dao.fetchByOrganizationNameAndResourceType
 import xtages.console.dao.fetchLatestByOrganizationName
+import xtages.console.dao.insertIfNotExists
 import xtages.console.pojo.dbIdentifier
 import xtages.console.pojo.dbName
 import xtages.console.pojo.dbUsername
 import xtages.console.query.enums.ResourceStatus
-import xtages.console.query.enums.ResourceType
+import xtages.console.query.enums.ResourceType.POSTGRESQL
 import xtages.console.query.tables.daos.OrganizationDao
 import xtages.console.query.tables.daos.PlanDao
 import xtages.console.query.tables.daos.ResourceDao
@@ -40,14 +42,26 @@ class RdsService(
     private val resourceDao: ResourceDao,
 ) {
 
-    fun provisionPostgreSql(organization: Organization, plan: Plan) {
-        if (!postgreSqlInstanceExists(organization = organization)) {
-            if (plan.paid!!) {
+    /**
+     * Provisions a PostgreSQL DB for [organization]. If [plan] is free then we first check if we are over the limit of
+     * db allocations and if we are then we add a [ResourceStatus.WAIT_LISTED] [Resource], instead of actually making
+     * the call to AWS to provision the DB.
+     */
+    fun provisionPostgreSql(organization: Organization, plan: Plan): Resource {
+        return refreshPostgreSqlInstanceStatus(organization = organization, plan = plan)
+            ?: return if (plan.paid!!) {
                 provisionPostgreSqlServerlessCluster(organization = organization)
-            } else {
+            } else if (resourceDao.canAllocatedResource(POSTGRESQL)) {
                 provisionPostgreSqlDbInstance(organization = organization)
+            } else {
+                val waitListedResource = Resource(
+                    organizationName = organization.name,
+                    resourceType = POSTGRESQL,
+                    resourceStatus = ResourceStatus.WAIT_LISTED,
+                )
+                resourceDao.insertIfNotExists(waitListedResource)
+                waitListedResource
             }
-        }
     }
 
     /**
@@ -56,7 +70,7 @@ class RdsService(
      * That's similar to 2 vCPU and 2 GB of RAM and 4 vCPU and 4 GB of RAM
      * Also, by default the auto pause will be enable
      */
-    private fun provisionPostgreSqlServerlessCluster(organization: Organization) {
+    private fun provisionPostgreSqlServerlessCluster(organization: Organization): Resource {
         val plan = planDao.fetchLatestByOrganizationName(organization.name!!)?.plan!!
         val password = createAndStorePassInSsm(organization)
         val cluster = CreateDbClusterRequest.builder()
@@ -87,27 +101,27 @@ class RdsService(
             .build()
         try {
             val result = rdsAsyncClient.createDBCluster(cluster).get()
-            resourceDao.insert(
-                Resource(
-                    organizationName = organization.name,
-                    resourceType = ResourceType.POSTGRESQL,
-                    resourceStatus = ResourceStatus.REQUESTED,
-                    resourceArn = result.dbCluster().dbClusterArn()
-                )
+            val resource = Resource(
+                organizationName = organization.name,
+                resourceType = POSTGRESQL,
+                resourceStatus = ResourceStatus.REQUESTED,
+                resourceArn = result.dbCluster().dbClusterArn()
             )
+            resourceDao.insert(resource)
+            return resource
         } catch (e: RdsException) {
             logger.error {
                 "There was an error while provisioning the DB for organization: ${organization.name}. Plan id used: ${plan.id}"
             }
             logger.error(e) {}
-            throw e;
+            throw e
         }
     }
 
     /**
      * Provisions a classic RDS instance with Postgres
      */
-    private fun provisionPostgreSqlDbInstance(organization: Organization) {
+    private fun provisionPostgreSqlDbInstance(organization: Organization): Resource {
         val plan = planDao.fetchLatestByOrganizationName(organization.name!!)?.plan!!
         val password = createAndStorePassInSsm(organization)
         val instanceRequest = CreateDbInstanceRequest.builder()
@@ -135,43 +149,31 @@ class RdsService(
             .build()
         try {
             val result = rdsAsyncClient.createDBInstance(instanceRequest).get()
-            resourceDao.insert(
-                Resource(
-                    organizationName = organization.name,
-                    resourceType = ResourceType.POSTGRESQL,
-                    resourceStatus = ResourceStatus.REQUESTED,
-                    resourceArn = result.dbInstance().dbInstanceArn()
-                )
+            val resource = Resource(
+                organizationName = organization.name,
+                resourceType = POSTGRESQL,
+                resourceStatus = ResourceStatus.REQUESTED,
+                resourceArn = result.dbInstance().dbInstanceArn()
             )
-            organizationDao.merge(organization)
+            resourceDao.insert(resource)
+            return resource
         } catch (e: RdsException) {
             logger.error {
                 "There was an error while provisioning the DB for organization: ${organization.name}. Plan id used: ${plan.id}"
             }
             logger.error(e) {}
-            throw e;
+            throw e
         }
-    }
-
-    /**
-     * Checks if a PostgreSQL DB instance/cluster exists for the [organization]. NB: The instance/cluster might be in
-     * the process of being provisioned by AWS.
-     */
-    fun postgreSqlInstanceExists(organization: Organization): Boolean {
-        return resourceDao.fetchByOrganizationNameAndResourceType(
-            organization = organization,
-            resourceType = ResourceType.POSTGRESQL
-        ) != null
     }
 
     /**
      * Checks if a PostgreSQL DB instance/cluster exists for the [organization] and has been provisioned. Records in our
      * DB the endpoint for the instance/cluster.
      */
-    fun postgreSqlInstanceIsProvisioned(organization: Organization, plan: Plan): Boolean {
+    fun refreshPostgreSqlInstanceStatus(organization: Organization, plan: Plan): Resource? {
         val dbResource = resourceDao.fetchByOrganizationNameAndResourceType(
             organization = organization,
-            resourceType = ResourceType.POSTGRESQL
+            resourceType = POSTGRESQL
         )
         if (dbResource != null && dbResource.resourceStatus == ResourceStatus.REQUESTED) {
             val endpoint = getEndpoint(organization = organization, paid = plan.paid!!)
@@ -179,11 +181,9 @@ class RdsService(
                 dbResource.resourceEndpoint = endpoint
                 dbResource.resourceStatus = ResourceStatus.PROVISIONED
                 resourceDao.merge(dbResource)
-                return true
             }
-            return false
         }
-        return true
+        return dbResource
     }
 
     private fun getEndpoint(organization: Organization, paid: Boolean): String? {
