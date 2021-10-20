@@ -128,9 +128,9 @@ val usageDetailPojoToUsageDetail = Converter { source: UsageDetailPojo ->
 val resourceTypePojoToResourceType = Converter { source: ResourceTypePojo ->
     when (source) {
         ResourceTypePojo.PROJECT -> ResourceType.PROJECT
-        ResourceTypePojo.MONTHLY_BUILD_MINUTES -> ResourceType.BUILD_MINUTES
-        ResourceTypePojo.MONTHLY_DATA_TRANSFER_GBS -> ResourceType.DATA_TRANSFER
-        ResourceTypePojo.DB_STORAGE_GBS -> ResourceType.POSTGRESQL
+        ResourceTypePojo.BUILD_MINUTES -> ResourceType.BUILD_MINUTES
+        ResourceTypePojo.DATA_TRANSFER -> ResourceType.DATA_TRANSFER
+        ResourceTypePojo.POSTGRESQL -> ResourceType.POSTGRESQL
     }
 }
 
@@ -138,9 +138,9 @@ val resourceTypePojoToResourceType = Converter { source: ResourceTypePojo ->
 val resourceTypeToResourceTypePojo = Converter { source: ResourceType ->
     when (source) {
         ResourceType.PROJECT -> ResourceTypePojo.PROJECT
-        ResourceType.BUILD_MINUTES -> ResourceTypePojo.MONTHLY_BUILD_MINUTES
-        ResourceType.DATA_TRANSFER -> ResourceTypePojo.MONTHLY_DATA_TRANSFER_GBS
-        ResourceType.POSTGRESQL -> ResourceTypePojo.DB_STORAGE_GBS
+        ResourceType.BUILD_MINUTES -> ResourceTypePojo.BUILD_MINUTES
+        ResourceType.DATA_TRANSFER -> ResourceTypePojo.DATA_TRANSFER
+        ResourceType.POSTGRESQL -> ResourceTypePojo.POSTGRESQL
         else -> throw UnsupportedOperationException("Invalid ResourceType [$source]")
     }
 }
@@ -149,9 +149,9 @@ val resourceTypeToResourceTypePojo = Converter { source: ResourceType ->
 val resourceTypeToResourceBillingModel = Converter { source: ResourceTypePojo ->
     when (source) {
         ResourceTypePojo.PROJECT -> ResourceBillingModel.TOTAL_NUMBER
-        ResourceTypePojo.MONTHLY_BUILD_MINUTES -> ResourceBillingModel.MINUTES_PER_MONTH
-        ResourceTypePojo.MONTHLY_DATA_TRANSFER_GBS -> ResourceBillingModel.GB_PER_MONTH
-        ResourceTypePojo.DB_STORAGE_GBS -> ResourceBillingModel.TOTAL_GB
+        ResourceTypePojo.BUILD_MINUTES -> ResourceBillingModel.MINUTES_PER_MONTH
+        ResourceTypePojo.DATA_TRANSFER -> ResourceBillingModel.GB_PER_MONTH
+        ResourceTypePojo.POSTGRESQL -> ResourceBillingModel.TOTAL_GB
     }
 }
 

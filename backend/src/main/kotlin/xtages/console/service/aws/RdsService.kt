@@ -7,14 +7,19 @@ import software.amazon.awssdk.services.rds.RdsAsyncClient
 import software.amazon.awssdk.services.rds.model.*
 import software.amazon.awssdk.services.ssm.model.*
 import xtages.console.config.ConsoleProperties
+import xtages.console.dao.fetchByOrganizationNameAndResourceType
 import xtages.console.dao.fetchLatestByOrganizationName
 import xtages.console.pojo.dbIdentifier
 import xtages.console.pojo.dbName
 import xtages.console.pojo.dbUsername
+import xtages.console.query.enums.ResourceStatus
+import xtages.console.query.enums.ResourceType
 import xtages.console.query.tables.daos.OrganizationDao
 import xtages.console.query.tables.daos.PlanDao
+import xtages.console.query.tables.daos.ResourceDao
 import xtages.console.query.tables.pojos.Organization
 import xtages.console.query.tables.pojos.Plan
+import xtages.console.query.tables.pojos.Resource
 import xtages.console.service.OrganizationService
 import java.util.concurrent.ExecutionException
 import software.amazon.awssdk.services.rds.model.Tag as TagRds
@@ -32,6 +37,7 @@ class RdsService(
     private val planDao: PlanDao,
     private val organizationDao: OrganizationDao,
     private val organizationService: OrganizationService,
+    private val resourceDao: ResourceDao,
 ) {
 
     fun provisionPostgreSql(organization: Organization, plan: Plan) {
@@ -81,8 +87,14 @@ class RdsService(
             .build()
         try {
             val result = rdsAsyncClient.createDBCluster(cluster).get()
-            organization.rdsArn = result.dbCluster().dbClusterArn()
-            organizationDao.merge(organization)
+            resourceDao.insert(
+                Resource(
+                    organizationName = organization.name,
+                    resourceType = ResourceType.POSTGRESQL,
+                    resourceStatus = ResourceStatus.REQUESTED,
+                    resourceArn = result.dbCluster().dbClusterArn()
+                )
+            )
         } catch (e: RdsException) {
             logger.error {
                 "There was an error while provisioning the DB for organization: ${organization.name}. Plan id used: ${plan.id}"
@@ -123,7 +135,14 @@ class RdsService(
             .build()
         try {
             val result = rdsAsyncClient.createDBInstance(instanceRequest).get()
-            organization.rdsArn = result.dbInstance().dbInstanceArn()
+            resourceDao.insert(
+                Resource(
+                    organizationName = organization.name,
+                    resourceType = ResourceType.POSTGRESQL,
+                    resourceStatus = ResourceStatus.REQUESTED,
+                    resourceArn = result.dbInstance().dbInstanceArn()
+                )
+            )
             organizationDao.merge(organization)
         } catch (e: RdsException) {
             logger.error {
@@ -138,18 +157,28 @@ class RdsService(
      * Checks if a PostgreSQL DB instance/cluster exists for the [organization]. NB: The instance/cluster might be in
      * the process of being provisioned by AWS.
      */
-    fun postgreSqlInstanceExists(organization: Organization): Boolean = organization.rdsArn != null
+    fun postgreSqlInstanceExists(organization: Organization): Boolean {
+        return resourceDao.fetchByOrganizationNameAndResourceType(
+            organization = organization,
+            resourceType = ResourceType.POSTGRESQL
+        ) != null
+    }
 
     /**
      * Checks if a PostgreSQL DB instance/cluster exists for the [organization] and has been provisioned. Records in our
      * DB the endpoint for the instance/cluster.
      */
     fun postgreSqlInstanceIsProvisioned(organization: Organization, plan: Plan): Boolean {
-        if (organization.rdsEndpoint == null) {
+        val dbResource = resourceDao.fetchByOrganizationNameAndResourceType(
+            organization = organization,
+            resourceType = ResourceType.POSTGRESQL
+        )
+        if (dbResource != null && dbResource.resourceStatus == ResourceStatus.REQUESTED) {
             val endpoint = getEndpoint(organization = organization, paid = plan.paid!!)
             if (endpoint != null) {
-                organization.rdsEndpoint = endpoint
-                organizationDao.merge(organization)
+                dbResource.resourceEndpoint = endpoint
+                dbResource.resourceStatus = ResourceStatus.PROVISIONED
+                resourceDao.merge(dbResource)
                 return true
             }
             return false
