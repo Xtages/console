@@ -21,6 +21,7 @@ import xtages.console.query.tables.pojos.Organization
 import xtages.console.query.tables.pojos.Plan
 import xtages.console.query.tables.pojos.Resource
 import xtages.console.service.OrganizationService
+import java.util.concurrent.ExecutionException
 import software.amazon.awssdk.services.rds.model.Tag as TagRds
 
 private val logger = KotlinLogging.logger { }
