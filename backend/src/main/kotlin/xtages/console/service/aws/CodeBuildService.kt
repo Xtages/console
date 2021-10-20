@@ -43,6 +43,7 @@ import xtages.console.query.tables.pojos.Project
 import xtages.console.query.tables.references.BUILD
 import xtages.console.service.*
 import xtages.console.time.toUtcLocalDateTime
+import java.lang.Integer.min
 import java.time.*
 import java.time.format.DateTimeFormatter
 import software.amazon.awssdk.services.codebuild.model.Tag as CodebuildTag
@@ -423,6 +424,7 @@ class CodeBuildService(
      * Creates a new `CodeBuild` [BuildType.CI] project for [organization] and [project].
      */
     fun createCodeBuildCiProject(organization: Organization, project: Project, recipe: Recipe) {
+        val plan = organizationToPlanDao.fetchLatestPlan(organization)!!
         val response = codeBuildAsyncClient.createProject(
             buildCreateProjectRequest(
                 organization = organization,
@@ -430,6 +432,7 @@ class CodeBuildService(
                 recipe = recipe,
                 codeBuildType = CodeBuildType.CI,
                 serviceRoleName = "xtages-codebuild-ci-role",
+                concurrentBuildLimit = plan.concurrentBuildLimit,
             )
         ).get()
         val arn = response.project().arn()
@@ -446,6 +449,13 @@ class CodeBuildService(
      * Creates a new `CodeBuild` [BuildType.CD] project for [organization] and [project].
      */
     fun createCodeBuildCdProject(organization: Organization, project: Project, recipe: Recipe) {
+        val plan = organizationToPlanDao.fetchLatestPlan(organization)!!
+        val maxConcurrentBuilds =
+            if (plan.concurrentBuildLimit != null) {
+                min(2, plan.concurrentBuildLimit!!)
+            } else {
+                null
+            }
         val response = codeBuildAsyncClient.createProject(
             buildCreateProjectRequest(
                 organization = organization,
@@ -454,7 +464,7 @@ class CodeBuildService(
                 codeBuildType = CodeBuildType.CD,
                 privilegedMode = true,
                 serviceRoleName = "xtages-codebuild-cd-role",
-                concurrentBuildLimit = 2,
+                concurrentBuildLimit = maxConcurrentBuilds,
             )
         ).get()
 
