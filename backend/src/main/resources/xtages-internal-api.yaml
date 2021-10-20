@@ -503,14 +503,14 @@ paths:
           $ref: "#/components/responses/UnauthorizedError"
         default:
           $ref: "#/components/responses/DefaultError"
-  /resource/{resource}:
+  /resource/{resourceType}:
     post:
       summary: Provisions a resource
       operationId: provisionResource
       tags:
         - resource
       parameters:
-        - name: resource
+        - name: resourceType
           in: path
           required: true
           schema:
@@ -518,6 +518,10 @@ paths:
       responses:
         '200':
           description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Resource"
         "401":
           $ref: "#/components/responses/UnauthorizedError"
         default:
@@ -1095,19 +1099,20 @@ components:
           $ref: "#/components/schemas/ResourceType"
         billingModel:
           $ref: "#/components/schemas/ResourceBillingModel"
-        provisioningStatus:
-          $ref: "#/components/schemas/ResourceProvisioningStatus"
+        status:
+          $ref: "#/components/schemas/ResourceStatus"
       required:
         - resourceType
         - billingModel
         - provisioningStatus
-    ResourceProvisioningStatus:
-      description: The provisioning status of a resource
+    ResourceStatus:
+      description: The status of a resource
       type: string
       minLength: 1
       enum:
         - PROVISIONED
         - REQUESTED
+        - WAIT_LISTED
     ResourceType:
       description: Enum of resources
       type: string
