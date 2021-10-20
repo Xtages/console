@@ -25,6 +25,7 @@ import xtages.console.controller.model.CodeBuildType
 import xtages.console.controller.model.buildPojoToBuild
 import xtages.console.controller.model.organizationPojoToOrganizationConverter
 import xtages.console.controller.model.projectPojoToProject
+import xtages.console.dao.fetchByOrganizationNameAndResourceType
 import xtages.console.dao.fetchLatestPlan
 import xtages.console.dao.findFromBuilds
 import xtages.console.dao.findPreviousCIBuild
@@ -88,6 +89,7 @@ class CodeBuildService(
     private val userService: UserService,
     private val objectMapper: ObjectMapper,
     private val organizationToPlanDao: OrganizationToPlanDao,
+    private val resourceDao: ResourceDao,
     @Value("\${spring.profiles.active}")
     private val activeProfile: String,
 ) {
@@ -295,7 +297,7 @@ class CodeBuildService(
         )
         usageService.checkUsageIsBelowLimit(
             organization = organization,
-            resourceType = ResourceType.MONTHLY_BUILD_MINUTES
+            resourceType = ResourceType.BUILD_MINUTES
         )
         ensure.notNull(value = project.codebuildCdProjectArn, valueDesc = "project.codebuildCdProjectArn")
         ensure.notNull(value = project.codebuildCiProjectArn, valueDesc = "project.codebuildCiProjectArn")
@@ -320,6 +322,11 @@ class CodeBuildService(
 
         val plan = organizationToPlanDao.fetchLatestPlan(organization)!!
 
+        val dbResource = resourceDao.fetchByOrganizationNameAndResourceType(
+            organization = organization,
+            resourceType = ResourceType.POSTGRESQL
+        )
+
         val scriptPath = getScriptPath(recipe, previousGitHubProjectTag, environment)
         val isDeploy = environment == "production"
 
@@ -336,7 +343,7 @@ class CodeBuildService(
                             type = EnvironmentVariableType.PARAMETER_STORE
                         ),
                         envVar(name = "XTAGES_ENV", value = xtagesEnv),
-                        envVar(name = "XTAGES_DB_URL", value = organization.rdsEndpoint),
+                        envVar(name = "XTAGES_DB_URL", value = dbResource?.resourceEndpoint),
                         envVar(name = "XTAGES_DB_USER", value = organization.dbUsername),
                         envVar(name = "XTAGES_DB_NAME", value = organization.dbName),
                         envVar(name = "XTAGES_SCRIPT", value = scriptPath),

@@ -84,9 +84,9 @@ class UsageService(
                         val resetDateTime = when (resourceType) {
                             // PROJECT and DB_STORAGE_GBS don't reset at the end of the month
                             ResourceType.PROJECT,
-                            ResourceType.DB_STORAGE_GBS -> null
-                            ResourceType.MONTHLY_BUILD_MINUTES,
-                            ResourceType.MONTHLY_DATA_TRANSFER_GBS -> currentBillingMonth.endInclusive
+                            ResourceType.POSTGRESQL -> null
+                            ResourceType.BUILD_MINUTES,
+                            ResourceType.DATA_TRANSFER -> currentBillingMonth.endInclusive
                         }
                         return if (usage >= limit) {
                             UsageOverLimitWithDetails(
@@ -117,18 +117,21 @@ class UsageService(
     ): Long {
         return when (resourceType) {
             ResourceType.PROJECT -> projectDao.fetchByOrganization(organization.name!!).size.toLong()
-            ResourceType.MONTHLY_BUILD_MINUTES -> calculateBuildMinutes(
+            ResourceType.BUILD_MINUTES -> calculateBuildMinutes(
                 organization = organization,
                 billingCycle = dateRange
             )
-            ResourceType.MONTHLY_DATA_TRANSFER_GBS -> BinaryByteUnit.BYTES.toGibibytes(
-                cloudWatchService.getBytesSent(
-                    organization = organization,
-                    projects = projectDao.fetchByOrganization(organization.name!!).toTypedArray(),
-                    since = dateRange.start
+            ResourceType.DATA_TRANSFER -> {
+                @Suppress("CHANGING_ARGUMENTS_EXECUTION_ORDER_FOR_NAMED_VARARGS")
+                BinaryByteUnit.BYTES.toGibibytes(
+                    cloudWatchService.getBytesSent(
+                        organization = organization,
+                        projects = projectDao.fetchByOrganization(organization.name!!).toTypedArray(),
+                        since = dateRange.start
+                    )
                 )
-            )
-            ResourceType.DB_STORAGE_GBS -> {
+            }
+            ResourceType.POSTGRESQL -> {
                 val bytesDbStorageFree = cloudWatchService.getBytesDbStorageFree(organization = organization)
                 if (bytesDbStorageFree == -1L) {
                     0L
@@ -188,9 +191,9 @@ class UsageService(
     private fun extractLimitFromPlan(plan: Plan, resourceType: ResourceType): Long {
         return when (resourceType) {
             ResourceType.PROJECT -> plan.limitProjects!!
-            ResourceType.MONTHLY_BUILD_MINUTES -> plan.limitMonthlyBuildMinutes!!
-            ResourceType.MONTHLY_DATA_TRANSFER_GBS -> plan.limitMonthlyDataTransferGbs!!
-            ResourceType.DB_STORAGE_GBS -> plan.dbStorageGbs!!
+            ResourceType.BUILD_MINUTES -> plan.limitMonthlyBuildMinutes!!
+            ResourceType.DATA_TRANSFER -> plan.limitMonthlyDataTransferGbs!!
+            ResourceType.POSTGRESQL -> plan.dbStorageGbs!!
         }
     }
 }
