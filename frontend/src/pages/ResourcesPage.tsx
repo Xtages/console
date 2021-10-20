@@ -40,7 +40,7 @@ export default function ResourcesPage() {
                       resource={ResourceType.Postgresql}
                       title="PostgreSQL"
                       onProvisionRequested={handleProvisionRequest}
-                      provisioningStatus={postgres?.provisioningStatus}
+                      provisioningStatus={postgres?.status}
                     >
                       <p className="prose">
                         PostgreSQL is a powerful, open source object-relational database system

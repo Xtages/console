@@ -1,7 +1,7 @@
 import React from 'react';
 import {Meta, Story} from '@storybook/react';
 import {ResourceCard, ResourceCardProps} from 'components/resources/ResourceCard';
-import {ResourceProvisioningStatus, ResourceType} from 'gen/api';
+import {ResourceStatus, ResourceType} from 'gen/api';
 
 export default {
   title: 'Xtages/ResourceCard',
@@ -21,7 +21,7 @@ export const ResourceProvisioned = Template.bind({});
 ResourceProvisioned.args = {
   resource: ResourceType.Postgresql,
   title: 'PostgreSQL',
-  provisioningStatus: ResourceProvisioningStatus.Provisioned,
+  provisioningStatus: ResourceStatus.Provisioned,
 };
 ResourceProvisioned.storyName = 'ResourceCardProvisioned';
 
@@ -29,7 +29,7 @@ export const ResourceRequested = Template.bind({});
 ResourceRequested.args = {
   resource: ResourceType.Postgresql,
   title: 'PostgreSQL',
-  provisioningStatus: ResourceProvisioningStatus.Requested,
+  provisioningStatus: ResourceStatus.Requested,
 };
 ResourceRequested.storyName = 'ResourceCardRequested';
 

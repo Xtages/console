@@ -787,10 +787,10 @@ export interface Resource {
     billingModel: ResourceBillingModel;
     /**
      * 
-     * @type {ResourceProvisioningStatus}
+     * @type {ResourceStatus}
      * @memberof Resource
      */
-    provisioningStatus: ResourceProvisioningStatus;
+    status?: ResourceStatus;
 }
 /**
  * How a Resource is billed
@@ -805,13 +805,14 @@ export enum ResourceBillingModel {
 }
 
 /**
- * The provisioning status of a resource
+ * The status of a resource
  * @export
  * @enum {string}
  */
-export enum ResourceProvisioningStatus {
+export enum ResourceStatus {
     Provisioned = 'PROVISIONED',
-    Requested = 'REQUESTED'
+    Requested = 'REQUESTED',
+    WaitListed = 'WAIT_LISTED'
 }
 
 /**
@@ -2915,15 +2916,15 @@ export const ResourceApiAxiosParamCreator = function (configuration?: Configurat
         /**
          * 
          * @summary Provisions a resource
-         * @param {ResourceType} resource 
+         * @param {ResourceType} resourceType 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        provisionResource: async (resource: ResourceType, options: any = {}): Promise<RequestArgs> => {
-            // verify required parameter 'resource' is not null or undefined
-            assertParamExists('provisionResource', 'resource', resource)
-            const localVarPath = `/resource/{resource}`
-                .replace(`{${"resource"}}`, encodeURIComponent(String(resource)));
+        provisionResource: async (resourceType: ResourceType, options: any = {}): Promise<RequestArgs> => {
+            // verify required parameter 'resourceType' is not null or undefined
+            assertParamExists('provisionResource', 'resourceType', resourceType)
+            const localVarPath = `/resource/{resourceType}`
+                .replace(`{${"resourceType"}}`, encodeURIComponent(String(resourceType)));
             // use dummy base URL string because the URL constructor only accepts absolute URLs.
             const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
             let baseOptions;
@@ -2994,12 +2995,12 @@ export const ResourceApiFp = function(configuration?: Configuration) {
         /**
          * 
          * @summary Provisions a resource
-         * @param {ResourceType} resource 
+         * @param {ResourceType} resourceType 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async provisionResource(resource: ResourceType, options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<void>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.provisionResource(resource, options);
+        async provisionResource(resourceType: ResourceType, options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Resource>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.provisionResource(resourceType, options);
             return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
         },
     }
@@ -3043,12 +3044,12 @@ export const ResourceApiFactory = function (configuration?: Configuration, baseP
         /**
          * 
          * @summary Provisions a resource
-         * @param {ResourceType} resource 
+         * @param {ResourceType} resourceType 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        provisionResource(resource: ResourceType, options?: any): AxiosPromise<void> {
-            return localVarFp.provisionResource(resource, options).then((request) => request(axios, basePath));
+        provisionResource(resourceType: ResourceType, options?: any): AxiosPromise<Resource> {
+            return localVarFp.provisionResource(resourceType, options).then((request) => request(axios, basePath));
         },
     };
 };
@@ -3097,13 +3098,13 @@ export class ResourceApi extends BaseAPI {
     /**
      * 
      * @summary Provisions a resource
-     * @param {ResourceType} resource 
+     * @param {ResourceType} resourceType 
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      * @memberof ResourceApi
      */
-    public provisionResource(resource: ResourceType, options?: any) {
-        return ResourceApiFp(this.configuration).provisionResource(resource, options).then((request) => request(this.axios, this.basePath));
+    public provisionResource(resourceType: ResourceType, options?: any) {
+        return ResourceApiFp(this.configuration).provisionResource(resourceType, options).then((request) => request(this.axios, this.basePath));
     }
 }
 

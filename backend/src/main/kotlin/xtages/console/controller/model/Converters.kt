@@ -16,10 +16,12 @@ import xtages.console.query.tables.pojos.ProjectDeployment
 import xtages.console.query.tables.pojos.Recipe
 import xtages.console.service.*
 import xtages.console.time.toUtcMillis
+import xtages.console.query.enums.ResourceStatus as ResourceStatusPojo
 import xtages.console.query.enums.ResourceType as ResourceTypePojo
 import xtages.console.query.tables.pojos.Build as BuildPojo
 import xtages.console.query.tables.pojos.Organization as OrganizationPojo
 import xtages.console.query.tables.pojos.Project as ProjectPojo
+import xtages.console.query.tables.pojos.Resource as ResourcePojo
 import xtages.console.service.UsageDetail as UsageDetailPojo
 
 /**
@@ -152,6 +154,22 @@ val resourceTypeToResourceBillingModel = Converter { source: ResourceTypePojo ->
         ResourceTypePojo.BUILD_MINUTES -> ResourceBillingModel.MINUTES_PER_MONTH
         ResourceTypePojo.DATA_TRANSFER -> ResourceBillingModel.GB_PER_MONTH
         ResourceTypePojo.POSTGRESQL -> ResourceBillingModel.TOTAL_GB
+    }
+}
+
+val resourcePojoToResource = Converter { source : ResourcePojo ->
+    Resource(
+        resourceType = resourceTypePojoToResourceType.convert(source.resourceType!!)!!,
+        billingModel = resourceTypeToResourceBillingModel.convert(source.resourceType!!)!!,
+        status = resourceStatusPojoToResourceStatus.convert(source.resourceStatus!!)!!,
+    )
+}
+
+val resourceStatusPojoToResourceStatus = Converter { source: ResourceStatusPojo ->
+    when (source) {
+        ResourceStatusPojo.REQUESTED -> ResourceStatus.REQUESTED
+        ResourceStatusPojo.PROVISIONED -> ResourceStatus.PROVISIONED
+        ResourceStatusPojo.WAIT_LISTED -> ResourceStatus.WAIT_LISTED
     }
 }
 
