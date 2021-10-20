@@ -39,9 +39,9 @@ class ResourceApiController(
 
     override fun getResources(): ResponseEntity<List<Resource>> {
         val organization = organizationDao.maybeFetchOneByCognitoUserId(authenticationService.currentCognitoUserId)
-        organization ?: run {
-            val plan = organizationToPlanDao.fetchLatestPlan(organization!!)
-            if (plan != null && rdsService.postgreSqlInstanceExists(organization = organization, plan = plan)) {
+        if (organization != null) {
+            val plan = organizationToPlanDao.fetchLatestPlan(organization)
+            if (plan != null && rdsService.postgreSqlInstanceExists(organization = organization)) {
                 if (rdsService.postgreSqlInstanceIsProvisioned(organization = organization, plan = plan)) {
                     return ResponseEntity.ok(
                         listOf(
@@ -70,7 +70,7 @@ class ResourceApiController(
 
     override fun provisionResource(@PathVariable(value = "resource") resource: ResourceType): ResponseEntity<Unit> {
         val organization = organizationDao.maybeFetchOneByCognitoUserId(authenticationService.currentCognitoUserId)
-        organization ?: run {
+        if (organization != null) {
             val plan = organizationToPlanDao.fetchLatestPlan(organization!!)
                 ?: throw UserNeedsToHavePlanException(
                     "User needs to have a plan associated to provision a DB"

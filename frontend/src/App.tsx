@@ -29,6 +29,7 @@ const InvalidOrgPage = loadable(() => import('pages/authn/InvalidOrgPage'));
 const LoginPage = loadable(() => import('pages/authn/LoginPage'));
 const ProjectPage = loadable(() => import('pages/ProjectPage'));
 const ProjectSettingsPage = loadable(() => import('pages/ProjectSettingsPage'));
+const ResourcesPage = loadable(() => import('pages/ResourcesPage'));
 const SignUpPage = loadable(() => import('pages/authn/SignUpPage'));
 const StripePostCheckoutPage = loadable(() => import('pages/StripePostCheckoutPage'));
 
@@ -94,6 +95,7 @@ function InstrumentedApp() {
             component={DeploymentsPage}
           />
           <AuthdAndGoodStandingRoute path="/deployments" component={DeploymentsPage} />
+          <AuthdAndGoodStandingRoute path="/resources" component={ResourcesPage} />
           <AuthdAndGoodStandingRoute path="/" component={HomePage} />
         </Switch>
       </ProvideAuth>
