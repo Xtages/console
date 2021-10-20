@@ -71,7 +71,7 @@ class ResourceApiController(
     override fun provisionResource(@PathVariable(value = "resource") resource: ResourceType): ResponseEntity<Unit> {
         val organization = organizationDao.maybeFetchOneByCognitoUserId(authenticationService.currentCognitoUserId)
         if (organization != null) {
-            val plan = organizationToPlanDao.fetchLatestPlan(organization!!)
+            val plan = organizationToPlanDao.fetchLatestPlan(organization)
                 ?: throw UserNeedsToHavePlanException(
                     "User needs to have a plan associated to provision a DB"
                 )
