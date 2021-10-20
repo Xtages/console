@@ -521,6 +521,8 @@ class CodeBuildService(
             )
             .vpcConfig(
                 VpcConfig.builder()
+                    .vpcId(consoleProperties.aws.vpc.id)
+                    .securityGroupIds(consoleProperties.aws.rds.dbSecurityGroup)
                     .subnets(consoleProperties.aws.vpc.privateSubnets)
                     .build()
             )
