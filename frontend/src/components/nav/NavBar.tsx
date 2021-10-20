@@ -57,6 +57,9 @@ export default function NavBar() {
               <NavLink className="nav-link" to="/deployments/" exact>Deployments</NavLink>
             </li>
             <li className="nav-item">
+              <NavLink className="nav-link" to="/resources" exact>Resources</NavLink>
+            </li>
+            <li className="nav-item">
               <a
                 className="nav-link"
                 href="https://docs.xtages.com"

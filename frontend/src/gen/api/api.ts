@@ -768,6 +768,31 @@ export interface RecordCheckoutReq {
     checkoutSessionId: string;
 }
 /**
+ * A provisioned (or in progress to be provisioned) resourced
+ * @export
+ * @interface Resource
+ */
+export interface Resource {
+    /**
+     * 
+     * @type {ResourceType}
+     * @memberof Resource
+     */
+    resourceType: ResourceType;
+    /**
+     * 
+     * @type {ResourceBillingModel}
+     * @memberof Resource
+     */
+    billingModel: ResourceBillingModel;
+    /**
+     * 
+     * @type {ResourceProvisioningStatus}
+     * @memberof Resource
+     */
+    provisioningStatus: ResourceProvisioningStatus;
+}
+/**
  * How a Resource is billed
  * @export
  * @enum {string}
@@ -777,6 +802,16 @@ export enum ResourceBillingModel {
     GbPerMonth = 'GB_PER_MONTH',
     TotalGb = 'TOTAL_GB',
     TotalNumber = 'TOTAL_NUMBER'
+}
+
+/**
+ * The provisioning status of a resource
+ * @export
+ * @enum {string}
+ */
+export enum ResourceProvisioningStatus {
+    Provisioned = 'PROVISIONED',
+    Requested = 'REQUESTED'
 }
 
 /**
@@ -2807,6 +2842,40 @@ export const ResourceApiAxiosParamCreator = function (configuration?: Configurat
         },
         /**
          * 
+         * @summary Gets all the Resources that have been provisioned (or are in progress of being provisioned)
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getResources: async (options: any = {}): Promise<RequestArgs> => {
+            const localVarPath = `/resource`;
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            // authentication bearerAuth required
+            // http bearer authentication required
+            await setBearerAuthToObject(localVarHeaderParameter, configuration)
+
+
+    
+            setSearchParams(localVarUrlObj, localVarQueryParameter, options.query);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
+         * 
          * @summary Gets the usage for a certain resource type across all projects
          * @param {ResourceType} resourceType 
          * @param {*} [options] Override http request option.
@@ -2903,6 +2972,16 @@ export const ResourceApiFp = function(configuration?: Configuration) {
         },
         /**
          * 
+         * @summary Gets all the Resources that have been provisioned (or are in progress of being provisioned)
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async getResources(options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Array<Resource>>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.getResources(options);
+            return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
+        },
+        /**
+         * 
          * @summary Gets the usage for a certain resource type across all projects
          * @param {ResourceType} resourceType 
          * @param {*} [options] Override http request option.
@@ -2944,6 +3023,15 @@ export const ResourceApiFactory = function (configuration?: Configuration, baseP
         },
         /**
          * 
+         * @summary Gets all the Resources that have been provisioned (or are in progress of being provisioned)
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getResources(options?: any): AxiosPromise<Array<Resource>> {
+            return localVarFp.getResources(options).then((request) => request(axios, basePath));
+        },
+        /**
+         * 
          * @summary Gets the usage for a certain resource type across all projects
          * @param {ResourceType} resourceType 
          * @param {*} [options] Override http request option.
@@ -2981,6 +3069,17 @@ export class ResourceApi extends BaseAPI {
      */
     public getAllUsageDetails(options?: any) {
         return ResourceApiFp(this.configuration).getAllUsageDetails(options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * 
+     * @summary Gets all the Resources that have been provisioned (or are in progress of being provisioned)
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof ResourceApi
+     */
+    public getResources(options?: any) {
+        return ResourceApiFp(this.configuration).getResources(options).then((request) => request(this.axios, this.basePath));
     }
 
     /**
