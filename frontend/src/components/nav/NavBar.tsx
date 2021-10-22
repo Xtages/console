@@ -74,12 +74,9 @@ export default function NavBar() {
           </ul>
         </div>
         <div className="ml-1">
-          <Container className="p-0 text-xs text-right">
+          <Container className="p-0">
             <Row noGutters className="align-items-center">
               <Col sm="auto" className="pr-2">
-                <div>
-                  {auth?.principal?.name ?? auth?.principal?.email}
-                </div>
                 {organization?.name && (
                 <div>
                   {organization?.name}
@@ -92,6 +89,10 @@ export default function NavBar() {
                     <Avatar rounded size="sm" />
                   </Dropdown.Toggle>
                   <Dropdown.Menu>
+                    <Dropdown.Header className="text-xs text-nowrap">
+                      {auth?.principal?.name ?? auth?.principal?.email}
+                    </Dropdown.Header>
+                    <Dropdown.Divider />
                     <Dropdown.Item onClick={goToAccount}>Account</Dropdown.Item>
                     <Dropdown.Divider />
                     <Dropdown.Item onClick={signOut}>Sign out</Dropdown.Item>
