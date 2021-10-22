@@ -12,6 +12,7 @@ import {Flag} from 'react-feather';
 import {useOrganization} from 'hooks/useOrganization';
 import {buildOauthUrl} from 'helpers/github';
 import {useAuth} from 'hooks/useAuth';
+import {useTracking} from 'hooks/useTracking';
 
 export function SetupWizardSection() {
   return (
@@ -26,6 +27,7 @@ function SetupWizard() {
     organization,
   } = useOrganization();
   const {principal} = useAuth();
+  const {trackComponentEvent} = useTracking();
 
   const {
     data: installUrlData,
@@ -42,6 +44,11 @@ function SetupWizard() {
     const installUrl = needToInstallGitHubApp
       ? installUrlData?.data!!
       : buildOauthUrl(organization?.name!!, principal?.id!!).toString();
+    trackComponentEvent('SetupWizard', 'GitHub setup needed', {
+      needToInstallGitHubApp,
+      needToAuthorizedGitHubOauth,
+      installUrl,
+    });
     return (
       <Section>
         <SectionTitle
@@ -60,6 +67,9 @@ function SetupWizard() {
   }
   if (isSuccess
       && organization?.subscriptionStatus === OrganizationSubscriptionStatusEnum.Unconfirmed) {
+    trackComponentEvent('SetupWizard', 'Checkout needed', {
+      org: organization.name,
+    });
     return (
       <Section>
         <SectionTitle
