@@ -6,32 +6,23 @@ import com.stripe.model.Invoice
 import com.stripe.model.Subscription
 import com.stripe.param.checkout.SessionCreateParams
 import com.stripe.param.checkout.SessionCreateParams.SubscriptionData
-import mu.KotlinLogging
 import org.springframework.cache.annotation.Cacheable
 import org.springframework.stereotype.Service
 import org.springframework.web.context.annotation.RequestScope
 import org.springframework.web.util.UriComponentsBuilder
 import xtages.console.config.ConsoleProperties
 import xtages.console.dao.fetchOneByCognitoUserId
-import xtages.console.dao.insertIfNotExists
-import xtages.console.exception.ExceptionCode.ORG_NOT_FOUND
 import xtages.console.exception.ensure
-import xtages.console.query.enums.OrganizationSubscriptionStatus
 import xtages.console.query.enums.OrganizationSubscriptionStatus.ACTIVE
 import xtages.console.query.enums.OrganizationSubscriptionStatus.SUSPENDED
 import xtages.console.query.tables.daos.OrganizationDao
-import xtages.console.query.tables.daos.OrganizationToPlanDao
-import xtages.console.query.tables.daos.PlanDao
 import xtages.console.query.tables.pojos.Organization
-import xtages.console.query.tables.pojos.OrganizationToPlan
 import java.net.URI
-import java.time.LocalDateTime
 import com.stripe.model.billingportal.Session as PortalSession
 import com.stripe.model.checkout.Session as CheckoutSession
 import com.stripe.param.billingportal.SessionCreateParams as CustomerPortalSessionCreateParams
 
 
-private val logger = KotlinLogging.logger { }
 const val ORGANIZATION_NAME_PARAM = "organizationName"
 const val OWNER_COGNITO_USER_ID_PARAM = "ownerCognitoUserId"
 
@@ -40,9 +31,8 @@ const val OWNER_COGNITO_USER_ID_PARAM = "ownerCognitoUserId"
 class StripeService(
     private val consoleProperties: ConsoleProperties,
     private val organizationDao: OrganizationDao,
-    private val planDao: PlanDao,
-    private val organizationToPlanDao: OrganizationToPlanDao,
     private val authenticationService: AuthenticationService,
+    private val subscriptionService: SubscriptionService,
 ) {
     init {
         Stripe.apiKey = consoleProperties.stripe.apiKey
@@ -103,7 +93,6 @@ class StripeService(
             builder.setTrialPeriodDays(consoleProperties.stripe.trialPeriod)
         }
         return builder.build()
-
     }
 
     /**
@@ -143,7 +132,7 @@ class StripeService(
     private fun onInvoicePaymentSucceeded(event: Event) {
         val invoice = event.dataObjectDeserializer.`object`.get() as Invoice
         val organizationName = getOrganizationNameFromSubscription(invoice)
-        updateOrganization(
+        subscriptionService.updateSubscriptionStatus(
             organizationName = organizationName,
             subscriptionStatus = ACTIVE
         )
@@ -158,25 +147,10 @@ class StripeService(
     private fun onInvoicePaid(event: Event) {
         val invoice = event.dataObjectDeserializer.`object`.get() as Invoice
         val organizationName = getOrganizationNameFromSubscription(invoice)
-        updateOrganization(
+        subscriptionService.updateSubscriptionStatus(
             organizationName = organizationName,
             subscriptionStatus = ACTIVE
         )
-    }
-
-    private fun updateOrganization(
-        organizationName: String,
-        stripeCustomerId: String? = null,
-        subscriptionStatus: OrganizationSubscriptionStatus
-    ): Organization {
-        val organization = getOrganization(organizationName)
-        organization.subscriptionStatus = subscriptionStatus
-        if (stripeCustomerId != null) {
-            organization.stripeCustomerId = stripeCustomerId
-        }
-        organizationDao.update(organization)
-        logger.info { "Organization ${organization.name} has transitioned to [$subscriptionStatus] state" }
-        return organization
     }
 
     @Cacheable
@@ -193,17 +167,9 @@ class StripeService(
     private fun onInvoicePaymentFailed(event: Event) {
         val invoice = event.dataObjectDeserializer.`object`.get() as Invoice
         val organizationName = getOrganizationNameFromSubscription(invoice)
-        updateOrganization(
+        subscriptionService.updateSubscriptionStatus(
             organizationName = organizationName,
             subscriptionStatus = SUSPENDED
-        )
-    }
-
-    private fun getOrganization(organizationName: String): Organization {
-        return ensure.foundOne(
-            operation = { organizationDao.fetchOneByName(organizationName) },
-            code = ORG_NOT_FOUND,
-            lazyMessage = { "Organization [$organizationName] not found" }
         )
     }
 
@@ -220,23 +186,14 @@ class StripeService(
 
     private fun handleCheckoutCompleted(checkout: CheckoutSession) {
         val organizationName = checkout.metadata[ORGANIZATION_NAME_PARAM]!!
-        val organization = updateOrganization(
+        val subscription = Subscription.retrieve(checkout.subscription)
+        val product = subscription.items.data.single().price.product
+        subscriptionService.updateSubscriptionStatus(
             organizationName = organizationName,
             stripeCustomerId = checkout.customer,
-            subscriptionStatus = ACTIVE
+            subscriptionStatus = ACTIVE,
+            newPlanId = product,
         )
-
-        val subscription = Subscription.retrieve(checkout.subscription)
-        val plan = planDao.fetchByProductId(subscription.items.data.single().price.product).single()
-
-        organizationToPlanDao.insertIfNotExists(
-            OrganizationToPlan(
-                organizationName = organization.name,
-                planId = plan.id,
-                startTime = LocalDateTime.now()
-            )
-        )
-
     }
 
     fun recordCheckoutOutcome(checkoutSessionId: String) {

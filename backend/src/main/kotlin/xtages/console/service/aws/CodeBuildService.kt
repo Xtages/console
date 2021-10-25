@@ -16,7 +16,6 @@ import mu.KotlinLogging
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Service
-import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
 import software.amazon.awssdk.services.codebuild.CodeBuildAsyncClient
 import software.amazon.awssdk.services.codebuild.model.*
 import xtages.console.config.ConsoleProperties
@@ -25,7 +24,7 @@ import xtages.console.controller.model.CodeBuildType
 import xtages.console.controller.model.buildPojoToBuild
 import xtages.console.controller.model.organizationPojoToOrganizationConverter
 import xtages.console.controller.model.projectPojoToProject
-import xtages.console.dao.fetchByOrganizationNameAndResourceType
+import xtages.console.dao.fetchByOrganizationAndResourceType
 import xtages.console.dao.fetchLatestPlan
 import xtages.console.dao.findFromBuilds
 import xtages.console.dao.findPreviousCIBuild
@@ -43,9 +42,9 @@ import xtages.console.query.tables.pojos.Project
 import xtages.console.query.tables.references.BUILD
 import xtages.console.service.*
 import xtages.console.time.toUtcLocalDateTime
-import java.lang.Integer.min
 import java.time.*
 import java.time.format.DateTimeFormatter
+import java.util.concurrent.CompletableFuture
 import software.amazon.awssdk.services.codebuild.model.Tag as CodebuildTag
 
 private val xtagesCodeBuildTag = buildCodeBuildProjectTag(key = "XTAGES_CONSOLE_CREATED", value = "true")
@@ -83,7 +82,6 @@ class CodeBuildService(
     private val githubUserDao: GithubUserDao,
     private val recipeDao: RecipeDao,
     private val consoleProperties: ConsoleProperties,
-    private val authenticationService: AuthenticationService,
     private val usageService: UsageService,
     private val gitHubService: GitHubService,
     private val notificationService: NotificationService,
@@ -323,7 +321,7 @@ class CodeBuildService(
 
         val plan = organizationToPlanDao.fetchLatestPlan(organization)!!
 
-        val dbResource = resourceDao.fetchByOrganizationNameAndResourceType(
+        val dbResource = resourceDao.fetchByOrganizationAndResourceType(
             organization = organization,
             resourceType = ResourceType.POSTGRESQL
         )
@@ -414,12 +412,6 @@ class CodeBuildService(
         return cloudWatchLogsService.getLogs(logGroupName = logGroupName, logStreamName = logStreamName)
     }
 
-    private fun userSessionCodeBuildClient(): CodeBuildAsyncClient {
-        return CodeBuildAsyncClient.builder()
-            .credentialsProvider(StaticCredentialsProvider.create(authenticationService.userAwsSessionCredentials))
-            .build()
-    }
-
     /**
      * Creates a new `CodeBuild` [BuildType.CI] project for [organization] and [project].
      */
@@ -432,7 +424,7 @@ class CodeBuildService(
                 recipe = recipe,
                 codeBuildType = CodeBuildType.CI,
                 serviceRoleName = "xtages-codebuild-ci-role",
-                concurrentBuildLimit = plan.concurrentBuildLimit,
+                concurrentBuildLimit = plan.concurrentBuildLimit!!,
             )
         ).get()
         val arn = response.project().arn()
@@ -450,12 +442,6 @@ class CodeBuildService(
      */
     fun createCodeBuildCdProject(organization: Organization, project: Project, recipe: Recipe) {
         val plan = organizationToPlanDao.fetchLatestPlan(organization)!!
-        val maxConcurrentBuilds =
-            if (plan.concurrentBuildLimit != null) {
-                min(2, plan.concurrentBuildLimit!!)
-            } else {
-                null
-            }
         val response = codeBuildAsyncClient.createProject(
             buildCreateProjectRequest(
                 organization = organization,
@@ -464,7 +450,7 @@ class CodeBuildService(
                 codeBuildType = CodeBuildType.CD,
                 privilegedMode = true,
                 serviceRoleName = "xtages-codebuild-cd-role",
-                concurrentBuildLimit = maxConcurrentBuilds,
+                concurrentBuildLimit = plan.concurrentBuildLimit!!,
             )
         ).get()
 
@@ -478,6 +464,32 @@ class CodeBuildService(
         projectDao.merge(project)
     }
 
+    /**
+     * Updates the CI and CD projects for [organization] and [project] based on the constraints set by [plan].
+     */
+    fun updateCodeBuildProjects(
+        organization: Organization,
+        project: Project,
+        plan: Plan,
+    ): List<CompletableFuture<UpdateProjectResponse>> {
+        return listOf(
+            codeBuildAsyncClient.updateProject(
+                UpdateProjectRequest
+                    .builder()
+                    .name(project.codeBuildCiProjectName)
+                    .concurrentBuildLimit(plan.concurrentBuildLimit)
+                    .build()
+            ),
+            codeBuildAsyncClient.updateProject(
+                UpdateProjectRequest
+                    .builder()
+                    .name(project.codeBuildCdProjectName)
+                    .concurrentBuildLimit(plan.concurrentBuildLimit)
+                    .build()
+            )
+        )
+    }
+
     private fun buildCreateProjectRequest(
         organization: Organization,
         project: Project,
@@ -485,7 +497,7 @@ class CodeBuildService(
         codeBuildType: CodeBuildType,
         privilegedMode: Boolean = false,
         serviceRoleName: String,
-        concurrentBuildLimit: Int? = null,
+        concurrentBuildLimit: Int,
     ): CreateProjectRequest {
         fun <T> buildTypeVar(ciVar: T, cdVar: T) = if (codeBuildType == CodeBuildType.CI) ciVar else cdVar
         val imageName = buildTypeVar(recipe.codeBuildCiImageName, recipe.codeBuildCdImageName)
@@ -543,9 +555,7 @@ class CodeBuildService(
                 buildCodeBuildProjectTag(key = "project-hash", value = project.hash!!)
             )
             .badgeEnabled(false)
-        if (concurrentBuildLimit != null) {
-            builder.concurrentBuildLimit(concurrentBuildLimit)
-        }
+            .concurrentBuildLimit(concurrentBuildLimit)
         return builder.build()
     }
 

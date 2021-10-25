@@ -12,7 +12,7 @@ import xtages.console.query.tables.references.RESOURCE_LIMIT
 /**
  * Returns a [Resource] of [resourceType] for [organization] or `null`.
  */
-fun ResourceDao.fetchByOrganizationNameAndResourceType(
+fun ResourceDao.fetchByOrganizationAndResourceType(
     organization: Organization,
     resourceType: ResourceType
 ): Resource? {
