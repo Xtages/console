@@ -7,6 +7,7 @@ import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminGetUse
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AttributeType
 import software.amazon.awssdk.services.cognitoidentityprovider.model.UserNotFoundException
 import software.amazon.awssdk.services.cognitoidentityprovider.model.UserStatusType
+import xtages.console.concurrent.waitForAll
 import xtages.console.config.ConsoleProperties
 import xtages.console.exception.CognitoException
 import xtages.console.exception.ExceptionCode.USER_NOT_FOUND
@@ -20,8 +21,6 @@ import xtages.console.query.tables.pojos.XtagesUser
 import xtages.console.query.tables.references.XTAGES_USER
 import xtages.console.service.aws.CognitoService
 import java.util.concurrent.ExecutionException
-import java.util.stream.Stream
-import kotlin.streams.toList
 
 private val logger = KotlinLogging.logger { }
 
@@ -133,23 +132,23 @@ class UserService(
         val uniqueIds = ids.toSet()
         val cognitoUserIdToXtagesUser =
             userDao.fetchById(*uniqueIds.toIntArray()).associateBy { user -> user.cognitoUserId!! }
-        val getUserRequests = cognitoUserIdToXtagesUser.keys.map { id ->
-            cognitoIdentityProviderAsyncClient.adminGetUser(
-                AdminGetUserRequest.builder()
-                    .userPoolId(consoleProperties.aws.cognito.userPoolId)
-                    .username(id)
-                    .build()
-            ).handle { response, error ->
-                if (error != null) {
-                    logger.error(error) { "An error occurred fetching cognito user details for [$id]" }
-                    null
-                } else {
-                    response
+        val cognitoIdToCognitoUser = cognitoUserIdToXtagesUser.keys
+            .map { id ->
+                cognitoIdentityProviderAsyncClient.adminGetUser(
+                    AdminGetUserRequest.builder()
+                        .userPoolId(consoleProperties.aws.cognito.userPoolId)
+                        .username(id)
+                        .build()
+                ).handle { response, error ->
+                    if (error != null) {
+                        logger.error(error) { "An error occurred fetching cognito user details for [$id]" }
+                        null
+                    } else {
+                        response
+                    }
                 }
             }
-        }
-        val cognitoIdToCognitoUser = Stream.of(*getUserRequests.toTypedArray()).map { future -> future.join() }
-            .toList()
+            .waitForAll()
             .filterNotNull()
             .associateBy { response -> response.username() }
 
