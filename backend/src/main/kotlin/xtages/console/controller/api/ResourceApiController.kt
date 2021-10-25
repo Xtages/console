@@ -5,6 +5,7 @@ import org.springframework.http.HttpStatus.FORBIDDEN
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Controller
 import org.springframework.web.bind.annotation.PathVariable
+import xtages.console.concurrent.waitForAll
 import xtages.console.controller.api.model.Resource
 import xtages.console.controller.api.model.ResourceType
 import xtages.console.controller.api.model.UsageDetail
@@ -22,8 +23,6 @@ import xtages.console.service.AuthenticationService
 import xtages.console.service.UsageService
 import xtages.console.service.aws.RdsService
 import java.util.concurrent.CompletableFuture
-import java.util.stream.Stream
-import kotlin.streams.toList
 
 val IMPLEMENTED_RESOURCES =
     listOf(ResourceType.PROJECT, ResourceType.BUILD_MINUTES, ResourceType.DATA_TRANSFER, ResourceType.POSTGRESQL)
@@ -84,13 +83,13 @@ class ResourceApiController(
         organization ?: run {
             return ResponseEntity.ok(emptyList())
         }
-        val usageFutures = IMPLEMENTED_RESOURCES.map { resourceType ->
-            CompletableFuture.supplyAsync {
-                getUsageDetail(organization, resourceType = resourceType)
+        val usages = IMPLEMENTED_RESOURCES
+            .map { resourceType ->
+                CompletableFuture.supplyAsync {
+                    getUsageDetail(organization, resourceType = resourceType)
+                }
             }
-        }
-        val usages = Stream.of(*usageFutures.toTypedArray())
-            .map { future -> future.join() }
+            .waitForAll()
             .toList()
             .mapNotNull(usageDetailPojoToUsageDetail::convert)
         return ResponseEntity.ok(usages)
