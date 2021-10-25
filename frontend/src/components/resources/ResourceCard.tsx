@@ -56,10 +56,8 @@ export function ResourceCard({
           <AlertTriangle size="1em" className="mr-2" />
           Provisioning on-hold
         </Alert.Heading>
-        <p className="prose">
-          We are spinning up more capacity for you, we will send you an e-mail once
-          we are ready to provision your resource.
-        </p>
+        We are spinning up more capacity for you, we will send you an e-mail once
+        we are ready to provision your resource.
       </Alert>
     );
   }
@@ -86,11 +84,11 @@ export function ResourceCard({
         <Col className="d-flex pl-3" sm={2}>
           <Card.Img className="h-50 align-self-center" src={`/img/resource/${imageName}.svg`} />
         </Col>
-        <Col sm={10}>
+        <Col sm="auto">
           <Card.Body>
             <Card.Title>{title}</Card.Title>
-            <Card.Text>{children}</Card.Text>
-            {provisioningStatusText}
+            <Card.Text className="prose">{children}</Card.Text>
+            {provisioningStatusText && <div className="prose">{provisioningStatusText}</div>}
             {!provisioningStatus && !comingSoon
               && (
               <Button
