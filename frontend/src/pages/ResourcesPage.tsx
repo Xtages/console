@@ -35,52 +35,44 @@ export default function ResourcesPage() {
               <SectionTitle icon={Layers} title="Resources" />
               <Container>
                 <Row>
-                  <Col sm={10}>
+                  <Col sm="auto">
                     <ResourceCard
                       resource={ResourceType.Postgresql}
                       title="PostgreSQL"
                       onProvisionRequested={handleProvisionRequest}
                       provisioningStatus={postgres?.status}
                     >
-                      <p className="prose">
-                        PostgreSQL is a powerful, open source object-relational database system
-                        with over 30 years of active development that has earned it a strong
-                        reputation for reliability, feature robustness, and performance.
-                      </p>
+                      PostgreSQL is a powerful, open source object-relational database system
+                      with over 30 years of active development that has earned it a strong
+                      reputation for reliability, feature robustness, and performance.
                     </ResourceCard>
                     <ResourceCard
                       resource={ResourceType.Mysql}
                       title="MySQL"
                       comingSoon
                     >
-                      <p className="prose">
-                        With more than 20 years of community-backed development and support,
-                        MySQL is a reliable, stable, and secure SQL-based database management
-                        system.
-                      </p>
+                      With more than 20 years of community-backed development and support,
+                      MySQL is a reliable, stable, and secure SQL-based database management
+                      system.
                     </ResourceCard>
                     <ResourceCard
                       resource={ResourceType.Mongodb}
                       title="MongoDB"
                       comingSoon
                     >
-                      <p className="prose">
-                        MongoDB is a scalable and flexible document database. MongoDB’s document
-                        model is simple for developers to learn and use, while still providing
-                        all the capabilities needed to meet the most complex requirements at any
-                        scale.
-                      </p>
+                      MongoDB is a scalable and flexible document database. MongoDB’s document
+                      model is simple for developers to learn and use, while still providing
+                      all the capabilities needed to meet the most complex requirements at any
+                      scale.
                     </ResourceCard>
                     <ResourceCard
                       resource={ResourceType.Redis}
                       title="Redis"
                       comingSoon
                     >
-                      <p className="prose">
-                        Redis is an open source (BSD licensed), in-memory data structure store, used
-                        as a database, cache, and message broker. Redis provides data structures
-                        such as strings, hashes, lists, sets, sorted sets and more.
-                      </p>
+                      Redis is an open source (BSD licensed), in-memory data structure store, used
+                      as a database, cache, and message broker. Redis provides data structures
+                      such as strings, hashes, lists, sets, sorted sets and more.
                     </ResourceCard>
                   </Col>
                 </Row>
