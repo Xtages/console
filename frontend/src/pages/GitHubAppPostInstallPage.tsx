@@ -10,6 +10,7 @@ import Logos from 'components/Logos';
 import {Organization, OrganizationGitHubOrganizationTypeEnum} from 'gen/api';
 import {useAuth} from 'hooks/useAuth';
 import {buildOauthUrl} from 'helpers/github';
+import {useTracking} from 'hooks/useTracking';
 
 const MUTATION_KEY = 'recordInstall';
 
@@ -22,6 +23,7 @@ export default function GitHubAppPostInstallPage() {
   const isMutating = useIsMutating({mutationKey: MUTATION_KEY});
   const history = useHistory();
   const {principal} = useAuth();
+  const {trackComponentEvent, trackComponentApiError} = useTracking();
 
   const {
     isIdle,
@@ -37,8 +39,10 @@ export default function GitHubAppPostInstallPage() {
     mutationKey: MUTATION_KEY,
     retry: false,
     onSuccess: (response: AxiosResponse<Organization>) => {
+      trackComponentEvent('GitHubAppPostInstallPage', 'Install recorded', response);
       const {gitHubOrganizationType, name} = response.data;
       if (gitHubOrganizationType === OrganizationGitHubOrganizationTypeEnum.Individual) {
+        trackComponentEvent('GitHubAppPostInstallPage', 'Installed on individual GitHub account');
         const url = buildOauthUrl(name, principal?.id!!);
         window.location.assign(url.toString());
       } else {
@@ -49,6 +53,7 @@ export default function GitHubAppPostInstallPage() {
 
   useEffect(() => {
     if (!isMutating && isIdle) {
+      trackComponentEvent('GitHubAppPostInstallPage', 'Install succeeded');
       mutate();
     }
   }, []);
@@ -58,6 +63,7 @@ export default function GitHubAppPostInstallPage() {
   }
 
   if (isError) {
+    trackComponentApiError('GitHubAppPostInstallPage', 'gitHubAppApi.recordInstall', error);
     if (Axios.isAxiosError(error) && error.response?.data?.error_code === 'INVALID_GITHUB_APP_INSTALL_NOT_ALL_REPOS_SELECTED') {
       return (
         <CenteredOnScreen>

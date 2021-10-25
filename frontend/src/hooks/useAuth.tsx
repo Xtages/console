@@ -8,6 +8,7 @@ import {Organization} from 'gen/api';
 import {organizationApi} from 'service/Services';
 import {useQueryClient} from 'react-query';
 import axios from 'axios';
+import {useTracking} from 'hooks/useTracking';
 
 CognitoAuth.configure({
   aws_project_region: process.env.REACT_APP_COGNITO_REGION,
@@ -129,6 +130,7 @@ function useProvideAuth() {
   const [inProgress, setInProgress] = useState(true);
   const [organization, setOrganization] = useState<Nullable<Organization>>(null);
   const queryClient = useQueryClient();
+  const {trackComponentEvent} = useTracking();
 
   async function fetchOrg() {
     if (organization === null) {
@@ -139,6 +141,7 @@ function useProvideAuth() {
         if (!axios.isAxiosError(e) || (axios.isAxiosError(e) && e.response?.status !== 404)) {
           throw e;
         } else {
+          trackComponentEvent('useAuth', 'User has no org');
           setOrganization(null);
         }
       }
