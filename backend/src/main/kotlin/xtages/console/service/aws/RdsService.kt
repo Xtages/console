@@ -8,8 +8,7 @@ import software.amazon.awssdk.services.rds.model.*
 import software.amazon.awssdk.services.ssm.model.*
 import xtages.console.config.ConsoleProperties
 import xtages.console.dao.canAllocatedResource
-import xtages.console.dao.fetchByOrganizationNameAndResourceType
-import xtages.console.dao.fetchLatestByOrganizationName
+import xtages.console.dao.fetchByOrganizationAndResourceType
 import xtages.console.dao.insertIfNotExists
 import xtages.console.pojo.dbIdentifier
 import xtages.console.pojo.dbName
@@ -50,9 +49,9 @@ class RdsService(
     fun provisionPostgreSql(organization: Organization, plan: Plan): Resource {
         return refreshPostgreSqlInstanceStatus(organization = organization, plan = plan)
             ?: return if (plan.paid!!) {
-                provisionPostgreSqlServerlessCluster(organization = organization)
+                provisionPostgreSqlServerlessCluster(organization = organization, plan = plan)
             } else if (resourceDao.canAllocatedResource(POSTGRESQL)) {
-                provisionPostgreSqlDbInstance(organization = organization)
+                provisionPostgreSqlDbInstance(organization = organization, plan = plan)
             } else {
                 val waitListedResource = Resource(
                     organizationName = organization.name,
@@ -70,8 +69,7 @@ class RdsService(
      * That's similar to 2 vCPU and 2 GB of RAM and 4 vCPU and 4 GB of RAM
      * Also, by default the auto pause will be enable
      */
-    private fun provisionPostgreSqlServerlessCluster(organization: Organization): Resource {
-        val plan = planDao.fetchLatestByOrganizationName(organization.name!!)?.plan!!
+    private fun provisionPostgreSqlServerlessCluster(organization: Organization, plan: Plan): Resource {
         val password = createAndStorePassInSsm(organization)
         val cluster = CreateDbClusterRequest.builder()
             .dbClusterIdentifier(organization.dbIdentifier)
@@ -121,8 +119,7 @@ class RdsService(
     /**
      * Provisions a classic RDS instance with Postgres
      */
-    private fun provisionPostgreSqlDbInstance(organization: Organization): Resource {
-        val plan = planDao.fetchLatestByOrganizationName(organization.name!!)?.plan!!
+    private fun provisionPostgreSqlDbInstance(organization: Organization, plan: Plan): Resource {
         val password = createAndStorePassInSsm(organization)
         val instanceRequest = CreateDbInstanceRequest.builder()
             .dbInstanceIdentifier(organization.dbIdentifier)
@@ -171,7 +168,7 @@ class RdsService(
      * DB the endpoint for the instance/cluster.
      */
     fun refreshPostgreSqlInstanceStatus(organization: Organization, plan: Plan): Resource? {
-        val dbResource = resourceDao.fetchByOrganizationNameAndResourceType(
+        val dbResource = resourceDao.fetchByOrganizationAndResourceType(
             organization = organization,
             resourceType = POSTGRESQL
         )
@@ -213,6 +210,21 @@ class RdsService(
                 throw e
             }
         }
+    }
+
+    /**
+     * Updates the DB instance specs for [organization] based on [plan].
+     */
+    fun updatePostgreSqlInstanceSpecs(organization: Organization, plan: Plan) {
+        rdsAsyncClient.modifyDBInstance(
+            ModifyDbInstanceRequest
+                .builder()
+                .dbInstanceIdentifier(organization.dbIdentifier)
+                .dbInstanceClass(plan.dbInstance)
+                .allocatedStorage(plan.dbStorageGbs!!.toInt())
+                .applyImmediately(true)
+                .build()
+        ).get()
     }
 
     /**
