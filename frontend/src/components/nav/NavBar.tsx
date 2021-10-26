@@ -1,9 +1,10 @@
 import React from 'react';
-import {Link, NavLink, useHistory} from 'react-router-dom';
+import {Link, NavLink, useHistory, useRouteMatch} from 'react-router-dom';
 import {useAuth} from 'hooks/useAuth';
-import {Col, Container, Dropdown, Row} from 'react-bootstrap';
+import {Button, Col, Container, Dropdown, Row} from 'react-bootstrap';
 import {useTracking} from 'hooks/useTracking';
 import {useOrganization} from 'hooks/useOrganization';
+import {Star} from 'react-feather';
 import Logo from '../Logos';
 import Avatar from '../avatar/Avatar';
 
@@ -33,9 +34,14 @@ export default function NavBar() {
   const history = useHistory();
   const {reset} = useTracking();
   const {organization} = useOrganization();
+  const inUpgradePage = useRouteMatch({path: '/upgrade', strict: true});
 
   function goToAccount() {
     history.push('/account');
+  }
+
+  function goToUpgrade() {
+    history.push('/upgrade');
   }
 
   async function signOut() {
@@ -73,6 +79,22 @@ export default function NavBar() {
             </li>
           </ul>
         </div>
+        {!inUpgradePage
+        && organization
+        && (organization.plan && !organization.plan.paid)
+        && (
+        <Button
+          variant="warning"
+          size="sm"
+          className="mr-1 btn-icon-label"
+          onClick={goToUpgrade}
+        >
+          <span className="btn-inner--icon">
+            <Star size="0.9em" fill="white" />
+          </span>
+          <span className="btn-inner--text">Upgrade</span>
+        </Button>
+        )}
         <div className="ml-1">
           <Container className="p-0">
             <Row noGutters className="align-items-center">

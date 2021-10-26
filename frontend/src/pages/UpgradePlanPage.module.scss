@@ -1,0 +1,15 @@
+@import "src/assets/css/variables";
+@import "src/assets/css/mixins";
+
+.specs {
+  th, td {
+    font-size: 1em !important;
+  }
+
+  th {
+    background-color: lighten($success, 30%) !important;
+    color: darken($success, 25%);
+    font-weight: bolder;
+    border: none !important;
+  }
+}

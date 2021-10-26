@@ -20,6 +20,7 @@ import xtages.console.query.enums.ResourceStatus as ResourceStatusPojo
 import xtages.console.query.enums.ResourceType as ResourceTypePojo
 import xtages.console.query.tables.pojos.Build as BuildPojo
 import xtages.console.query.tables.pojos.Organization as OrganizationPojo
+import xtages.console.query.tables.pojos.Plan as PlanPojo
 import xtages.console.query.tables.pojos.Project as ProjectPojo
 import xtages.console.query.tables.pojos.Resource as ResourcePojo
 import xtages.console.service.UsageDetail as UsageDetailPojo
@@ -49,6 +50,11 @@ val organizationPojoToOrganizationConverter =
             githubOauthAuthorized = source.githubOauthAuthorized,
         )
     }
+
+/** Converts a [xtages.console.query.tables.pojos.Plan] to a [Plan] */
+val planPojoToPlanConverter = Converter { source: PlanPojo ->
+    Plan(id = source.productId!!, name = source.name!!, paid = source.paid!!)
+}
 
 /** Converts a [GithubOrganizationType] into a [Organization.GitHubOrganizationType]. */
 val githubOrganizationTypePojoToGithubOrganizationType = Converter { source: GithubOrganizationType ->
@@ -157,7 +163,7 @@ val resourceTypeToResourceBillingModel = Converter { source: ResourceTypePojo ->
     }
 }
 
-val resourcePojoToResource = Converter { source : ResourcePojo ->
+val resourcePojoToResource = Converter { source: ResourcePojo ->
     Resource(
         resourceType = resourceTypePojoToResourceType.convert(source.resourceType!!)!!,
         billingModel = resourceTypeToResourceBillingModel.convert(source.resourceType!!)!!,
