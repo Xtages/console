@@ -326,7 +326,12 @@ class CodeBuildService(
             resourceType = ResourceType.POSTGRESQL
         )
 
-        val scriptPath = getScriptPath(recipe, previousGitHubProjectTag, environment)
+        val scriptPath = getScriptPath(
+            recipe = recipe,
+            previousGitHubProjectTag = previousGitHubProjectTag,
+            environment = environment,
+            paidPlan = plan.paid!!
+        )
         val isDeploy = environment == "production"
 
         val xtagesEnv = if (activeProfile == "prod") "production" else "development"
@@ -381,12 +386,13 @@ class CodeBuildService(
     private fun getScriptPath(
         recipe: Recipe,
         previousGitHubProjectTag: String?,
-        environment: String
+        environment: String,
+        paidPlan: Boolean
     ): String {
         val scriptPath = when {
             previousGitHubProjectTag != null -> recipe.rollbackScriptPath
-            environment == "staging" -> recipe.deployScriptPath
-            environment == "production" -> recipe.promoteScriptPath
+            environment == "staging" || !paidPlan -> recipe.deployScriptPath
+            environment == "production" && paidPlan -> recipe.promoteScriptPath
             environment == "dev" -> recipe.buildScriptPath
             else -> null
         }
