@@ -722,6 +722,8 @@ components:
           enum:
             - ORGANIZATION
             - INDIVIDUAL
+        plan:
+          $ref: "#/components/schemas/Plan"
       required:
         - name
         - subscriptionStatus
@@ -1183,6 +1185,22 @@ components:
         - username
         - isOwner
         - status
+    Plan:
+      description: The Plan the organization is currently subscribed to
+      properties:
+        id:
+          type: string
+          minLength: 1
+        name:
+          type: string
+          minLength: 1
+        paid:
+          type: boolean
+          minLength: 1
+      required:
+        - id
+        - name
+        - paid
     User:
       description: An Xtages user
       properties:

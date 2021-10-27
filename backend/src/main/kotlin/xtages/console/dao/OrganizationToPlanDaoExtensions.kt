@@ -42,3 +42,15 @@ fun OrganizationToPlanDao.fetchLatestPlan(organization: Organization): Plan? {
         .limit(1)
         .fetchOneInto(Plan::class.java)
 }
+
+/**
+ * Returns the latest [OrganizationToPlan] for [organization], or `null` if there isn't one.
+ */
+fun OrganizationToPlanDao.fetchLatestByOrganization(organization: Organization): OrganizationToPlan? {
+    return ctx().select()
+        .from(ORGANIZATION_TO_PLAN)
+        .where(ORGANIZATION_TO_PLAN.ORGANIZATION_NAME.eq(organization.name))
+        .orderBy(ORGANIZATION_TO_PLAN.START_TIME.desc())
+        .limit(1)
+        .fetchOneInto(OrganizationToPlan::class.java)
+}

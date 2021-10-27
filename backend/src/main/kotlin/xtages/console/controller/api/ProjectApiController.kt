@@ -23,6 +23,7 @@ import xtages.console.query.enums.ResourceType
 import xtages.console.query.tables.daos.*
 import xtages.console.query.tables.pojos.*
 import xtages.console.query.tables.pojos.Organization
+import xtages.console.query.tables.pojos.Plan
 import xtages.console.service.*
 import xtages.console.service.aws.*
 import java.net.URL
@@ -611,6 +612,6 @@ object BuildComparator : Comparator<BuildPojo> {
 private data class OrganizationWithPlanAndProjectAndUser(
     val organization: Organization,
     val plan: Plan,
-    val project: xtages.console.query.tables.pojos.Project,
+    val project: ProjectPojo,
     val user: XtagesUser,
 )

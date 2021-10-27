@@ -11,13 +11,14 @@ import xtages.console.controller.api.model.Project
 import xtages.console.controller.api.model.Projects
 import xtages.console.controller.model.buildPojoToDeployment
 import xtages.console.controller.model.organizationPojoToOrganizationConverter
+import xtages.console.controller.model.planPojoToPlanConverter
 import xtages.console.controller.model.projectPojoTypeToProjectTypeConverter
+import xtages.console.dao.fetchLatestByOrganization
 import xtages.console.dao.fetchLatestDeploymentsByOrg
 import xtages.console.dao.findFromBuilds
 import xtages.console.dao.maybeFetchOneByCognitoUserId
 import xtages.console.query.tables.daos.*
 import xtages.console.service.AuthenticationService
-import xtages.console.service.GitHubService
 import xtages.console.service.UserService
 
 private val logger = KotlinLogging.logger { }
@@ -32,7 +33,7 @@ class OrganizationApiController(
     val projectDeploymentDao: ProjectDeploymentDao,
     val projectDao: ProjectDao,
     val githubUserDao: GithubUserDao,
-    private val gitHubService: GitHubService,
+    private val planDao: PlanDao,
     val consoleProperties: ConsoleProperties,
 ) :
     OrganizationApiControllerBase {
@@ -42,9 +43,19 @@ class OrganizationApiController(
         organization ?: run {
             return ResponseEntity(HttpStatus.NOT_FOUND)
         }
-        val installation = gitHubService.fetchAppInstallation(organization)
-        println(installation.permissions)
-        return ResponseEntity.ok(organizationPojoToOrganizationConverter.convert(organization))
+        val convertedOrg = organizationPojoToOrganizationConverter.convert(organization)!!
+        val planWithBillingCycleAnchorDay =
+            planDao.fetchLatestByOrganization(organization = organization)
+        if (planWithBillingCycleAnchorDay?.plan != null) {
+            return ResponseEntity.ok(
+                convertedOrg.copy(
+                    plan = planPojoToPlanConverter.convert(
+                        planWithBillingCycleAnchorDay.plan
+                    )
+                )
+            )
+        }
+        return ResponseEntity.ok(convertedOrg)
     }
 
     override fun getOrganizationEligibility(orgEligibleReq: OrgEligibleReq): ResponseEntity<Unit> {
