@@ -45,7 +45,7 @@ class ResourceApiController(
             val plan = organizationToPlanDao.fetchLatestPlan(organization)
             if (plan != null) {
                 val dbResource =
-                    rdsService.refreshPostgreSqlInstanceStatus(organization = organization, plan = plan)
+                    rdsService.refreshPostgreSqlInstanceStatus(organization = organization)
                 if (dbResource != null) {
                     return ResponseEntity.ok(
                         listOf(

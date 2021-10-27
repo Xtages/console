@@ -120,10 +120,7 @@ class SubscriptionService(
             }
         }
         if (fromPlan.dbInstance != toPlan.dbInstance || fromPlan.dbStorageGbs != toPlan.dbStorageGbs) {
-            val resource = rdsService.refreshPostgreSqlInstanceStatus(
-                organization = organization,
-                plan = fromPlan,
-            )
+            val resource = rdsService.refreshPostgreSqlInstanceStatus(organization)
             if (resource != null) {
                 if (resource.resourceStatus == ResourceStatus.REQUESTED
                     || resource.resourceStatus == ResourceStatus.PROVISIONED

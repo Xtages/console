@@ -47,10 +47,8 @@ class RdsService(
      * the call to AWS to provision the DB.
      */
     fun provisionPostgreSql(organization: Organization, plan: Plan): Resource {
-        return refreshPostgreSqlInstanceStatus(organization = organization, plan = plan)
-            ?: return if (plan.paid!!) {
-                provisionPostgreSqlServerlessCluster(organization = organization, plan = plan)
-            } else if (resourceDao.canAllocatedResource(POSTGRESQL)) {
+        return refreshPostgreSqlInstanceStatus(organization = organization)
+            ?: return if (resourceDao.canAllocatedResource(POSTGRESQL)) {
                 provisionPostgreSqlDbInstance(organization = organization, plan = plan)
             } else {
                 val waitListedResource = Resource(
@@ -67,7 +65,9 @@ class RdsService(
      * Async operation that provision an Aurora Serverless cluster asynchronously
      * By default the cluster will have a min of 2 ACUs and a max of 4 ACUs
      * That's similar to 2 vCPU and 2 GB of RAM and 4 vCPU and 4 GB of RAM
-     * Also, by default the auto pause will be enable
+     * Also, by default the auto pause will be enabled
+     * Note: Even though this is not being used currently, will leave it in case we want to explore this
+     * solution based on customer usage
      */
     private fun provisionPostgreSqlServerlessCluster(organization: Organization, plan: Plan): Resource {
         val password = createAndStorePassInSsm(organization)
@@ -164,16 +164,16 @@ class RdsService(
     }
 
     /**
-     * Checks if a PostgreSQL DB instance/cluster exists for the [organization] and has been provisioned. Records in our
-     * DB the endpoint for the instance/cluster.
+     * Checks if a PostgreSQL DB instance exists for the [organization] and has been provisioned. Records in our
+     * DB the endpoint for the instance.
      */
-    fun refreshPostgreSqlInstanceStatus(organization: Organization, plan: Plan): Resource? {
+    fun refreshPostgreSqlInstanceStatus(organization: Organization): Resource? {
         val dbResource = resourceDao.fetchByOrganizationAndResourceType(
             organization = organization,
             resourceType = POSTGRESQL
         )
         if (dbResource != null && dbResource.resourceStatus == ResourceStatus.REQUESTED) {
-            val endpoint = getEndpoint(organization = organization, paid = plan.paid!!)
+            val endpoint = getEndpoint(organization = organization)
             if (endpoint != null) {
                 dbResource.resourceEndpoint = endpoint
                 dbResource.resourceStatus = ResourceStatus.PROVISIONED
@@ -183,18 +183,8 @@ class RdsService(
         return dbResource
     }
 
-    private fun getEndpoint(organization: Organization, paid: Boolean): String? {
+    private fun getEndpoint(organization: Organization): String? {
         return try {
-            if (paid) {
-                // serverless
-                val response = rdsAsyncClient.describeDBClusters(
-                    DescribeDbClustersRequest
-                        .builder()
-                        .dbClusterIdentifier(organization.dbIdentifier)
-                        .build()
-                ).get()
-                return response.dbClusters().firstOrNull()?.endpoint()
-            }
             // db instance
             val response = rdsAsyncClient.describeDBInstances(
                 DescribeDbInstancesRequest
@@ -204,7 +194,7 @@ class RdsService(
             ).get()
             response.dbInstances().firstOrNull()?.endpoint()?.address()
         } catch (e: ExecutionException) {
-            if (e.cause is DbInstanceNotFoundException || e.cause is DbClusterNotFoundException) {
+            if (e.cause is DbInstanceNotFoundException) {
                 return null
             } else {
                 throw e
