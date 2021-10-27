@@ -316,12 +316,12 @@ class ProjectApiController(
     }
 
     override fun ci(projectName: String, ciReq: CIReq): ResponseEntity<CI> {
-        val (organization, plan, project, user) = checkRepoBelongsToOrg(projectName)
+        val (organization, _, project, user) = checkRepoBelongsToOrg(projectName)
         val recipe = ensure.foundOne(
             operation = { recipeDao.fetchOneById(project.recipe!!) },
             code = RECIPE_NOT_FOUND
         )
-        rdsService.refreshPostgreSqlInstanceStatus(organization, plan)
+        rdsService.refreshPostgreSqlInstanceStatus(organization)
         val commitHash = if (ciReq.commitHash == "HEAD") {
             gitHubService.findHeadCommitRevision(organization = organization, project = project)
         } else {
@@ -349,7 +349,7 @@ class ProjectApiController(
             "name"
         )
 
-        rdsService.refreshPostgreSqlInstanceStatus(organization, plan)
+        rdsService.refreshPostgreSqlInstanceStatus(organization)
 
         val tag = gitHubService.tagProject(
             organization = organization,
