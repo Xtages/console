@@ -130,9 +130,11 @@ if (process.env.NODE_ENV !== 'production') {
 
 export type PlanSelectorProps = {
   purchaseEnabled?: boolean;
+
+  showFreePlan?: boolean;
 };
 
-export function PlanSelector({purchaseEnabled = true}: PlanSelectorProps) {
+export function PlanSelector({purchaseEnabled = true, showFreePlan = true}: PlanSelectorProps) {
   const [billingCycle, setBillingCycle] = useState<BillingCycle>('yearly');
   const [planType, setPlanType] = useState<PlanType>('pro');
   const {trackComponentEvent} = useTracking();
@@ -161,7 +163,9 @@ export function PlanSelector({purchaseEnabled = true}: PlanSelectorProps) {
     >
       <Container className={styles.planSelector}>
         <BillingCycleToggle size="sm" />
-        <Row className="mb-3 mt-4 shadow-none">
+        <Row className="mb-3 mt-4 shadow-none justify-content-center">
+          {showFreePlan
+          && (
           <Col lg={3}>
             <PlanCard
               planType="free"
@@ -175,6 +179,7 @@ export function PlanSelector({purchaseEnabled = true}: PlanSelectorProps) {
               </ul>
             </PlanCard>
           </Col>
+          )}
           <Col lg={3}>
             <PlanCard planType="starter" purchaseEnabled={purchaseEnabled}>
               <ul className="list-unstyled text-sm mb-4">
@@ -182,30 +187,34 @@ export function PlanSelector({purchaseEnabled = true}: PlanSelectorProps) {
                 <li>2500 CI/CD credits (Linux)</li>
                 <li>20 GB of data-transfer</li>
                 <li>Deploys to the Xtages Cloud</li>
-                <li>
-                  <abbr title="Out-of-the-box">OOTB</abbr>
-                  {' '}
-                  metrics dashboard
-                </li>
                 <li>Log collection</li>
-                <li>Support over email</li>
+                <li>
+                  Metrics dashboard
+                  <span className="d-block text-muted text-sm">(coming soon)</span>
+                </li>
+                <li>
+                  Incident management
+                  <span className="d-block text-muted text-sm">(coming soon)</span>
+                </li>
               </ul>
             </PlanCard>
           </Col>
           <Col lg={3}>
             <PlanCard planType="pro" highlighted purchaseEnabled={purchaseEnabled}>
               <ul className="list-unstyled text-white text-sm opacity-8 mb-4">
-                <li>Deploy up to 5 apps</li>
+                <li>Deploy up to 3 apps</li>
                 <li>7500 CI/CD credits (Linux)</li>
                 <li>500 GB of data-transfer</li>
                 <li>Deploys to the Xtages Cloud</li>
-                <li>
-                  <abbr title="Out-of-the-box">OOTB</abbr>
-                  {' '}
-                  metrics dashboard
-                </li>
                 <li>Log collection</li>
-                <li>Support over email (24hr SLA)</li>
+                <li>
+                  Metrics dashboard
+                  <span className="d-block text-white text-sm">(coming soon)</span>
+                </li>
+                <li>
+                  Incident management
+                  <span className="d-block text-white text-sm">(coming soon)</span>
+                </li>
               </ul>
             </PlanCard>
           </Col>

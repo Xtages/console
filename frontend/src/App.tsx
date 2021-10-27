@@ -32,6 +32,7 @@ const ProjectSettingsPage = loadable(() => import('pages/ProjectSettingsPage'));
 const ResourcesPage = loadable(() => import('pages/ResourcesPage'));
 const SignUpPage = loadable(() => import('pages/authn/SignUpPage'));
 const StripePostCheckoutPage = loadable(() => import('pages/StripePostCheckoutPage'));
+const UpgradePlanPage = loadable(() => import('pages/UpgradePlanPage'));
 
 const queryClient = new QueryClient();
 const analytics = buildAnalytics();
@@ -96,6 +97,7 @@ function InstrumentedApp() {
           />
           <AuthdAndGoodStandingRoute path="/deployments" component={DeploymentsPage} />
           <AuthdAndGoodStandingRoute path="/resources" component={ResourcesPage} />
+          <AuthdAndGoodStandingRoute path="/upgrade" component={UpgradePlanPage} />
           <AuthdAndGoodStandingRoute path="/" component={HomePage} />
         </Switch>
       </ProvideAuth>

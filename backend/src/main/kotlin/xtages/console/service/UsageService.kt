@@ -5,7 +5,7 @@ import com.jakewharton.byteunits.DecimalByteUnit
 import org.springframework.stereotype.Service
 import xtages.console.dao.fetchActiveCreditsByOrganizationName
 import xtages.console.dao.fetchByOrganizationInDateRange
-import xtages.console.dao.fetchLatestByOrganizationName
+import xtages.console.dao.fetchLatestByOrganization
 import xtages.console.exception.UsageOverLimitException
 import xtages.console.query.enums.OrganizationSubscriptionStatus
 import xtages.console.query.enums.ResourceType
@@ -63,7 +63,7 @@ class UsageService(
                 // If there's no current plan for the organization then they are considered over the limit for
                 // everything.
                 val (plan, billingCycleAnchorDay) = planDao
-                    .fetchLatestByOrganizationName(organizationName = organization.name!!)
+                    .fetchLatestByOrganization(organization = organization)
                     ?: return UsageOverLimitNoPlan(resourceType = resourceType)
                 val currentBillingMonth = CurrentBillingMonth(anchorDay = billingCycleAnchorDay)
                 val limit = findLimitForResourceType(
