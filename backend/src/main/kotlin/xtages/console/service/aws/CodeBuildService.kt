@@ -21,6 +21,8 @@ import software.amazon.awssdk.services.codebuild.model.*
 import xtages.console.config.ConsoleProperties
 import xtages.console.controller.api.model.Logs
 import xtages.console.controller.model.CodeBuildType
+import xtages.console.controller.model.CodeBuildType.CD
+import xtages.console.controller.model.CodeBuildType.CI
 import xtages.console.controller.model.buildPojoToBuild
 import xtages.console.controller.model.organizationPojoToOrganizationConverter
 import xtages.console.controller.model.projectPojoToProject
@@ -330,7 +332,8 @@ class CodeBuildService(
             recipe = recipe,
             previousGitHubProjectTag = previousGitHubProjectTag,
             environment = environment,
-            paidPlan = plan.paid!!
+            paidPlan = plan.paid!!,
+            codeBuildType = codeBuildType,
         )
         val isDeploy = environment == "production"
 
@@ -387,13 +390,14 @@ class CodeBuildService(
         recipe: Recipe,
         previousGitHubProjectTag: String?,
         environment: String,
-        paidPlan: Boolean
+        paidPlan: Boolean,
+        codeBuildType: CodeBuildType,
     ): String {
         val scriptPath = when {
             previousGitHubProjectTag != null -> recipe.rollbackScriptPath
-            environment == "staging" || !paidPlan -> recipe.deployScriptPath
-            environment == "production" && paidPlan -> recipe.promoteScriptPath
-            environment == "dev" -> recipe.buildScriptPath
+            codeBuildType == CD && (environment == "staging" || !paidPlan) -> recipe.deployScriptPath
+            codeBuildType == CD && (environment == "production" && paidPlan) -> recipe.promoteScriptPath
+            codeBuildType == CI && environment == "dev" -> recipe.buildScriptPath
             else -> null
         }
         return ensure.notNull(value = scriptPath, valueDesc = "scriptPath")
@@ -453,7 +457,7 @@ class CodeBuildService(
                 organization = organization,
                 project = project,
                 recipe = recipe,
-                codeBuildType = CodeBuildType.CD,
+                codeBuildType = CD,
                 privilegedMode = true,
                 serviceRoleName = "xtages-codebuild-cd-role",
                 concurrentBuildLimit = plan.concurrentBuildLimit!!,
