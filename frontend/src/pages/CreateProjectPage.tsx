@@ -34,7 +34,7 @@ export default function CreateProjectPage() {
     projectName: '',
   };
   const [errorMsg, setErrorMsg] = useState<ReactNode>(null);
-  const {organization, orgNotFound, isFetching} = useOrganization();
+  const {organization, orgNotFound, isLoading} = useOrganization();
   const organizationName = orgNotFound ? 'UNKNOWN' : organization?.name;
   const history = useHistory();
 
@@ -93,7 +93,7 @@ export default function CreateProjectPage() {
     }
   }
 
-  if (isFetching) {
+  if (isLoading) {
     return (<></>);
   }
 
