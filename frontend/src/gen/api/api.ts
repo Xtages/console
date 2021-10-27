@@ -611,6 +611,12 @@ export interface Organization {
      * @memberof Organization
      */
     gitHubOrganizationType: OrganizationGitHubOrganizationTypeEnum;
+    /**
+     * 
+     * @type {Plan}
+     * @memberof Organization
+     */
+    plan?: Plan;
 }
 
 /**
@@ -633,6 +639,31 @@ export enum OrganizationGitHubOrganizationTypeEnum {
     Individual = 'INDIVIDUAL'
 }
 
+/**
+ * The Plan the organization is currently subscribed to
+ * @export
+ * @interface Plan
+ */
+export interface Plan {
+    /**
+     * 
+     * @type {string}
+     * @memberof Plan
+     */
+    id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof Plan
+     */
+    name: string;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof Plan
+     */
+    paid: boolean;
+}
 /**
  * An Xtages project
  * @export

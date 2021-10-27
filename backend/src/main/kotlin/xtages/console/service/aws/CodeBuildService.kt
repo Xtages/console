@@ -485,14 +485,18 @@ class CodeBuildService(
                     .name(project.codeBuildCiProjectName)
                     .concurrentBuildLimit(plan.concurrentBuildLimit)
                     .build()
-            ),
+            ).also {
+                logger.debug { "Updated Project [${project.name}] CI CodeBuild [${project.codebuildCdProjectArn}] project's concurrentBuildLimit to [${plan.concurrentBuildLimit}]" }
+            },
             codeBuildAsyncClient.updateProject(
                 UpdateProjectRequest
                     .builder()
                     .name(project.codeBuildCdProjectName)
                     .concurrentBuildLimit(plan.concurrentBuildLimit)
                     .build()
-            )
+            ).also {
+                logger.debug { "Updated Project [${project.name}] CD CodeBuild [${project.codebuildCdProjectArn}] project's concurrentBuildLimit to [${plan.concurrentBuildLimit}]" }
+            }
         )
     }
 

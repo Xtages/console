@@ -216,15 +216,18 @@ class RdsService(
      * Updates the DB instance specs for [organization] based on [plan].
      */
     fun updatePostgreSqlInstanceSpecs(organization: Organization, plan: Plan) {
-        rdsAsyncClient.modifyDBInstance(
-            ModifyDbInstanceRequest
-                .builder()
-                .dbInstanceIdentifier(organization.dbIdentifier)
-                .dbInstanceClass(plan.dbInstance)
-                .allocatedStorage(plan.dbStorageGbs!!.toInt())
-                .applyImmediately(true)
-                .build()
-        ).get()
+        rdsAsyncClient
+            .modifyDBInstance(
+                ModifyDbInstanceRequest
+                    .builder()
+                    .dbInstanceIdentifier(organization.dbIdentifier)
+                    .dbInstanceClass(plan.dbInstance)
+                    .allocatedStorage(plan.dbStorageGbs!!.toInt())
+                    .applyImmediately(true)
+                    .build()
+            )
+            .also { logger.debug { "Updated DB Instance [${organization.dbIdentifier}] to instanceClass [${plan.dbInstance}] and allocatedStorage [${plan.dbStorageGbs!!.toInt()}]" } }
+            .get()
     }
 
     /**
