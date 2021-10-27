@@ -2,6 +2,7 @@ package xtages.console.service
 
 import mu.KotlinLogging
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 import xtages.console.concurrent.waitForAll
 import xtages.console.dao.fetchLatestByOrganization
 import xtages.console.dao.insertIfNotExists
@@ -37,6 +38,7 @@ class SubscriptionService(
      * Updates the subscription status for [organizationName]. [stripeCustomerId] may be specified if
      * [stripeCustomerId] was previously `null` which can happen for free plans.
      */
+    @Transactional
     fun updateSubscriptionStatus(
         organizationName: String,
         stripeCustomerId: String? = null,
@@ -83,7 +85,7 @@ class SubscriptionService(
                     )
                     upgrade(organization = organization, fromPlan = latestPlan.plan, toPlan = plan)
                 } else {
-                    logger.debug { "Upgrade to plan [$newPlanId] has already been handled." }
+                    logger.warn { "Upgrade to plan [$newPlanId] has already been handled." }
                 }
             }
         }
