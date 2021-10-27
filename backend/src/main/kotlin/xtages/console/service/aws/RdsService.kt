@@ -173,7 +173,7 @@ class RdsService(
             resourceType = POSTGRESQL
         )
         if (dbResource != null && dbResource.resourceStatus == ResourceStatus.REQUESTED) {
-            val endpoint = getEndpoint(organization = organization, paid = plan.paid!!)
+            val endpoint = getEndpoint(organization = organization)
             if (endpoint != null) {
                 dbResource.resourceEndpoint = endpoint
                 dbResource.resourceStatus = ResourceStatus.PROVISIONED
@@ -183,7 +183,7 @@ class RdsService(
         return dbResource
     }
 
-    private fun getEndpoint(organization: Organization, paid: Boolean): String? {
+    private fun getEndpoint(organization: Organization): String? {
         return try {
             // db instance
             val response = rdsAsyncClient.describeDBInstances(
@@ -194,7 +194,7 @@ class RdsService(
             ).get()
             response.dbInstances().firstOrNull()?.endpoint()?.address()
         } catch (e: ExecutionException) {
-            if (e.cause is DbInstanceNotFoundException || e.cause is DbClusterNotFoundException) {
+            if (e.cause is DbInstanceNotFoundException) {
                 return null
             } else {
                 throw e
