@@ -47,7 +47,7 @@ class RdsService(
      * the call to AWS to provision the DB.
      */
     fun provisionPostgreSql(organization: Organization, plan: Plan): Resource {
-        return refreshPostgreSqlInstanceStatus(organization = organization, plan = plan)
+        return refreshPostgreSqlInstanceStatus(organization = organization)
             ?: return if (resourceDao.canAllocatedResource(POSTGRESQL)) {
                 provisionPostgreSqlDbInstance(organization = organization, plan = plan)
             } else {
@@ -164,10 +164,10 @@ class RdsService(
     }
 
     /**
-     * Checks if a PostgreSQL DB instance/cluster exists for the [organization] and has been provisioned. Records in our
-     * DB the endpoint for the instance/cluster.
+     * Checks if a PostgreSQL DB instance exists for the [organization] and has been provisioned. Records in our
+     * DB the endpoint for the instance.
      */
-    fun refreshPostgreSqlInstanceStatus(organization: Organization, plan: Plan): Resource? {
+    fun refreshPostgreSqlInstanceStatus(organization: Organization): Resource? {
         val dbResource = resourceDao.fetchByOrganizationAndResourceType(
             organization = organization,
             resourceType = POSTGRESQL
