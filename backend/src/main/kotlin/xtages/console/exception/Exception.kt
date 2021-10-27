@@ -39,6 +39,7 @@ enum class ExceptionCode {
     INVALID_SSM_PARAMETER_NAME,
     INVALID_ORG_TYPE,
     INVALID_PLAN_UPGRADE,
+    INVALID_OPERATION_FOR_PLAN,
 }
 
 /**
@@ -104,3 +105,7 @@ class UserNeedsToLinkOrganizationException(innerMessage: String) :
 @ResponseStatus(HttpStatus.FORBIDDEN)
 class UserNeedsToHavePlanException(innerMessage: String) :
     XtagesConsoleException(code = USER_NEEDS_TO_HAVE_PLAN_ASSOCIATED, message = innerMessage)
+
+@ResponseStatus(HttpStatus.FORBIDDEN)
+class InvalidOperationForPlan(innerMessage: String) :
+    XtagesConsoleException(code = INVALID_OPERATION_FOR_PLAN, message = innerMessage)
