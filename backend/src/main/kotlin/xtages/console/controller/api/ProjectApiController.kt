@@ -10,8 +10,11 @@ import org.springframework.stereotype.Controller
 import xtages.console.config.ConsoleProperties
 import xtages.console.controller.api.model.*
 import xtages.console.controller.model.*
+import xtages.console.controller.model.Environment.PRODUCTION
+import xtages.console.controller.model.Environment.STAGING
 import xtages.console.dao.*
 import xtages.console.exception.ExceptionCode.*
+import xtages.console.exception.InvalidOperationForPlan
 import xtages.console.exception.UserNeedsToLinkOrganizationException
 import xtages.console.exception.ensure
 import xtages.console.query.enums.*
@@ -359,6 +362,8 @@ class ProjectApiController(
             code = RECIPE_NOT_FOUND
         )
 
+        val envToDeploy = if (plan?.paid == false) PRODUCTION else STAGING
+
         val startCodeBuildResponse = codeBuildService.startCodeBuildProject(
             gitHubAppToken = gitHubService.appToken(organization),
             user = user,
@@ -367,7 +372,7 @@ class ProjectApiController(
             organization = organization,
             commitHash = cdReq.commitHash,
             codeBuildType = CodeBuildType.CD,
-            environment = "staging",
+            environment = envToDeploy.name.toLowerCase(),
             gitHubProjectTag = tag,
         )
 
@@ -375,7 +380,13 @@ class ProjectApiController(
     }
 
     override fun promote(projectName: String): ResponseEntity<CD> {
-        val (organization, _, project, user) = checkRepoBelongsToOrg(projectName)
+        val (organization, plan, project, user) = checkRepoBelongsToOrg(projectName)
+
+        ensure.isTrue(
+            value = !plan.paid!!,
+            code = INVALID_OPERATION_FOR_PLAN,
+            message = "Operation restricted for free plans"
+        )
 
         val recipe = ensure.foundOne(
             operation = { recipeDao.fetchOneById(project.recipe!!) },
@@ -488,7 +499,12 @@ class ProjectApiController(
         projectName: String,
         updateProjectSettingsReq: UpdateProjectSettingsReq
     ): ResponseEntity<ProjectSettings> {
-        val (_, _, project, _) = checkRepoBelongsToOrg(projectName)
+        val (_, plan, project, _) = checkRepoBelongsToOrg(projectName)
+
+        if (plan.paid != null && !plan.paid!!) {
+            throw InvalidOperationForPlan("Free tier doesn't allow to update project settings")
+        }
+
         if (project.associatedDomain != null) {
             return ResponseEntity(CONFLICT)
         }
