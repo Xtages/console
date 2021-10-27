@@ -48,9 +48,7 @@ class RdsService(
      */
     fun provisionPostgreSql(organization: Organization, plan: Plan): Resource {
         return refreshPostgreSqlInstanceStatus(organization = organization, plan = plan)
-            ?: return if (plan.paid!!) {
-                provisionPostgreSqlServerlessCluster(organization = organization, plan = plan)
-            } else if (resourceDao.canAllocatedResource(POSTGRESQL)) {
+            ?: return if (resourceDao.canAllocatedResource(POSTGRESQL)) {
                 provisionPostgreSqlDbInstance(organization = organization, plan = plan)
             } else {
                 val waitListedResource = Resource(
@@ -67,7 +65,9 @@ class RdsService(
      * Async operation that provision an Aurora Serverless cluster asynchronously
      * By default the cluster will have a min of 2 ACUs and a max of 4 ACUs
      * That's similar to 2 vCPU and 2 GB of RAM and 4 vCPU and 4 GB of RAM
-     * Also, by default the auto pause will be enable
+     * Also, by default the auto pause will be enabled
+     * Note: Even though this is not being used currently, will leave it in case we want to explore this
+     * solution based on customer usage
      */
     private fun provisionPostgreSqlServerlessCluster(organization: Organization, plan: Plan): Resource {
         val password = createAndStorePassInSsm(organization)
@@ -185,16 +185,6 @@ class RdsService(
 
     private fun getEndpoint(organization: Organization, paid: Boolean): String? {
         return try {
-            if (paid) {
-                // serverless
-                val response = rdsAsyncClient.describeDBClusters(
-                    DescribeDbClustersRequest
-                        .builder()
-                        .dbClusterIdentifier(organization.dbIdentifier)
-                        .build()
-                ).get()
-                return response.dbClusters().firstOrNull()?.endpoint()
-            }
             // db instance
             val response = rdsAsyncClient.describeDBInstances(
                 DescribeDbInstancesRequest
