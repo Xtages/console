@@ -362,7 +362,7 @@ class ProjectApiController(
             code = RECIPE_NOT_FOUND
         )
 
-        val envToDeploy = if (plan.paid != null && !plan.paid!!) PRODUCTION else STAGING
+        val envToDeploy = if (plan?.paid == false) PRODUCTION else STAGING
 
         val startCodeBuildResponse = codeBuildService.startCodeBuildProject(
             gitHubAppToken = gitHubService.appToken(organization),
