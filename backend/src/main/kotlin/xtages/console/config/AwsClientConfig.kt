@@ -3,7 +3,6 @@ package xtages.console.config
 import com.amazonaws.services.sqs.AmazonSQSAsync
 import com.fasterxml.jackson.databind.ObjectMapper
 import io.awspring.cloud.messaging.config.QueueMessageHandlerFactory
-import io.awspring.cloud.messaging.core.QueueMessagingTemplate
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.messaging.converter.MappingJackson2MessageConverter
@@ -99,11 +98,7 @@ class AwsClientConfig {
         ).build()
 
     @Bean
-    fun queueMessagingTemplate(amazonSQSAsync: AmazonSQSAsync): QueueMessagingTemplate =
-        QueueMessagingTemplate(amazonSQSAsync)
-
-    @Bean
-    fun queueMessageHandlerFactory(mapper: ObjectMapper, amazonSQSAsync: AmazonSQSAsync): QueueMessageHandlerFactory {
+    fun queueMessageHandlerFactory(mapper: ObjectMapper, amazonSQSAsync: AmazonSQSAsync?): QueueMessageHandlerFactory {
         val queueHandlerFactory = QueueMessageHandlerFactory()
         queueHandlerFactory.setAmazonSqs(amazonSQSAsync)
         queueHandlerFactory.setArgumentResolvers(
