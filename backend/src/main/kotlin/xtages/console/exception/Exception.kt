@@ -40,6 +40,7 @@ enum class ExceptionCode {
     INVALID_ORG_TYPE,
     INVALID_PLAN_UPGRADE,
     INVALID_OPERATION_FOR_PLAN,
+    MAX_CONCURRENT_BUILD_LIMIT_EXCEEDED,
 }
 
 /**
@@ -109,3 +110,7 @@ class UserNeedsToHavePlanException(innerMessage: String) :
 @ResponseStatus(HttpStatus.FORBIDDEN)
 class InvalidOperationForPlan(innerMessage: String) :
     XtagesConsoleException(code = INVALID_OPERATION_FOR_PLAN, message = innerMessage)
+
+@ResponseStatus(HttpStatus.BAD_REQUEST)
+class MaxConcurrentBuildLimitExceeded() :
+    XtagesConsoleException(code = MAX_CONCURRENT_BUILD_LIMIT_EXCEEDED, message = "Max no. of build exceeded")
