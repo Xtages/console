@@ -198,6 +198,37 @@ class ProjectApiController(
         )
     }
 
+    /**
+     * The [BuildActions] are determined following this logic:
+     *
+     * If the [Build] was in staging:
+     *      * __INVARIANTS__:
+     *          * Must have been a CD
+     *          * The [Organization] cannot be subscribed to a free plan, because free plans only ever deploy to
+     *          production
+     *      * The [Build] can be re-deployed to staging
+     *      * If the build succeeded to be deployed in staging then it can be promoted to production
+     * If the [Build] was in production:
+     *      * __INVARIANTS__:
+     *          * Must have been a CD
+     *      * If the [Organization] is subscribed to a free plan
+     *          * The [Build] cannot be deployed to staging, but we show the option as disabled in the UI
+     *          * The [Build] can be deployed to production
+     *      * Otherwise:
+     *          * The [Build] can be deployed to staging
+     *          * The [Build] can be promoted to production
+     *      * If the [Build] was successful and there was a deployment associated to it, then it can be rolled back
+     *  If the [Build] was neither in production nor staging:
+     *      * __INVARIANTS__:
+     *          * Must have been a CI
+     *      * The [Build] can be re-run in CI
+     *      * If the [Build] succeeded:
+     *          * If the [Organization] is subscribed to a free plan
+     *              * The [Build] cannot be deployed to staging, but we show the option as disabled in the UI
+     *              * The [Build] can be deployed to production
+     *      * Otherwise:
+     *          * The [Build] can be deployed to staging
+     */
     private fun determineAvailableBuildActions(
         latestDeployments: List<ProjectDeployment>,
         build: BuildPojo,
