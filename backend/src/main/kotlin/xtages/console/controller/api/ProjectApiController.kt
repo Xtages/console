@@ -9,6 +9,9 @@ import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Controller
 import xtages.console.config.ConsoleProperties
 import xtages.console.controller.api.model.*
+import xtages.console.controller.api.model.BuildActionDisabledReason.NOT_AVAILABLE_FOR_FREE_PLAN
+import xtages.console.controller.api.model.BuildActionType.*
+import xtages.console.controller.api.model.CI
 import xtages.console.controller.model.*
 import xtages.console.controller.model.Environment.PRODUCTION
 import xtages.console.controller.model.Environment.STAGING
@@ -66,8 +69,7 @@ class ProjectApiController(
         includeDeployments: Boolean,
         includeSuccessfulBuildPercentage: Boolean,
     ): ResponseEntity<Project> {
-        val organization = organizationDao.fetchOneByCognitoUserId(authenticationService.currentCognitoUserId)
-        val project = projectDao.fetchOneByNameAndOrganization(organization = organization, projectName = projectName)
+        val (organization, plan, project, _) = getProjectCoordinates(projectName = projectName)
         val percentageOfSuccessfulBuildsInTheLastMonth =
             when {
                 includeSuccessfulBuildPercentage -> buildDao.findPercentageOfSuccessfulBuildsInLast30Days(
@@ -97,7 +99,11 @@ class ProjectApiController(
                         events = events,
                         usernameToGithubUser = usernameToGithubUser,
                         idToXtagesUser = idToXtagesUser,
-                        actions = determineAvailableBuildActions(projectDeployments, build),
+                        actions = determineAvailableBuildActions(
+                            latestDeployments = projectDeployments,
+                            build = build,
+                            plan = plan
+                        ),
                     )
                 }
                 else -> emptyList()
@@ -137,6 +143,10 @@ class ProjectApiController(
         organization ?: run {
             return ResponseEntity.ok(emptyList())
         }
+        val plan = ensure.notNull(
+            value = organizationToPlanDao.fetchLatestPlan(organization = organization),
+            valueDesc = "plan"
+        )
         val projects = projectDao.fetchByOrganization(organization.name!!).toMutableList()
         if (includeLastBuild) {
             val projectIdToLatestBuild = buildDao
@@ -168,7 +178,11 @@ class ProjectApiController(
                             events = emptyList(),
                             usernameToGithubUser = usernameToGithubUser,
                             idToXtagesUser = idToXtagesUser,
-                            actions = determineAvailableBuildActions(latestDeployments, build),
+                            actions = determineAvailableBuildActions(
+                                latestDeployments = latestDeployments,
+                                build = build,
+                                plan = plan
+                            ),
                         )
                     }
                     convertProjectPojoToProject(
@@ -184,32 +198,85 @@ class ProjectApiController(
         )
     }
 
+    /**
+     * The [BuildActions] are determined following this logic:
+     *
+     * If the [Build] was in staging:
+     *      * __INVARIANTS__:
+     *          * Must have been a CD
+     *          * The [Organization] cannot be subscribed to a free plan, because free plans only ever deploy to
+     *          production
+     *      * The [Build] can be re-deployed to staging
+     *      * If the build succeeded to be deployed in staging then it can be promoted to production
+     * If the [Build] was in production:
+     *      * __INVARIANTS__:
+     *          * Must have been a CD
+     *      * If the [Organization] is subscribed to a free plan
+     *          * The [Build] cannot be deployed to staging, but we show the option as disabled in the UI
+     *          * The [Build] can be deployed to production
+     *      * Otherwise:
+     *          * The [Build] can be deployed to staging
+     *          * The [Build] can be promoted to production
+     *      * If the [Build] was successful and there was a deployment associated to it, then it can be rolled back
+     *  If the [Build] was neither in production nor staging:
+     *      * __INVARIANTS__:
+     *          * Must have been a CI
+     *      * The [Build] can be re-run in CI
+     *      * If the [Build] succeeded:
+     *          * If the [Organization] is subscribed to a free plan
+     *              * The [Build] cannot be deployed to staging, but we show the option as disabled in the UI
+     *              * The [Build] can be deployed to production
+     *      * Otherwise:
+     *          * The [Build] can be deployed to staging
+     */
     private fun determineAvailableBuildActions(
         latestDeployments: List<ProjectDeployment>,
-        build: BuildPojo
-    ): Set<BuildActions> {
-        val actions = mutableSetOf<BuildActions>()
+        build: BuildPojo,
+        plan: Plan
+    ): Set<BuildAction> {
+        val actions = mutableSetOf<BuildAction>()
         val succeeded = build.status == BuildStatus.SUCCEEDED
         val wasInStaging = build.environment == "staging"
         val wasInProd = build.environment == "production"
         val deployment = latestDeployments.find { deployment -> deployment.buildId == build.id }
+        val isFreePlan = plan.paid != true
         if (wasInStaging) {
             ensure.isTrue(value = build.type == BuildType.CD, code = INVALID_BUILD_TYPE)
-            actions.add(BuildActions.DEPLOY)
+            ensure.isTrue(value = !isFreePlan, code = INVALID_PLAN)
+            actions += BuildAction(actionType = DEPLOY_TO_STAGING)
             if (succeeded) {
-                actions.add(BuildActions.PROMOTE)
+                actions += BuildAction(actionType = PROMOTE)
             }
         } else if (wasInProd) {
             ensure.isTrue(value = build.type == BuildType.CD, code = INVALID_BUILD_TYPE)
-            actions.add(BuildActions.PROMOTE)
+            if (isFreePlan) {
+                actions += BuildAction(
+                    actionType = DEPLOY_TO_STAGING,
+                    enabled = false,
+                    disabledReason = NOT_AVAILABLE_FOR_FREE_PLAN
+                )
+                actions += BuildAction(actionType = DEPLOY_TO_PRODUCTION)
+            } else {
+                actions += BuildAction(actionType = DEPLOY_TO_STAGING)
+                actions += BuildAction(actionType = PROMOTE)
+            }
             if (succeeded && deployment != null) {
-                actions.add(BuildActions.ROLLBACK)
+                actions += BuildAction(actionType = ROLLBACK)
             }
         } else {
             ensure.isTrue(value = build.type == BuildType.CI, code = INVALID_BUILD_TYPE)
-            actions.add(BuildActions.CI)
+            actions += BuildAction(actionType = BuildActionType.CI)
             if (succeeded) {
-                actions.add(BuildActions.DEPLOY)
+                if (isFreePlan) {
+                    actions += BuildAction(
+                        actionType = DEPLOY_TO_STAGING,
+                        enabled = false,
+                        disabledReason = NOT_AVAILABLE_FOR_FREE_PLAN
+                    )
+                    actions += BuildAction(actionType = DEPLOY_TO_PRODUCTION)
+                } else {
+                    actions += BuildAction(actionType = DEPLOY_TO_STAGING)
+                }
             }
         }
         return actions
@@ -316,7 +383,7 @@ class ProjectApiController(
     }
 
     override fun ci(projectName: String, ciReq: CIReq): ResponseEntity<CI> {
-        val (organization, _, project, user) = checkRepoBelongsToOrg(projectName)
+        val (organization, _, project, user) = getProjectCoordinates(projectName)
         val recipe = ensure.foundOne(
             operation = { recipeDao.fetchOneById(project.recipe!!) },
             code = RECIPE_NOT_FOUND
@@ -342,7 +409,7 @@ class ProjectApiController(
     }
 
     override fun deploy(projectName: String, cdReq: CDReq): ResponseEntity<CD> {
-        val (organization, plan, project, user) = checkRepoBelongsToOrg(projectName)
+        val (organization, plan, project, user) = getProjectCoordinates(projectName)
 
         val userName = ensure.notNull(
             authenticationService.jwt.getClaim<String>("name"),
@@ -363,7 +430,7 @@ class ProjectApiController(
             code = RECIPE_NOT_FOUND
         )
 
-        val envToDeploy = if (plan?.paid == false) PRODUCTION else STAGING
+        val envToDeploy = if (plan.paid == false) PRODUCTION else STAGING
 
         val startCodeBuildResponse = codeBuildService.startCodeBuildProject(
             gitHubAppToken = gitHubService.appToken(organization),
@@ -381,7 +448,7 @@ class ProjectApiController(
     }
 
     override fun promote(projectName: String): ResponseEntity<CD> {
-        val (organization, plan, project, user) = checkRepoBelongsToOrg(projectName)
+        val (organization, plan, project, user) = getProjectCoordinates(projectName)
 
         ensure.isTrue(
             value = !plan.paid!!,
@@ -416,7 +483,7 @@ class ProjectApiController(
     }
 
     override fun rollback(projectName: String): ResponseEntity<CD> {
-        val (organization, _, project, user) = checkRepoBelongsToOrg(projectName)
+        val (organization, _, project, user) = getProjectCoordinates(projectName)
 
         val recipe = ensure.foundOne(
             operation = { recipeDao.fetchOneById(project.recipe!!) },
@@ -484,7 +551,7 @@ class ProjectApiController(
         endTimeInMillis: Long?,
         token: String?
     ): ResponseEntity<Logs> {
-        val (_, _, project, _) = checkRepoBelongsToOrg(projectName)
+        val (_, _, project, _) = getProjectCoordinates(projectName)
         val logs = ecsService.getLogsFor(
             env = env,
             buildId = buildId,
@@ -500,7 +567,7 @@ class ProjectApiController(
         projectName: String,
         updateProjectSettingsReq: UpdateProjectSettingsReq
     ): ResponseEntity<ProjectSettings> {
-        val (_, plan, project, _) = checkRepoBelongsToOrg(projectName)
+        val (_, plan, project, _) = getProjectCoordinates(projectName)
 
         if (plan.paid != null && !plan.paid!!) {
             throw InvalidOperationForPlan("Free tier doesn't allow to update project settings")
@@ -539,7 +606,7 @@ class ProjectApiController(
     }
 
     override fun getProjectSettings(projectName: String): ResponseEntity<ProjectSettings> {
-        val (_, _, project, _) = checkRepoBelongsToOrg(projectName)
+        val (_, _, project, _) = getProjectCoordinates(projectName)
         if (project.certArn != null) {
             val certificateDetail = acmService.getCertificateDetail(certificateArn = project.certArn!!)
             ensure.isTrue(
@@ -557,7 +624,7 @@ class ProjectApiController(
         return ResponseEntity.ok(ProjectSettings(projectId = project.id!!))
     }
 
-    private fun checkRepoBelongsToOrg(projectName: String): OrganizationWithPlanAndProjectAndUser {
+    private fun getProjectCoordinates(projectName: String): OrganizationWithPlanAndProjectAndUser {
         val user = ensure.foundOne(
             operation = { userDao.fetchOneByCognitoUserId(authenticationService.currentCognitoUserId.id) },
             code = USER_NOT_FOUND,
@@ -565,7 +632,10 @@ class ProjectApiController(
         )
         val organization = organizationDao.fetchOneByCognitoUserId(authenticationService.currentCognitoUserId)
         val project = projectDao.fetchOneByNameAndOrganization(organization = organization, projectName = projectName)
-        val plan = organizationToPlanDao.fetchLatestPlan(organization = organization)!!
+        val plan = ensure.notNull(
+            value = organizationToPlanDao.fetchLatestPlan(organization = organization),
+            valueDesc = "plan"
+        )
         return OrganizationWithPlanAndProjectAndUser(organization, plan, project, user)
     }
 
