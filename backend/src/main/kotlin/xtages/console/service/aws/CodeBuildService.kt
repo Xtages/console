@@ -32,6 +32,7 @@ import xtages.console.dao.findFromBuilds
 import xtages.console.dao.findPreviousCIBuild
 import xtages.console.exception.ExceptionCode
 import xtages.console.exception.ExceptionCode.INVALID_ENVIRONMENT
+import xtages.console.exception.MaxConcurrentBuildLimitExceeded
 import xtages.console.exception.ensure
 import xtages.console.pojo.*
 import xtages.console.query.enums.BuildStatus
@@ -47,6 +48,7 @@ import xtages.console.time.toUtcLocalDateTime
 import java.time.*
 import java.time.format.DateTimeFormatter
 import java.util.concurrent.CompletableFuture
+import software.amazon.awssdk.services.codebuild.model.AccountLimitExceededException as AccountLimitExceededException
 import software.amazon.awssdk.services.codebuild.model.Tag as CodebuildTag
 
 private val xtagesCodeBuildTag = buildCodeBuildProjectTag(key = "XTAGES_CONSOLE_CREATED", value = "true")
@@ -338,44 +340,57 @@ class CodeBuildService(
         val isDeploy = environment == "production"
 
         val xtagesEnv = if (activeProfile == "prod") "production" else "development"
-        val startBuildResponse = codeBuildAsyncClient.startBuild(
-            StartBuildRequest.builder()
-                .projectName(cbProjectName)
-                .environmentVariablesOverride(
-                    listOfNotNull(
-                        envVar(
-                            condition = organization.ssmDbPassPath != null,
-                            name = "XTAGES_DB_PASS",
-                            value = organization.ssmDbPassPath,
-                            type = EnvironmentVariableType.PARAMETER_STORE
-                        ),
-                        envVar(name = "XTAGES_ENV", value = xtagesEnv),
-                        envVar(name = "XTAGES_DB_URL", value = dbResource?.resourceEndpoint),
-                        envVar(name = "XTAGES_DB_USER", value = organization.dbUsername),
-                        envVar(name = "XTAGES_DB_NAME", value = organization.dbName),
-                        envVar(name = "XTAGES_SCRIPT", value = scriptPath),
-                        envVar(name = "XTAGES_COMMIT", value = commitHash),
-                        envVar(name = "XTAGES_REPO", value = project.ghRepoFullName),
-                        envVar(name = "XTAGES_PROJECT", value = project.hash),
-                        envVar(name = "XTAGES_GITHUB_TOKEN", value = gitHubAppToken),
-                        envVar(name = "XTAGES_GH_PROJECT_TAG", value = gitHubProjectTag),
-                        envVar(name = "XTAGES_APP_ENV", value = environment.toLowerCase()),
-                        envVar(name = "XTAGES_PROJECT_TYPE", value = recipe.projectType?.name!!.toLowerCase()),
-                        envVar(name = "XTAGES_ORG", value = organization.name),
-                        envVar(name = "XTAGES_ORG_HASH", value = organization.hash),
-                        envVar(name = "XTAGES_RECIPE_REPO", value = recipe.repository),
-                        envVar(name = "XTAGES_GH_RECIPE_TAG", value = recipe.tag),
-                        envVar(name = "XTAGES_NODE_VER", value = recipe.version),
-                        envVar(name = "XTAGES_PREVIOUS_GH_PROJECT_TAG", value = previousGitHubProjectTag),
-                        envVar(name = "XTAGES_BUILD_ID", value = buildRecord.id.toString()),
-                        envVar(name = "XTAGES_PLAN_PAID", value = plan.paid.toString()),
-                        envVar(condition = isDeploy, name = "XTAGES_HOST_HEADER", value = project.associatedDomain),
-                        envVar(condition = isDeploy, name = "XTAGES_CUSTOMER_DOMAIN", value = project.associatedDomain),
+        var startBuildResponse = StartBuildResponse.builder().build()
+        try {
+            startBuildResponse = codeBuildAsyncClient.startBuild(
+                StartBuildRequest.builder()
+                    .projectName(cbProjectName)
+                    .environmentVariablesOverride(
+                        listOfNotNull(
+                            envVar(
+                                condition = organization.ssmDbPassPath != null,
+                                name = "XTAGES_DB_PASS",
+                                value = organization.ssmDbPassPath,
+                                type = EnvironmentVariableType.PARAMETER_STORE
+                            ),
+                            envVar(name = "XTAGES_ENV", value = xtagesEnv),
+                            envVar(name = "XTAGES_DB_URL", value = dbResource?.resourceEndpoint),
+                            envVar(name = "XTAGES_DB_USER", value = organization.dbUsername),
+                            envVar(name = "XTAGES_DB_NAME", value = organization.dbName),
+                            envVar(name = "XTAGES_SCRIPT", value = scriptPath),
+                            envVar(name = "XTAGES_COMMIT", value = commitHash),
+                            envVar(name = "XTAGES_REPO", value = project.ghRepoFullName),
+                            envVar(name = "XTAGES_PROJECT", value = project.hash),
+                            envVar(name = "XTAGES_GITHUB_TOKEN", value = gitHubAppToken),
+                            envVar(name = "XTAGES_GH_PROJECT_TAG", value = gitHubProjectTag),
+                            envVar(name = "XTAGES_APP_ENV", value = environment.toLowerCase()),
+                            envVar(name = "XTAGES_PROJECT_TYPE", value = recipe.projectType?.name!!.toLowerCase()),
+                            envVar(name = "XTAGES_ORG", value = organization.name),
+                            envVar(name = "XTAGES_ORG_HASH", value = organization.hash),
+                            envVar(name = "XTAGES_RECIPE_REPO", value = recipe.repository),
+                            envVar(name = "XTAGES_GH_RECIPE_TAG", value = recipe.tag),
+                            envVar(name = "XTAGES_NODE_VER", value = recipe.version),
+                            envVar(name = "XTAGES_PREVIOUS_GH_PROJECT_TAG", value = previousGitHubProjectTag),
+                            envVar(name = "XTAGES_BUILD_ID", value = buildRecord.id.toString()),
+                            envVar(name = "XTAGES_PLAN_PAID", value = plan.paid.toString()),
+                            envVar(condition = isDeploy, name = "XTAGES_HOST_HEADER", value = project.associatedDomain),
+                            envVar(
+                                condition = isDeploy,
+                                name = "XTAGES_CUSTOMER_DOMAIN",
+                                value = project.associatedDomain
+                            ),
+                        )
                     )
-                )
-                .build()
-        ).get()
-
+                    .build()
+            ).get()
+        } catch (e: Exception) {
+            if (e.cause is AccountLimitExceededException) {
+                // TODO(mdellamerlina): add a metric to track how often this happens and to which users
+                buildRecord.delete();
+                logger.error { "Maximum concurrent builds exceeded" }
+                throw MaxConcurrentBuildLimitExceeded()
+            }
+        }
         val buildArn = startBuildResponse.build().arn()
         logger.debug { "StartBuildResponse Object: $buildArn" }
         buildRecord.buildArn = buildArn
