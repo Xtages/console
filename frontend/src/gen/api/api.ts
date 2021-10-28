@@ -141,10 +141,10 @@ export interface Build {
     endTimestampInMillis?: number;
     /**
      * 
-     * @type {Array<BuildActions>}
+     * @type {Array<BuildAction>}
      * @memberof Build
      */
-    actions: Array<BuildActions>;
+    actions: Array<BuildAction>;
     /**
      * 
      * @type {Array<BuildPhase>}
@@ -166,12 +166,47 @@ export enum BuildStatusEnum {
 }
 
 /**
- * Actions available to a specificic Build
+ * Action available to a specific Build
+ * @export
+ * @interface BuildAction
+ */
+export interface BuildAction {
+    /**
+     * 
+     * @type {BuildActionType}
+     * @memberof BuildAction
+     */
+    actionType: BuildActionType;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof BuildAction
+     */
+    enabled: boolean;
+    /**
+     * 
+     * @type {BuildActionDisabledReason}
+     * @memberof BuildAction
+     */
+    disabledReason?: BuildActionDisabledReason;
+}
+/**
+ * Reason why a BuildAction is disabled
  * @export
  * @enum {string}
  */
-export enum BuildActions {
-    Deploy = 'DEPLOY',
+export enum BuildActionDisabledReason {
+    NotAvailableForFreePlan = 'NOT_AVAILABLE_FOR_FREE_PLAN'
+}
+
+/**
+ * Type of action available to a specificic Build
+ * @export
+ * @enum {string}
+ */
+export enum BuildActionType {
+    DeployToStaging = 'DEPLOY_TO_STAGING',
+    DeployToProduction = 'DEPLOY_TO_PRODUCTION',
     Promote = 'PROMOTE',
     Rollback = 'ROLLBACK',
     Ci = 'CI'

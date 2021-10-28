@@ -946,15 +946,35 @@ components:
       enum:
         - CI
         - CD
-    BuildActions:
-      description: Actions available to a specificic Build
+    BuildActionType:
+      description: Type of action available to a specificic Build
       type: string
       minLength: 1
       enum:
-        - DEPLOY
+        - DEPLOY_TO_STAGING
+        - DEPLOY_TO_PRODUCTION
         - PROMOTE
         - ROLLBACK
         - CI
+    BuildActionDisabledReason:
+      description: Reason why a BuildAction is disabled
+      type: string
+      minLength: 1
+      enum:
+        - NOT_AVAILABLE_FOR_FREE_PLAN
+    BuildAction:
+      description: Action available to a specific Build
+      properties:
+        actionType:
+          $ref: "#/components/schemas/BuildActionType"
+        enabled:
+          type: boolean
+          default: true
+        disabledReason:
+          $ref: "#/components/schemas/BuildActionDisabledReason"
+      required:
+        - actionType
+        - enabled
     Build:
       description: A build (CI or CD) that ocurred
       properties:
@@ -1000,7 +1020,7 @@ components:
         actions:
           type: array
           items:
-            $ref: "#/components/schemas/BuildActions"
+            $ref: "#/components/schemas/BuildAction"
         phases:
           type: array
           items:
