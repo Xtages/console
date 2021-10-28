@@ -3,6 +3,7 @@ import React, {ReactNode} from 'react';
 import {useParams} from 'react-router-dom';
 import {Col, Container, Row, Spinner} from 'react-bootstrap';
 import {AxiosResponse} from 'axios';
+import {useOrganization} from 'hooks/useOrganization';
 import {projectApi} from '../service/Services';
 import {Section} from '../components/layout/Section';
 import Page from '../components/layout/Page';
@@ -25,6 +26,11 @@ export default function ProjectSettingsPage() {
     },
   ]);
   const {
+    isLoading: isLoadingOrg,
+    error: orgError,
+    organization,
+  } = useOrganization();
+  const {
     isLoading: isLoadingProject,
     error: projectError,
     data: projectData,
@@ -35,7 +41,7 @@ export default function ProjectSettingsPage() {
     data: settingsData,
   } = queryResult[1];
   let content: string | ReactNode;
-  if (isLoadingProject || isLoadingProjectSettings) {
+  if (isLoadingOrg || isLoadingProject || isLoadingProjectSettings) {
     content = (
       <div className="mx-auto py-5">
         <Spinner animation="grow" role="status" variant="dark-secondary">
@@ -43,11 +49,12 @@ export default function ProjectSettingsPage() {
         </Spinner>
       </div>
     );
-  } else if (projectError || projectSettingsError) {
+  } else if (orgError || projectError || projectSettingsError) {
     content = 'An error has occurred';
   } else {
     content = (
       <ProjectSettingsCard
+        organization={organization!!}
         project={(projectData as AxiosResponse<Project>).data}
         projectSettings={(settingsData as AxiosResponse<ProjectSettings>).data}
       />
