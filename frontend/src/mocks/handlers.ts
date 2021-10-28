@@ -5,7 +5,8 @@ import {DefaultRequestBody,
   RestContext,
   RestRequest} from 'msw';
 import {AssociatedDomainCertificateStatusEnum,
-  BuildActions,
+  BuildAction,
+  BuildActionType,
   BuildStatusEnum,
   BuildType,
   Deployment,
@@ -51,7 +52,16 @@ const projectsArray: Array<Project> = [{
     commitHash: '20002e398382b2b1d47e74c05aa648ae1b6e6fb3',
     commitUrl: 'https://github.com/Ghostbusters/GhostTrap/commit/20002e398382b2b1d47e74c05aa648ae1b6e6fb3',
     startTimestampInMillis: 1628803353843,
-    actions: [BuildActions.Promote, BuildActions.Rollback],
+    actions: [
+      <BuildAction>{
+        actionType: BuildActionType.Promote,
+        enabled: true,
+      },
+      <BuildAction>{
+        actionType: BuildActionType.Rollback,
+        enabled: true,
+      },
+    ],
     phases: [],
     endTimestampInMillis: 1628803400000,
   }],
@@ -99,7 +109,16 @@ const projectsArray: Array<Project> = [{
     commitHash: '365a0aef96b430c82a498e5fb57e26b25aa59ac3',
     commitUrl: 'https://github.com/Ghostbusters/Ecto-1/commit/365a0aef96b430c82a498e5fb57e26b25aa59ac3',
     startTimestampInMillis: 1629321753843,
-    actions: [BuildActions.Deploy, BuildActions.Promote],
+    actions: [
+      <BuildAction>{
+        actionType: BuildActionType.Promote,
+        enabled: true,
+      },
+      <BuildAction>{
+        actionType: BuildActionType.Rollback,
+        enabled: true,
+      },
+    ],
     phases: [],
     endTimestampInMillis: 1629321800000,
   }],
@@ -125,7 +144,12 @@ const projectsArray: Array<Project> = [{
     commitHash: 'e53915cef4ce13a5a6e6d54363b705d3e34b8691',
     commitUrl: 'https://github.com/Ghostbusters/ProtonPack/commit/e53915cef4ce13a5a6e6d54363b705d3e34b8691',
     startTimestampInMillis: 1629845051616,
-    actions: [BuildActions.Ci],
+    actions: [
+      <BuildAction>{
+        actionType: BuildActionType.Ci,
+        enabled: true,
+      },
+    ],
     phases: [],
     endTimestampInMillis: 1629845099000,
   }],
@@ -151,7 +175,16 @@ const projectWithBuildsAndDeployments: Project = {
     commitHash: '20002e398382b2b1d47e74c05aa648ae1b6e6fb3',
     commitUrl: 'https://github.com/Ghostbusters/GhostTrap/commit/20002e398382b2b1d47e74c05aa648ae1b6e6fb3',
     startTimestampInMillis: 1628803353843,
-    actions: [BuildActions.Promote, BuildActions.Rollback],
+    actions: [
+      <BuildAction>{
+        actionType: BuildActionType.Promote,
+        enabled: true,
+      },
+      <BuildAction>{
+        actionType: BuildActionType.Rollback,
+        enabled: true,
+      },
+    ],
     phases: [],
     endTimestampInMillis: 1628803400000,
   }, {
@@ -166,7 +199,12 @@ const projectWithBuildsAndDeployments: Project = {
     commitHash: '20002e398382b2b1d47e74c05aa648ae1b6e6fb3',
     commitUrl: 'https://github.com/XtagesCzunigaTest/GhostTrap/commit/db6276db7c943f3abd19295743c8c2565156e826',
     startTimestampInMillis: 1629235353843,
-    actions: [BuildActions.Deploy],
+    actions: [
+      <BuildAction>{
+        actionType: BuildActionType.DeployToStaging,
+        enabled: true,
+      },
+    ],
     phases: [],
     endTimestampInMillis: 1629235400000,
   }, {
@@ -181,7 +219,16 @@ const projectWithBuildsAndDeployments: Project = {
     commitHash: '20002e398382b2b1d47e74c05aa648ae1b6e6fb3',
     commitUrl: 'https://github.com/XtagesCzunigaTest/GhostTrap/commit/7380a5568ce8756db3d2d11ecf5138614d808770',
     startTimestampInMillis: 1629148953843,
-    actions: [BuildActions.Promote, BuildActions.Rollback],
+    actions: [
+      <BuildAction>{
+        actionType: BuildActionType.Promote,
+        enabled: true,
+      },
+      <BuildAction>{
+        actionType: BuildActionType.Rollback,
+        enabled: true,
+      },
+    ],
     phases: [],
     endTimestampInMillis: 1629149000000,
   }],
