@@ -1,9 +1,10 @@
-import React, {useState} from 'react';
+import React, {FC, useState} from 'react';
 import {ArrowUpCircle,
   Check,
   ChevronDown,
   ChevronUp,
   GitMerge,
+  IconProps,
   RotateCcw,
   UploadCloud,
   X} from 'react-feather';
@@ -18,11 +19,18 @@ import {Alert,
   Row,
   Tab,
   Tabs} from 'react-bootstrap';
-import {Build, BuildActions, BuildPhase, BuildType, Project} from 'gen/api';
+import {Build,
+  BuildAction,
+  BuildActionDisabledReason,
+  BuildActionType,
+  BuildPhase,
+  BuildType,
+  Project} from 'gen/api';
 import {durationString, formatDateTimeMed, formatDateTimeRelativeToNow} from 'helpers/time';
 import {cdApi, ciApi, logsApi} from 'service/Services';
 import {UseQueryLoaderElement} from 'components/layout/UseQueryLoaderElement';
 import {UserName} from 'components/user/UserName';
+import {ButtonVariant} from 'react-bootstrap/types';
 import {BuildStatusIcon} from './BuildStatusIcon';
 import Avatar from '../avatar/Avatar';
 import {LogViewer} from '../logviewer/LogViewer';
@@ -191,7 +199,7 @@ export function BuildRowInner({
 }
 
 /**
- * Dropwdown with available Build actions.
+ * Dropdown with available Build actions.
  */
 function BuildActionsDropdown({project, build}: {project: Project, build: Build}) {
   const queryClient = useQueryClient();
@@ -224,31 +232,93 @@ function BuildActionsDropdown({project, build}: {project: Project, build: Build}
     await queryClient.invalidateQueries('projects');
   }
 
-  const canRunCi = build.actions.includes(BuildActions.Ci);
-  const canPromote = build.actions.includes(BuildActions.Promote);
-  const canDeploy = build.actions.includes(BuildActions.Deploy);
-  const canRollback = build.actions.includes(BuildActions.Rollback);
+  const buildActionsByType = build.actions.reduce(
+    (map: Record<BuildActionType, BuildAction>, action) => {
+      // eslint-disable-next-line no-param-reassign
+      map[action.actionType] = action;
+      return map;
+    }, {} as Record<BuildActionType, BuildAction>,
+  );
 
   return (
     <DropdownButton title="Actions" id={`actions-${build.id}`} menuRole="menu" size="sm">
-      <Dropdown.Item onClick={runCi} disabled={!canRunCi}>
-        <span className={cx('pr-2', {'text-success': canRunCi})}><GitMerge size="1.3em" /></span>
+      <BuildActionsDropdownItem
+        buildAction={buildActionsByType[BuildActionType.Ci]}
+        variant="success"
+        onClick={runCi}
+        icon={GitMerge}
+      >
         Run CI
-      </Dropdown.Item>
-      <Dropdown.Item onClick={promote} disabled={!canPromote}>
-        <span className={cx('pr-2', {'text-dark-primary': canPromote})}><UploadCloud size="1.3em" /></span>
+      </BuildActionsDropdownItem>
+      <BuildActionsDropdownItem
+        buildAction={buildActionsByType[BuildActionType.Promote]}
+        variant="dark-primary"
+        onClick={promote}
+        icon={UploadCloud}
+      >
         Promote to Prod
-      </Dropdown.Item>
-      <Dropdown.Item onClick={deploy} disabled={!canDeploy}>
-        <span className={cx('pr-2', {'text-primary': canDeploy})}><ArrowUpCircle size="1.3em" /></span>
+      </BuildActionsDropdownItem>
+      <BuildActionsDropdownItem
+        buildAction={buildActionsByType[BuildActionType.DeployToStaging]}
+        variant="primary"
+        onClick={deploy}
+        icon={ArrowUpCircle}
+      >
         Deploy to Staging
-      </Dropdown.Item>
-      <Dropdown.Item onClick={rollback} disabled={!canRollback}>
-        <span className={cx('pr-2', {'text-danger': canRollback})}><RotateCcw size="1.3em" /></span>
+      </BuildActionsDropdownItem>
+      <BuildActionsDropdownItem
+        buildAction={buildActionsByType[BuildActionType.DeployToProduction]}
+        variant="dark-primary"
+        onClick={deploy}
+        icon={UploadCloud}
+      >
+        Deploy to Production
+      </BuildActionsDropdownItem>
+      <BuildActionsDropdownItem
+        buildAction={buildActionsByType[BuildActionType.Rollback]}
+        variant="danger"
+        onClick={rollback}
+        icon={RotateCcw}
+      >
         Rollback
-      </Dropdown.Item>
+      </BuildActionsDropdownItem>
     </DropdownButton>
   );
+}
+
+type BuildActionsDropdownItemProps = {
+  buildAction?: BuildAction;
+  children: String;
+  variant: ButtonVariant;
+  icon: FC<IconProps>;
+  onClick: React.MouseEventHandler;
+};
+
+function BuildActionsDropdownItem({
+  buildAction,
+  children,
+  variant,
+  icon: Icon,
+  onClick,
+}: BuildActionsDropdownItemProps) {
+  if (buildAction) {
+    const {
+      enabled,
+      disabledReason,
+    } = buildAction;
+    const disabled = !enabled;
+    return (
+      <Dropdown.Item onClick={onClick} disabled={disabled}>
+        <span className={cx('pr-2', {[`text-${variant}`]: enabled})}>
+          <Icon size="1.3em" />
+        </span>
+        {children}
+        {disabled && disabledReason === BuildActionDisabledReason.NotAvailableForFreePlan
+          && <span className="d-block text-xs">(Not available on the Free plan)</span>}
+      </Dropdown.Item>
+    );
+  }
+  return null;
 }
 
 /** Renders the [Build] logs and phases */

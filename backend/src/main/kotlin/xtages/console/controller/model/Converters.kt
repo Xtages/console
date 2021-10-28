@@ -224,7 +224,7 @@ fun buildPojoToBuild(
     events: List<BuildEvent>,
     usernameToGithubUser: Map<String, GithubUser>,
     idToXtagesUser: Map<Int, XtagesUserWithCognitoAttributes>,
-    actions: Set<BuildActions>
+    actions: Set<BuildAction>
 ): Build {
     val initiator = getBuildInitiator(build, usernameToGithubUser, idToXtagesUser)
     return Build(
