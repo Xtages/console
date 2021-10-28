@@ -6,7 +6,10 @@ import {Form, Formik, FormikErrors} from 'formik';
 import {Link as LinkIcon} from 'react-feather';
 import {useQueryClient} from 'react-query';
 import {projectApi} from 'service/Services';
-import {AssociatedDomainCertificateStatusEnum, Project, ProjectSettings} from 'gen/api';
+import {AssociatedDomainCertificateStatusEnum,
+  Organization,
+  Project,
+  ProjectSettings} from 'gen/api';
 import {DocsLink} from 'components/link/XtagesLink';
 import {SimpleProjectCard} from './ProjectDetailsCard';
 import LabeledFormField from '../form/LabeledFormField';
@@ -14,6 +17,8 @@ import styles from './ProjectSettingsCard.module.scss';
 import {CopiableSpan} from '../text/CopiableSpan';
 
 export interface ProjectSettingsCardProps {
+  organization: Organization;
+
   project: Project;
 
   projectSettings: ProjectSettings;
@@ -30,6 +35,7 @@ type ProjectSettingsFormValues = z.infer<typeof projectSettingsFormValuesSchema>
  * A card showing {@link Project}'s {@link ProjectSettings} with a form to update them.
  */
 export function ProjectSettingsCard({
+  organization,
   project,
   projectSettings,
 }: ProjectSettingsCardProps) {
@@ -107,6 +113,8 @@ export function ProjectSettingsCard({
       certStatusMessage = undefined;
       break;
   }
+  console.dir(organization);
+  const planAllowsCustomDomain = organization.plan && organization.plan.paid;
 
   return (
     <SimpleProjectCard project={project} showSettingsLink={false} showRunCiButton={false}>
@@ -126,6 +134,12 @@ export function ProjectSettingsCard({
               </Alert>
               )}
               <h3 className="h5">Domain Settings</h3>
+              {!planAllowsCustomDomain && (
+              <Alert variant="warning">
+                Custom domains for Projects are only available for paid
+                accounts.
+              </Alert>
+              )}
               <p className="prose">
                 Use this setting to associate your own domain name to your Project&apos;s
                 production environment. We will handle the creation and renewal of the SSL
@@ -139,7 +153,7 @@ export function ProjectSettingsCard({
                 name="associatedDomainName"
                 label="Domain Name"
                 placeholder="www.yourdomain.com"
-                disabled={hasAssociatedDomain}
+                disabled={hasAssociatedDomain || !planAllowsCustomDomain}
                 value={associatedDomain?.name}
                 invalid={touched.associatedDomainName && errors.associatedDomainName != null}
                 validationFeedback="Please provide a valid domain."
@@ -210,7 +224,7 @@ export function ProjectSettingsCard({
               </>
               )}
               <div className="mt-4">
-                <Button type="submit" disabled={isSubmitting || hasAssociatedDomain}>
+                <Button type="submit" disabled={isSubmitting || hasAssociatedDomain || !planAllowsCustomDomain}>
                   Save
                 </Button>
               </div>
