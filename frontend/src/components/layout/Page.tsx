@@ -26,10 +26,10 @@ export default function Page({children, width = 'wide'} : PageProps) {
   });
   return (
     <>
-      <header className="pb-1">
+      <header className="pb-4">
         <NavBar />
       </header>
-      <div className="slice slice pt-3 bg-section-secondary">
+      <div className="slice slice pt-0 bg-section-secondary">
         <div className="container">
           <div className="row justify-content-center">
             <div className={cx({'col-12': width === 'wide', 'col-9': width === 'narrow'})}>

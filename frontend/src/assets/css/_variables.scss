@@ -1,44 +1,53 @@
 @import 'functions';
 
 $enable-card-cap-border:                      true;
-$enable-print-styles:                         true !default;
-$enable-validation-icons:                     true !default;
+$enable-print-styles:                         true;
+$enable-validation-icons:                     true;
 
-$icon-font-family:              'Material Icons' !default;
+$icon-font-family:              'Material Icons';
 
-$caret-width: .38em !default;
-$caret-vertical-align: 0.2em !default;
-$caret-spacing: 0.5em !default;
-
-$card-spacer-x:                     1rem !default;
+$caret-width: .38em;
+$caret-vertical-align: 0.2em;
+$caret-spacing: 0.5em;
 
 $input-btn-padding-y-xs:      .275rem;
 $input-btn-padding-x-xs:      .8rem;
 
-$font: "https://fonts.googleapis.com/css?family=Nunito+Sans:400,400i,600,700,800|Source+Code+Pro:400|Material+Icons&display=swap" !default;
+$font: "https://fonts.googleapis.com/css?family=Nunito+Sans:400,400i,600,700,800|Source+Code+Pro:400|Material+Icons&display=swap";
+
+$grid-gutter-width:           20px;
+
+$border-radius:               .275rem;
+$border-radius-xl:            .65rem;
+$border-radius-lg:            .4rem;
+$border-radius-sm:            .2rem;
+$border-radius-xs:            .1rem;
+
+$navbar-padding-x:                  0;
+$navbar-padding-y:                  0;
+
+$card-border-radius:                $border-radius-lg;
+$card-spacer-x:                     0.8rem;
 
 @import 'quick/scss/core/variables';
 
 $body-bg:       $gray-100;
 
-$table-head-font-size:        1.2rem !default;
-$table-subhead-font-size:     0.9rem !default;
-$table-subhead-color:         $gray-600 !default;
+$table-head-font-size:        1rem;
+$table-subhead-font-size:     0.9rem;
+$table-subhead-color:         $gray-600;
 
-$table-body-font-size:        1.1rem !default;
+$btn-font-size-xs:            $input-btn-font-size-xs;
 
-$btn-font-size-xs:            $input-btn-font-size-xs !default;
-
-$input-group-addon-invalid-color:               $danger !default;
-$input-group-addon-invalid-bg:                  $gray-200 !default;
-$input-group-addon-invalid-border-color:        $danger !default;
+$input-group-addon-invalid-color:               $danger;
+$input-group-addon-invalid-bg:                  $gray-200;
+$input-group-addon-invalid-border-color:        $danger;
 
 $input-padding-y-xs:                    $input-btn-padding-y-xs;
 $input-padding-x-xs:                    $input-btn-padding-x-xs;
 $input-line-height-xs:                  $input-btn-line-height-xs;
 
 $input-height-xs:                       add($input-line-height-xs * 1em, add($input-padding-y-xs * 2, $input-height-border, false));
-$border-radius-xs:                      .1rem;
 $input-border-radius-xs:                $border-radius-xs;
 
 @import '~bootstrap/scss/variables';
