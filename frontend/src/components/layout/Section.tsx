@@ -28,7 +28,7 @@ export function SectionTitle({
   const iconEl = icon && React.createElement(icon);
   return (
     <div className="row mx-n2">
-      <div className="d-flex align-items-center mb-4">
+      <div className="d-flex align-items-center mb-3">
         <div className="d-flex">
           {iconEl
                 && (
