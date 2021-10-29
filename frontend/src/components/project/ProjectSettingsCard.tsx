@@ -113,7 +113,6 @@ export function ProjectSettingsCard({
       certStatusMessage = undefined;
       break;
   }
-  console.dir(organization);
   const planAllowsCustomDomain = organization.plan && organization.plan.paid;
 
   return (
