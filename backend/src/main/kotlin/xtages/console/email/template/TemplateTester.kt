@@ -45,7 +45,7 @@ Reviewed-by: Z
 Refs #133 """
     val properties = ConsoleProperties(
         server = Server(basename = "https://console.xtages.com", noReplyAddress = "", emailReturnPath = ""),
-        stripe = Stripe(apiKey = "", webhookSecret = "", starterPriceIds = "", trialPeriod = 10),
+        stripe = Stripe(apiKey = "", webhookSecret = ""),
         gitHubApp = GitHubApp(
             privateKey = "",
             identifier = 3,
