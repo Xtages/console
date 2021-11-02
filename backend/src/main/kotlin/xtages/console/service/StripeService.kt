@@ -67,7 +67,11 @@ class StripeService(
             .setMode(SessionCreateParams.Mode.SUBSCRIPTION)
             .setAllowPromotionCodes(true)
             .putAllMetadata(metadata)
-            .setSubscriptionData(buildSubscriptionData(metadata))
+            .setSubscriptionData(
+                SubscriptionData.builder()
+                    .putAllMetadata(metadata)
+                    .build()
+            )
 
         priceIds.forEach { price ->
             builder.addLineItem(
@@ -81,12 +85,6 @@ class StripeService(
 
         val session = CheckoutSession.create(sessionParams)
         return session.id
-    }
-
-    private fun buildSubscriptionData(metadata: Map<String, String>): SubscriptionData? {
-        val builder = SubscriptionData.builder()
-            .putAllMetadata(metadata)
-        return builder.build()
     }
 
     /**
