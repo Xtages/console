@@ -17,8 +17,6 @@ data class ConsoleProperties(
     data class Stripe(
         val apiKey: String,
         val webhookSecret: String,
-        val starterPriceIds: String,
-        val trialPeriod: Long
     )
 
     data class Server(val basename: String, val noReplyAddress: String, val emailReturnPath: String)
