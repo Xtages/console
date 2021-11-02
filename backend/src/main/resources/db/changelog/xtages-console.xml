@@ -61,5 +61,6 @@
     <include file="changesets/00013-make-concurrent-build-limit-non-null.postgresql.sql" relativeToChangelogFile="true" />
     <include file="changesets/00014-changing-db-instance.postgresql.sql" relativeToChangelogFile="true" />
     <include file="changesets/00009-upgrade-recipe-tag-version.postgresql.sql" relativeToChangelogFile="true" />
+    <include file="changesets/00015-upgrade-recipe-tag-version.postgresql.sql" relativeToChangelogFile="true" />
 </databaseChangeLog>
 
