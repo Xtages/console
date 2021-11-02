@@ -52,9 +52,6 @@ class StripeService(
             .queryParam("checkoutSessionId", "{CHECKOUT_SESSION_ID}")
         val cancelUrl = UriComponentsBuilder.fromUri(URI(consoleProperties.server.basename))
             .pathSegment("signup")
-        val isTrialProduct = priceIds.any {
-            consoleProperties.stripe.starterPriceIds.split(",").contains(it)
-        }
         val ownerCognitoUserId = authenticationService.currentCognitoUserId.id
         val organizationName =
             organizationDao.fetchOneByCognitoUserId(cognitoUserId = authenticationService.currentCognitoUserId).name!!
@@ -70,7 +67,11 @@ class StripeService(
             .setMode(SessionCreateParams.Mode.SUBSCRIPTION)
             .setAllowPromotionCodes(true)
             .putAllMetadata(metadata)
-            .setSubscriptionData(buildSubscriptionData(isTrialProduct, metadata))
+            .setSubscriptionData(
+                SubscriptionData.builder()
+                    .putAllMetadata(metadata)
+                    .build()
+            )
 
         priceIds.forEach { price ->
             builder.addLineItem(
@@ -84,15 +85,6 @@ class StripeService(
 
         val session = CheckoutSession.create(sessionParams)
         return session.id
-    }
-
-    private fun buildSubscriptionData(isTrialProduct: Boolean, metadata: Map<String, String>): SubscriptionData? {
-        val builder = SubscriptionData.builder()
-            .putAllMetadata(metadata)
-        if (isTrialProduct) {
-            builder.setTrialPeriodDays(consoleProperties.stripe.trialPeriod)
-        }
-        return builder.build()
     }
 
     /**
