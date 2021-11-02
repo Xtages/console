@@ -8,6 +8,7 @@ env:
     ENV: prod
   parameter-store:
     REACT_APP_STRIPE_PUBLISHABLE_KEY: "/config/xtages_console_prod/xtages.console.stripe.publicApiKey"
+    REACT_APP_GIT_HUB_OAUTH_CLIENT_ID: "/config/xtages_console_prod/xtages.console.gitHubOauth.clientId"
 
 phases:
   pre_build:
