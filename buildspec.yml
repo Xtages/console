@@ -7,16 +7,18 @@ env:
   variables:
     ENV: prod
   parameter-store:
-    DB_PASS: "/config/xtages_console_dev/spring.datasource.password"
     REACT_APP_STRIPE_PUBLISHABLE_KEY: "/config/xtages_console_prod/xtages.console.stripe.publicApiKey"
     REACT_APP_GIT_HUB_OAUTH_CLIENT_ID: "/config/xtages_console_prod/xtages.console.gitHubOauth.clientId"
 
 phases:
   pre_build:
     commands:
+      - service docker start
       - nohup /usr/bin/dockerd --host=unix:///var/run/docker.sock --host=tcp://127.0.0.1:2375 --storage-driver=overlay2 &
       - aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 606626603369.dkr.ecr.us-east-1.amazonaws.com
-      - source ~/.bashrc
+      - service postgresql start
+      - createuser -U postgres -s "xtages_console" --no-password
+      - createdb -U postgres  "xtages_console" "Main Xtages console DB" --owner="xtages_console"
   build:
     commands:
       - cd backend
