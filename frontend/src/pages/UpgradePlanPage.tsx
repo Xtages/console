@@ -42,6 +42,17 @@ export default function UpgradePlanPage() {
                     <td>3</td>
                   </tr>
                   <tr>
+                    <th scope="row" className="text-left">No. of environments per app</th>
+                    <td>
+                      2
+                      <div>(staging and production)</div>
+                    </td>
+                    <td>
+                      2
+                      <div>(staging and production)</div>
+                    </td>
+                  </tr>
+                  <tr>
                     <th scope="row" className="text-left">Per app specs</th>
                     <td>
                       2 vCPU
@@ -89,11 +100,6 @@ export default function UpgradePlanPage() {
                   </tr>
                   <tr>
                     <th scope="row" className="text-left">Metrics dashboard</th>
-                    <td><span className="text-sm">(coming soon)</span></td>
-                    <td><span className="text-sm">(coming soon)</span></td>
-                  </tr>
-                  <tr>
-                    <th scope="row" className="text-left">Incident management</th>
                     <td><span className="text-sm">(coming soon)</span></td>
                     <td><span className="text-sm">(coming soon)</span></td>
                   </tr>

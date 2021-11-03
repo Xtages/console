@@ -46,14 +46,14 @@ let plans: Plans = {
   starter: {
     monthly: {
       priceId: 'price_1JF4NqIfxICi4AQgRTjmOWNf',
-      price: '229',
+      price: '188',
       billingInfo: 'per month',
       callToAction: 'Purchase Starter',
       title: 'Starter',
     },
     yearly: {
       priceId: 'price_1JF4NxIfxICi4AQgoeBWQ46u',
-      price: '199',
+      price: '150',
       billingInfo: 'per month, paid yearly',
       callToAction: 'Purchase Starter',
       title: 'Starter',
@@ -62,14 +62,14 @@ let plans: Plans = {
   pro: {
     monthly: {
       priceId: 'price_1JF4MZIfxICi4AQgU4RtfIBc',
-      price: '585',
+      price: '438',
       billingInfo: 'per month',
       callToAction: 'Purchase Pro',
       title: 'Professional',
     },
     yearly: {
       priceId: 'price_1JF4NiIfxICi4AQg9EsBpsl5',
-      price: '509',
+      price: '350',
       billingInfo: 'per month, paid yearly',
       callToAction: 'Purchase Pro',
       title: 'Professional',
@@ -96,14 +96,14 @@ if (process.env.NODE_ENV !== 'production') {
     starter: {
       monthly: {
         priceId: 'price_1J7pjXIfxICi4AQgDarGp3Xp',
-        price: '229',
+        price: '188',
         billingInfo: 'per month',
         callToAction: 'Purchase Starter',
         title: 'Starter',
       },
       yearly: {
         priceId: 'price_1J7pfYIfxICi4AQgGUYHG2lM',
-        price: '199',
+        price: '150',
         billingInfo: 'per month, paid yearly',
         callToAction: 'Purchase Starter',
         title: 'Starter',
@@ -112,14 +112,14 @@ if (process.env.NODE_ENV !== 'production') {
     pro: {
       monthly: {
         priceId: 'price_1J7plxIfxICi4AQgd7XO8FA2',
-        price: '585',
+        price: '438',
         billingInfo: 'per month',
         callToAction: 'Purchase Pro',
         title: 'Professional',
       },
       yearly: {
         priceId: 'price_1J7pkVIfxICi4AQgee83lecL',
-        price: '509',
+        price: '350',
         billingInfo: 'per month, paid yearly',
         callToAction: 'Purchase Pro',
         title: 'Professional',
@@ -173,9 +173,18 @@ export function PlanSelector({purchaseEnabled = true, showFreePlan = true}: Plan
               onClick={freePlanClickHandler}
             >
               <ul className="list-unstyled text-sm mb-4">
-                <li>Deploy 1 app (1 environment)</li>
+                <li>
+                  Deploy 1 app
+                  <div>(1 environment)</div>
+                </li>
                 <li>100 CI/CD credits (Linux)</li>
+                <li>1 GB of data-transfer</li>
                 <li>Deploys to the Xtages Cloud</li>
+                <li>Log collection</li>
+                <li>
+                  Metrics dashboard
+                  <span className="d-block text-muted text-sm">(coming soon)</span>
+                </li>
               </ul>
             </PlanCard>
           </Col>
@@ -183,7 +192,10 @@ export function PlanSelector({purchaseEnabled = true, showFreePlan = true}: Plan
           <Col lg={3}>
             <PlanCard planType="starter" purchaseEnabled={purchaseEnabled}>
               <ul className="list-unstyled text-sm mb-4">
-                <li>Deploy up to 2 apps</li>
+                <li>
+                  Deploy up to 2 apps
+                  <div>(2 environments for each)</div>
+                </li>
                 <li>2500 CI/CD credits (Linux)</li>
                 <li>20 GB of data-transfer</li>
                 <li>Deploys to the Xtages Cloud</li>
@@ -192,27 +204,22 @@ export function PlanSelector({purchaseEnabled = true, showFreePlan = true}: Plan
                   Metrics dashboard
                   <span className="d-block text-muted text-sm">(coming soon)</span>
                 </li>
-                <li>
-                  Incident management
-                  <span className="d-block text-muted text-sm">(coming soon)</span>
-                </li>
               </ul>
             </PlanCard>
           </Col>
           <Col lg={3}>
             <PlanCard planType="pro" highlighted purchaseEnabled={purchaseEnabled}>
               <ul className="list-unstyled text-white text-sm opacity-8 mb-4">
-                <li>Deploy up to 3 apps</li>
+                <li>
+                  Deploy up to 3 apps
+                  <div>(2 environments for each)</div>
+                </li>
                 <li>7500 CI/CD credits (Linux)</li>
                 <li>500 GB of data-transfer</li>
                 <li>Deploys to the Xtages Cloud</li>
                 <li>Log collection</li>
                 <li>
                   Metrics dashboard
-                  <span className="d-block text-white text-sm">(coming soon)</span>
-                </li>
-                <li>
-                  Incident management
                   <span className="d-block text-white text-sm">(coming soon)</span>
                 </li>
               </ul>
@@ -327,7 +334,7 @@ function BillingCycleToggle({size}: BillingCycleToggleProps) {
                   className="badge-floating badge-pill"
                   variant="success"
                 >
-                  -13%
+                  -25%
                 </Badge>
               </ToggleButton>
             </ToggleButtonGroup>
