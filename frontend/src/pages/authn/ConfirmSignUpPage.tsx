@@ -144,7 +144,7 @@ export default function ConfirmSignUpPage() {
     <section>
       <div className="container d-flex flex-column">
         <div className="row align-items-center justify-content-center min-vh-100">
-          <div className="col-md-6 col-lg-5 col-xl-4">
+          <div className="col-sm-4 py-6 py-md-0">
             <div className="mb-5 text-center">
               <Logo size="sm" />
               <h1 className="h3 mb-1">Confirm your account</h1>
