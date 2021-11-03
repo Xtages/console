@@ -76,7 +76,7 @@ export default function SignUpPage() {
     <section>
       <div className="container d-flex flex-column">
         <div className="row align-items-center justify-content-center min-vh-100">
-          <div className="col-md-8 col-lg-5 py-6">
+          <div className="col-sm-4 py-6">
             <div>
               <div className="mb-5 text-center">
                 <Logo size="sm" />

@@ -24,5 +24,5 @@ export function UserName({
     }
     return null;
   }
-  return <span className={className}>user.name</span>;
+  return <span className={className}>{name}</span>;
 }
