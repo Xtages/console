@@ -302,8 +302,6 @@ class CodeBuildService(
             organization = organization,
             resourceType = ResourceType.BUILD_MINUTES
         )
-        ensure.notNull(value = project.codebuildCdProjectArn, valueDesc = "project.codebuildCdProjectArn")
-        ensure.notNull(value = project.codebuildCiProjectArn, valueDesc = "project.codebuildCiProjectArn")
         val build = Build(
             environment = environment,
             type = BuildType.valueOf(codeBuildType.name),
