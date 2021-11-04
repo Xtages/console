@@ -143,10 +143,11 @@ class ProjectApiController(
         organization ?: run {
             return ResponseEntity.ok(emptyList())
         }
-        val plan = ensure.notNull(
-            value = organizationToPlanDao.fetchLatestPlan(organization = organization),
-            valueDesc = "plan"
-        )
+        val plan = organizationToPlanDao.fetchLatestPlan(organization = organization)
+        plan ?: run {
+            return ResponseEntity.ok(emptyList())
+        }
+
         val projects = projectDao.fetchByOrganization(organization.name!!).toMutableList()
         if (includeLastBuild) {
             val projectIdToLatestBuild = buildDao
