@@ -45,14 +45,14 @@ let plans: Plans = {
   },
   starter: {
     monthly: {
-      priceId: 'price_1JF4NqIfxICi4AQgRTjmOWNf',
+      priceId: 'price_1JrxP2IfxICi4AQgc1IrRkmF',
       price: '188',
       billingInfo: 'per month',
       callToAction: 'Purchase Starter',
       title: 'Starter',
     },
     yearly: {
-      priceId: 'price_1JF4NxIfxICi4AQgoeBWQ46u',
+      priceId: 'price_1JrxN0IfxICi4AQgOdyA0KrI',
       price: '150',
       billingInfo: 'per month, paid yearly',
       callToAction: 'Purchase Starter',
@@ -61,14 +61,14 @@ let plans: Plans = {
   },
   pro: {
     monthly: {
-      priceId: 'price_1JF4MZIfxICi4AQgU4RtfIBc',
+      priceId: 'price_1JrxRfIfxICi4AQgqOq4bq3C',
       price: '438',
       billingInfo: 'per month',
       callToAction: 'Purchase Pro',
       title: 'Professional',
     },
     yearly: {
-      priceId: 'price_1JF4NiIfxICi4AQg9EsBpsl5',
+      priceId: 'price_1JrxQUIfxICi4AQgdh0e4NG3',
       price: '350',
       billingInfo: 'per month, paid yearly',
       callToAction: 'Purchase Pro',
@@ -95,14 +95,14 @@ if (process.env.NODE_ENV !== 'production') {
     },
     starter: {
       monthly: {
-        priceId: 'price_1J7pjXIfxICi4AQgDarGp3Xp',
+        priceId: 'price_1JrxP2IfxICi4AQgc1IrRkmF',
         price: '188',
         billingInfo: 'per month',
         callToAction: 'Purchase Starter',
         title: 'Starter',
       },
       yearly: {
-        priceId: 'price_1J7pfYIfxICi4AQgGUYHG2lM',
+        priceId: 'price_1JrxN0IfxICi4AQgOdyA0KrI',
         price: '150',
         billingInfo: 'per month, paid yearly',
         callToAction: 'Purchase Starter',
@@ -111,14 +111,14 @@ if (process.env.NODE_ENV !== 'production') {
     },
     pro: {
       monthly: {
-        priceId: 'price_1J7plxIfxICi4AQgd7XO8FA2',
+        priceId: 'price_1JrxRfIfxICi4AQgqOq4bq3C',
         price: '438',
         billingInfo: 'per month',
         callToAction: 'Purchase Pro',
         title: 'Professional',
       },
       yearly: {
-        priceId: 'price_1J7pkVIfxICi4AQgee83lecL',
+        priceId: 'price_1JrxQUIfxICi4AQgdh0e4NG3',
         price: '350',
         billingInfo: 'per month, paid yearly',
         callToAction: 'Purchase Pro',
