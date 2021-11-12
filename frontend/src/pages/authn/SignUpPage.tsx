@@ -11,6 +11,7 @@ import {EmailField, PasswordField} from 'components/user/AuthFields';
 import {useTracking} from 'hooks/useTracking';
 import {useFormValidator} from 'hooks/useFormValidator';
 import {Nullable} from 'types/nullable';
+import LinkedInTag from 'react-linkedin-insight';
 
 const signUpFormValuesSchema = z.object({
   email: z.string()
@@ -29,6 +30,7 @@ export type SignUpFormValues = z.infer<typeof signUpFormValuesSchema>;
  * Component that renders the sign up page.
  */
 export default function SignUpPage() {
+  LinkedInTag.track('5610700');
   const initialValues: SignUpFormValues = {
     email: '',
     password: '',
