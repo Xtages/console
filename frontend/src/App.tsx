@@ -16,6 +16,7 @@ import {useSurvicate} from 'hooks/useSurvicate';
 import * as Sentry from '@sentry/react';
 import {CenteredOnScreen} from 'components/layout/CenteredOnScreen';
 import {Alert} from 'react-bootstrap';
+import LinkedInTag from 'react-linkedin-insight';
 
 const AccountPage = loadable(() => import('pages/AccountPage'));
 const ChangePasswordPage = loadable(() => import('pages/authn/ChangePasswordPage'));
@@ -38,6 +39,7 @@ const queryClient = new QueryClient();
 const analytics = buildAnalytics();
 
 export default function App() {
+  LinkedInTag.init('3590140', 'px');
   function errorFallback() {
     return (
       <CenteredOnScreen>
