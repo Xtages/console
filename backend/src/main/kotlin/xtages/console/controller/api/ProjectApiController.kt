@@ -452,7 +452,7 @@ class ProjectApiController(
         val (organization, plan, project, user) = getProjectCoordinates(projectName)
 
         ensure.isTrue(
-            value = !plan.paid!!,
+            value = plan.paid!!,
             code = INVALID_OPERATION_FOR_PLAN,
             message = "Operation restricted for free plans"
         )
